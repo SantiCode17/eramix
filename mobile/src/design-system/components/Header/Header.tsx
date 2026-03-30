@@ -7,7 +7,6 @@ import {
   ViewStyle,
   StyleProp,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   colors,
@@ -86,7 +85,7 @@ export default function Header({
   // glass (default)
   return (
     <View style={[styles.wrapper, styles.border, style]}>
-      <BlurView intensity={blurTokens.elevated} tint="dark" style={StyleSheet.absoluteFill} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(26, 26, 46, 0.92)" }]} />
       <View style={[StyleSheet.absoluteFill, styles.glassOverlay]} />
       {inner}
     </View>

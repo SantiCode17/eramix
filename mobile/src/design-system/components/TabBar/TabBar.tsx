@@ -7,7 +7,6 @@ import {
   ViewStyle,
   StyleProp,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { colors, typography, spacing, radii, opacity, blur as blurTokens } from "../../tokens";
 import { Badge } from "../Badge";
@@ -40,7 +39,7 @@ export default function TabBar({
 
   return (
     <View style={[styles.wrapper, style]}>
-      <BlurView intensity={blurTokens.elevated} tint="dark" style={styles.blur}>
+      <View style={[styles.blur, { backgroundColor: "rgba(26, 26, 46, 0.92)" }]}>
         <View style={styles.container}>
           {items.map((item) => {
             const isActive = item.key === activeKey;
@@ -71,7 +70,7 @@ export default function TabBar({
             );
           })}
         </View>
-      </BlurView>
+      </View>
     </View>
   );
 }

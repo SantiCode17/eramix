@@ -675,3 +675,68 @@ Cada fase documenta:
 - **Archivos evidencia:**
   - `/mobile/src/types/user.ts`
   - `/mobile/src/types/index.ts`
+
+---
+
+## Fase 9 — FRONTEND: Descubrimiento, Matching y Mapa de Proximidad
+
+**CE 9.a: Servicio API de búsqueda y solicitudes de amistad creado.**
+
+- **Implementación:** `discoverService.ts` con `searchApi` (searchUsers, findNearby, findByCity, findByCountry) y `friendRequestsApi` (send, getReceived, getSent, respond, cancel, getFriends, removeFriend). Tipos DTO: `UserSearchRequest`, `NearbyUserResponse`, `PageResponse<T>`, `FriendRequestResponse`, `DiscoverFilters`. Exportados en `api/index.ts` y `types/index.ts`.
+- **Archivos evidencia:**
+  - `/mobile/src/api/discoverService.ts`
+  - `/mobile/src/types/discover.ts`
+  - `/mobile/src/types/index.ts`
+  - `/mobile/src/api/index.ts`
+
+**CE 9.b: Stores Zustand para Discover y Location creados.**
+
+- **Implementación:** `useDiscoverStore` gestiona: card stack (users, currentIndex, pagination, auto-fetch), filtros (city, country, university, radius, interests, languages), dismissed/requested IDs, solicitudes de amistad (received/sent con CRUD). `useLocationStore` gestiona: permisos expo-location, coordenadas actuales, getCurrentLocation con accuracy Balanced.
+- **Archivos evidencia:**
+  - `/mobile/src/store/useDiscoverStore.ts`
+  - `/mobile/src/store/useLocationStore.ts`
+  - `/mobile/src/store/index.ts`
+
+**CE 9.c: UserCard glassmorphism con foto, nombre, universidad, barra de afinidad, chips de intereses y botones de acción.**
+
+- **Implementación:** Componente `UserCard` con foto al 60%, gradiente sobre foto con nombre/destino, sección info con universidad, barra de compatibilidad animada (LinearGradient amarillo→naranja), chips de intereses (máx 4 + badge +N), badges de idiomas, 3 botones circulares (dismiss rojo, profile neutro, connect dorado).
+- **Archivos evidencia:**
+  - `/mobile/src/screens/discover/components/UserCard.tsx`
+
+**CE 9.d: FilterModal con filtros de ciudad, país, radio, intereses e idiomas.**
+
+- **Implementación:** `FilterModal` usa `GlassModal` con: TextInput para ciudad/país, chips de radio (10/25/50/100/250/500 km), grilla de intereses multi-selectable (cargados de catalogApi), grilla de idiomas multi-selectable. Botones resetear y aplicar con `GlassButton`.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/discover/components/FilterModal.tsx`
+
+**CE 9.e: DiscoverScreen con swipe card stack usando react-native-gesture-handler + react-native-reanimated.**
+
+- **Implementación:** Stack de 3 cards con profundidad visual (scale 0.9→0.95→1, opacity 0.4→0.7→1). Swipe derecha = enviar solicitud ⭐, swipe izquierda = dismiss ✕. Gesture.Pan con threshold 30% pantalla. Overlays "CONECTAR ⭐" / "PASAR ✕" con opacidad interpolada. Rotación ±15° al deslizar. Botones manuales dismiss/connect/ver perfil. Auto-fetch al quedar ≤3 cards. Header con botones 📩 solicitudes, 🗺️ mapa, ⚡ filtros.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/discover/DiscoverScreen.tsx`
+
+**CE 9.f: NearbyMapScreen con react-native-maps, estilo oscuro y permisos de ubicación.**
+
+- **Implementación:** MapView con `customMapStyle` dark (fondo #1A1A2E, agua #003399, carreteras #2a2a4e). Markers circulares con foto de perfil (borde dorado). Ubicación fuzzy para privacidad. Selector de radio (10/25/50/100 km). Badge de conteo. Card de usuario seleccionado con nombre, distancia y destino. Flujo de permisos con pantalla dedicada ("Activar ubicación").
+- **Archivos evidencia:**
+  - `/mobile/src/screens/discover/NearbyMapScreen.tsx`
+
+**CE 9.g: FriendRequestsScreen con tabs received/sent y gestión completa.**
+
+- **Implementación:** Tab bar received/sent con contadores. Lista con pull-to-refresh. Cards con avatar, nombre, fecha relativa (formatRelativeDate). Tab received: botones aceptar (verde ✓) y rechazar (rojo ✕). Tab sent: botón cancelar si PENDING, badge de estado si ACCEPTED/REJECTED. EmptyState contextual para cada tab.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/discover/FriendRequestsScreen.tsx`
+
+**CE 9.h: UserDetailScreen con perfil completo del usuario.**
+
+- **Implementación:** ScrollView con: hero photo full-width (90% pantalla) con gradiente, secciones GlassCard para bio, universidades (home 🏠 + host ✈️), intereses (chips seleccionados), idiomas (con nivel), galería horizontal de fotos. Botón "Conectar ⭐" / "Solicitud enviada ✓".
+- **Archivos evidencia:**
+  - `/mobile/src/screens/discover/UserDetailScreen.tsx`
+
+**CE 9.i: DiscoverNavigator con Stack Navigator integrado en tabs.**
+
+- **Implementación:** `DiscoverNavigator` (Stack) con 4 pantallas: DiscoverMain, NearbyMap (slide_from_right), FriendRequests (slide_from_right), UserDetail (slide_from_bottom). Reemplaza el placeholder `DiscoverScreen` en `MainNavigator`. Tipo `DiscoverStackParamList` en `types/discover.ts`.
+- **Archivos evidencia:**
+  - `/mobile/src/navigation/DiscoverNavigator.tsx`
+  - `/mobile/src/navigation/MainNavigator.tsx`
+  - `/mobile/src/navigation/index.ts`

@@ -1,6 +1,5 @@
 import React from "react";
 import { View, StyleSheet, ViewStyle, StyleProp } from "react-native";
-import { BlurView } from "expo-blur";
 import { colors, radii, opacity, blur as blurTokens, shadows, spacing } from "../../tokens";
 
 export type GlassCardVariant = "surface" | "elevated" | "prominent";
@@ -54,10 +53,14 @@ export default function GlassCard({
         style,
       ]}
     >
-      <BlurView
-        intensity={blurAmount}
-        tint="dark"
-        style={[styles.blur, { borderRadius: config.radius }]}
+      <View
+        style={[
+          styles.blur,
+          {
+            borderRadius: config.radius,
+            backgroundColor: `rgba(30, 30, 60, ${0.5 + config.bgOpacity})`,
+          },
+        ]}
       >
         <View
           style={[
@@ -73,7 +76,7 @@ export default function GlassCard({
         >
           {children}
         </View>
-      </BlurView>
+      </View>
     </View>
   );
 }

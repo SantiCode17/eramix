@@ -9,7 +9,6 @@ import {
   StyleProp,
   Dimensions,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import {
   colors,
   radii,
@@ -78,7 +77,7 @@ export default function GlassModal({
       <View style={styles.container}>
         <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
-            <BlurView intensity={blurTokens.overlay} tint="dark" style={StyleSheet.absoluteFill} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0, 0, 0, 0.6)" }]} />
           </Pressable>
         </Animated.View>
 
@@ -90,11 +89,11 @@ export default function GlassModal({
           ]}
         >
           <View style={styles.handle} />
-          <BlurView intensity={blurTokens.elevated} tint="dark" style={styles.blur}>
+          <View style={[styles.blur, { backgroundColor: "rgba(26, 26, 46, 0.95)" }]}>
             <View style={styles.inner}>
               {children}
             </View>
-          </BlurView>
+          </View>
         </Animated.View>
       </View>
     </Modal>

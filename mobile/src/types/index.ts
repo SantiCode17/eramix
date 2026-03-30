@@ -21,6 +21,15 @@ export type {
   AuthResponse,
   MessageResponse,
 } from "./auth";
+export type {
+  UserSearchRequest,
+  NearbyUserResponse,
+  PageResponse,
+  FriendRequestResponse,
+  FriendRequestStatus,
+  DiscoverFilters,
+  DiscoverStackParamList,
+} from "./discover";
 
 // ── Navigation types ────────────────────────────────
 

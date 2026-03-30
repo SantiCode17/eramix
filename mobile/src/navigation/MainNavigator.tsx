@@ -5,11 +5,11 @@ import { createDrawerNavigator, DrawerContentScrollView } from "@react-navigatio
 import type { DrawerContentComponentProps } from "@react-navigation/drawer";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-  DiscoverScreen,
   EventsScreen,
   ChatListScreen,
   NotificationsScreen,
 } from "@/screens/main";
+import DiscoverNavigator from "./DiscoverNavigator";
 import ProfileNavigator from "./ProfileNavigator";
 import SettingsNavigator from "./SettingsNavigator";
 import { AboutScreen } from "@/screens/main";
@@ -66,7 +66,7 @@ function HomeTabs(): React.JSX.Element {
         tabBarLabel: tabConfig[route.name].label,
       })}
     >
-      <Tab.Screen name="Discover" component={DiscoverScreen} />
+      <Tab.Screen name="Discover" component={DiscoverNavigator} />
       <Tab.Screen name="Events" component={EventsScreen} />
       <Tab.Screen name="Chat" component={ChatListScreen} />
       <Tab.Screen name="Notifications" component={NotificationsScreen} />
