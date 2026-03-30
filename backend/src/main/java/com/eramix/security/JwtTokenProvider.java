@@ -1,14 +1,19 @@
 package com.eramix.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import com.eramix.exception.InvalidTokenException;
+import com.eramix.exception.TokenExpiredException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtTokenProvider {
@@ -26,35 +31,76 @@ public class JwtTokenProvider {
         this.refreshTokenExpiration = refreshTokenExpiration;
     }
 
-    public String generateAccessToken(String username) {
-        return buildToken(username, accessTokenExpiration);
+    /**
+     * Genera un access token con claims: sub=userId, email, roles.
+     */
+    public String generateAccessToken(Long userId, String email, String role) {
+        Date now = new Date();
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .claim("email", email)
+                .claim("roles", role)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + accessTokenExpiration))
+                .signWith(key)
+                .compact();
     }
 
-    public String generateRefreshToken(String username) {
-        return buildToken(username, refreshTokenExpiration);
+    /**
+     * Genera un refresh token opaco (UUID). No contiene claims;
+     * su validez se verifica contra la BD.
+     */
+    public String generateRefreshToken() {
+        return UUID.randomUUID().toString();
     }
 
-    public String getUsernameFromToken(String token) {
-        return parseClaims(token).getSubject();
+    /**
+     * Duración del refresh token en milisegundos.
+     */
+    public long getRefreshTokenExpirationMs() {
+        return refreshTokenExpiration;
     }
 
+    /**
+     * Duración del access token en milisegundos.
+     */
+    public long getAccessTokenExpirationMs() {
+        return accessTokenExpiration;
+    }
+
+    /**
+     * Extrae el user ID (sub) del token.
+     */
+    public Long getUserIdFromToken(String token) {
+        return Long.valueOf(parseClaims(token).getSubject());
+    }
+
+    /**
+     * Extrae el email del token.
+     */
+    public String getEmailFromToken(String token) {
+        return parseClaims(token).get("email", String.class);
+    }
+
+    /**
+     * Extrae el rol del token.
+     */
+    public String getRoleFromToken(String token) {
+        return parseClaims(token).get("roles", String.class);
+    }
+
+    /**
+     * Valida el token. Lanza excepciones tipadas para expirado/inválido.
+     */
     public boolean validateToken(String token) {
         try {
             parseClaims(token);
             return true;
-        } catch (Exception e) {
-            return false;
+        } catch (ExpiredJwtException e) {
+            throw new TokenExpiredException();
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new InvalidTokenException();
         }
-    }
-
-    private String buildToken(String subject, long expiration) {
-        Date now = new Date();
-        return Jwts.builder()
-                .subject(subject)
-                .issuedAt(now)
-                .expiration(new Date(now.getTime() + expiration))
-                .signWith(key)
-                .compact();
     }
 
     private Claims parseClaims(String token) {

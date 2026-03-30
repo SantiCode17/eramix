@@ -5,8 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -33,12 +33,12 @@ public class UserProfileResponse {
 
     private Double latitude;
     private Double longitude;
-    private LocalDateTime locationUpdatedAt;
+    private Instant locationUpdatedAt;
 
     private Boolean isActive;
     private Boolean isVerified;
-    private LocalDateTime lastSeen;
-    private LocalDateTime createdAt;
+    private Instant lastSeen;
+    private Instant createdAt;
 
     private List<InterestSummary> interests;
     private List<UserLanguageSummary> languages;

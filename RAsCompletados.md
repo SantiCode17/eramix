@@ -266,3 +266,73 @@ Cada fase documenta:
 - **Archivos evidencia:**
   - `/docs/database/ERD.md`
   - `/backend/src/main/java/com/eramix/entity/enums/`
+
+---
+
+## Fase 4: Backend — Autenticación, Seguridad y Gestión de Sesión
+
+### RA PSP (Programación de Servicios y Procesos) — RA4: Desarrolla aplicaciones que utilizan servicios en red de forma segura
+
+**CE 4.a: Se han implementado mecanismos de autenticación mediante tokens JWT.**
+
+- **Implementación:** Sistema de autenticación stateless basado en JWT (jjwt 0.12.6) con access tokens de 15 minutos. Los tokens contienen claims: `sub` (userId), `email`, `roles`. Se firma con HMAC-SHA384 usando una clave secreta configurable. El `JwtTokenProvider` encapsula generación, validación y extracción de claims. El `JwtAuthenticationFilter` (OncePerRequestFilter) extrae el Bearer token del header `Authorization`, valida y establece el `SecurityContext` con el userId como principal y el rol como `GrantedAuthority`.
+- **Justificación:** JWT permite autenticación sin estado en el servidor, ideal para APIs REST y escalabilidad horizontal. La separación en Provider + Filter sigue el principio SRP.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/security/JwtTokenProvider.java`
+  - `/backend/src/main/java/com/eramix/security/JwtAuthenticationFilter.java`
+  - `/backend/src/main/resources/application.properties` (configuración JWT)
+
+**CE 4.b: Se ha configurado Spring Security para proteger endpoints de la API.**
+
+- **Implementación:** `SecurityConfig` define una cadena de filtros: CORS habilitado → CSRF deshabilitado (API stateless) → sesiones STATELESS → rutas públicas (`/api/v1/auth/**`, `/api/health`, `/ws/**`) con `permitAll()` → el resto requiere autenticación. Se inyecta `JwtAuthenticationFilter` antes de `UsernamePasswordAuthenticationFilter`. Bean `AuthenticationManager` para autenticación programática. Bean `PasswordEncoder` con BCrypt.
+- **Justificación:** La configuración de seguridad protege todos los endpoints por defecto y solo expone explícitamente los públicos, siguiendo el principio de menor privilegio.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/config/SecurityConfig.java`
+  - `/backend/src/main/java/com/eramix/config/CorsConfig.java`
+
+**CE 4.c: Se ha implementado refresh token rotation para gestión segura de sesiones.**
+
+- **Implementación:** Refresh tokens opacos (UUID) de 30 días almacenados como hash SHA-256 en la tabla `refresh_tokens`. Al hacer refresh: se busca por hash, se verifica expiración, se elimina el antiguo (rotación), y se genera un nuevo par access+refresh. Al hacer logout se revoca el token. Al resetear contraseña se revocan TODOS los tokens del usuario. `AuthService` centraliza las 7 operaciones: register, login, refresh, logout, forgotPassword, resetPassword, deleteAccount.
+- **Justificación:** La rotación de refresh tokens mitiga el riesgo de tokens robados: cada uso genera un nuevo token y el anterior es inválido. El almacenamiento como hash SHA-256 protege los tokens en caso de brecha de datos.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/service/AuthService.java`
+  - `/backend/src/main/java/com/eramix/entity/RefreshToken.java`
+  - `/backend/src/main/java/com/eramix/repository/RefreshTokenRepository.java`
+
+**CE 4.d: Se ha implementado manejo de errores y excepciones de seguridad.**
+
+- **Implementación:** 5 excepciones de dominio tipadas: `UserNotFoundException` (404), `EmailAlreadyExistsException` (409), `InvalidCredentialsException` (401), `TokenExpiredException` (401), `InvalidTokenException` (401). `GlobalExceptionHandler` con `@RestControllerAdvice` maneja cada excepción y devuelve respuestas JSON estandarizadas con timestamp, status, error, message y path. El filtro JWT captura excepciones de token y responde con 401 directamente sin pasar al filter chain.
+- **Justificación:** Las excepciones tipadas permiten respuestas HTTP semánticas y mensajes claros. El manejo centralizado garantiza consistencia en todas las respuestas de error.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/exception/UserNotFoundException.java`
+  - `/backend/src/main/java/com/eramix/exception/EmailAlreadyExistsException.java`
+  - `/backend/src/main/java/com/eramix/exception/InvalidCredentialsException.java`
+  - `/backend/src/main/java/com/eramix/exception/TokenExpiredException.java`
+  - `/backend/src/main/java/com/eramix/exception/InvalidTokenException.java`
+  - `/backend/src/main/java/com/eramix/exception/GlobalExceptionHandler.java`
+
+### RA Introducción a la Nube Pública — CE 3.b: Se han identificado las capas de seguridad necesarias
+
+- **Implementación:** Se implementan múltiples capas de seguridad: (1) contraseñas hasheadas con BCrypt, (2) JWT firmado con HMAC-SHA384, (3) refresh tokens almacenados como SHA-256, (4) CORS configurado con orígenes permitidos, (5) CSRF deshabilitado por diseño stateless, (6) validación de entrada con Bean Validation, (7) separación de rutas públicas y protegidas. La configuración es externalizable via variables de entorno para distintos entornos (dev/staging/prod).
+- **Justificación:** La defensa en profundidad aplica seguridad en cada capa: red (CORS), transporte (JWT), almacenamiento (hash), y aplicación (validación).
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/config/SecurityConfig.java`
+  - `/backend/src/main/java/com/eramix/config/CorsConfig.java`
+  - `/backend/src/main/resources/application.properties`
+
+### RA Proyecto Intermodular — RA4: Realiza proyectos verificando el cumplimiento de los requisitos funcionales
+
+**CE 4.b: Se han verificado los endpoints de la API mediante pruebas funcionales.**
+
+- **Implementación:** Se crea una colección Postman con 12 requests organizados en 4 carpetas: Auth Flow (register, register duplicado, register inválido, login, login inválido, refresh, logout), Password Recovery (forgot-password, reset-password, reset-token inválido), Account Management (delete con auth, delete sin auth), Health Check. Cada request incluye tests automáticos que verifican status codes y estructura de respuesta. Variables de colección (`accessToken`, `refreshToken`, `resetToken`) se auto-rellenan.
+- **Justificación:** La colección Postman documenta la API y permite verificación reproducible de todos los flujos: happy path y casos de error.
+- **Archivos evidencia:**
+  - `/docs/api/auth-collection.json`
+
+**CE 4.c: Se ha verificado el correcto funcionamiento del sistema de autenticación completo.**
+
+- **Implementación:** Verificación end-to-end del flujo completo: Register → Login → Refresh (token rotation) → Forgot Password → Reset Password → Login con nueva contraseña → Delete Account. Se verifica compilación Maven limpia, arranque del backend con Flyway+JPA, y respuestas HTTP correctas con curl. Los 7 endpoints responden con los status codes esperados (201, 200, 401, 409).
+- **Justificación:** La verificación cubre el ciclo de vida completo de un usuario, incluyendo recuperación de contraseña y eliminación de cuenta, garantizando la integridad del sistema.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/controller/AuthController.java`
+  - `/docs/api/auth-collection.json`
