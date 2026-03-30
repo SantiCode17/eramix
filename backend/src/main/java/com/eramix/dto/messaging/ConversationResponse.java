@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -18,7 +18,8 @@ public class ConversationResponse {
     private String otherUserFirstName;
     private String otherUserLastName;
     private String otherUserProfilePhotoUrl;
+    private Boolean otherUserOnline;
     private MessageResponse lastMessage;
     private Long unreadCount;
-    private LocalDateTime lastMessageAt;
+    private Instant lastMessageAt;
 }

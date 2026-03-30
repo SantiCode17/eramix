@@ -404,3 +404,67 @@ Cada fase documenta:
 - **Justificación:** La verificación demuestra integración correcta Controller → Service → Repository → MySQL en todos los dominios de la aplicación.
 - **Archivos evidencia:**
   - Logs de servidor y respuestas curl en el historial de desarrollo
+
+---
+
+## Fase 6: Backend — WebSockets y Mensajería en Tiempo Real
+
+### RA PSP — RA3: Programa mecanismos de comunicación en red empleando sockets y analizando el escenario de ejecución
+
+**CE 3.a: Se ha analizado el escenario de ejecución y se ha justificado la selección de la arquitectura de comunicación.**
+
+- **Implementación:** Se selecciona WebSocket sobre STOMP con SockJS como protocolo de transporte para el chat en tiempo real. Se justifica frente a alternativas: HTTP polling (ineficiente, alta latencia), SSE (unidireccional), WebSocket nativo (sin fallback). STOMP proporciona routing de mensajes, suscripciones por tópico, y compatibilidad con el Message Broker de Spring. SockJS añade fallback automático a long-polling para navegadores sin soporte WebSocket.
+- **Justificación:** La arquitectura STOMP/WebSocket es full-duplex, asíncrona y escalable. El Message Broker interno de Spring gestiona el routing sin implementación manual. El patrón publish/subscribe permite enviar mensajes punto a punto (/user/{id}/queue/messages).
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/config/WebSocketConfig.java`
+  - `/docs/api/websocket-test.md`
+
+**CE 3.b: Se han implementado los roles de cliente y servidor en la comunicación WebSocket.**
+
+- **Implementación:** El servidor Spring Boot actúa como broker STOMP: acepta conexiones en `/ws`, gestiona suscripciones a canales por usuario, y enruta mensajes entre participantes. El `ChatController` recibe mensajes en `/app/chat.sendMessage`, los persiste, y los reenvía al destinatario via `SimpMessagingTemplate.convertAndSendToUser()`. El remitente también recibe confirmación con el ID de base de datos asignado al mensaje.
+- **Justificación:** Los roles están claramente separados: el servidor persiste, valida participación, crea notificaciones y enruta; el cliente envía y se suscribe a su canal personal.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/controller/ChatController.java`
+  - `/backend/src/main/java/com/eramix/service/ChatService.java`
+
+**CE 3.c: Se ha implementado la comunicación bidireccional y asíncrona sobre socket.**
+
+- **Implementación:** WebSocket STOMP es inherentemente bidireccional: el cliente envía mensajes (SEND) y recibe mensajes (MESSAGE) sobre la misma conexión TCP. La comunicación es asíncrona: el `@MessageMapping` del servidor procesa mensajes en hilos del pool de Spring sin bloquear la conexión. Los mensajes se enrutan al destinatario en tiempo real si está conectado, o se persisten para entrega posterior via API REST.
+- **Justificación:** La bidireccionalidad está demostrada por el flujo: enviar mensaje → recibir confirmación + el otro usuario recibe el mensaje, todo sobre la misma conexión.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/controller/ChatController.java`
+  - `/docs/api/websocket-test.md`
+
+**CE 3.d: Se han gestionado múltiples clientes concurrentes con control de sesiones.**
+
+- **Implementación:** `WebSocketSessionManager` mantiene un `ConcurrentHashMap<String, Set<String>>` donde la clave es el userId y el valor es el conjunto de sessionIds activos (un usuario puede conectarse desde múltiples dispositivos). Los `@EventListener` de `SessionConnectedEvent` y `SessionDisconnectEvent` registran y limpian sesiones automáticamente, incluyendo desconexiones abruptas. El indicador de presencia (`otherUserOnline`) se expone en las respuestas de conversaciones.
+- **Justificación:** `ConcurrentHashMap` garantiza thread-safety en accesos concurrentes. El listener de desconexión garantiza limpieza del mapa incluso con caídas de red. El soporte multi-dispositivo es funcional.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/websocket/WebSocketSessionManager.java`
+
+**CE 3.e: Se ha documentado la arquitectura de comunicación distribuida.**
+
+- **Implementación:** Se documenta el procedimiento completo de prueba del WebSocket en `websocket-test.md`: diagrama de arquitectura (cliente ↔ servidor ↔ cliente), instrucciones de conexión con SockJS, payloads de prueba, respuestas esperadas, y verificación de persistencia via REST. Se incluye ejemplo con JavaScript STOMP client para integración en el frontend.
+- **Justificación:** La documentación permite reproducir la prueba de comunicación en tiempo real con herramientas estándar.
+- **Archivos evidencia:**
+  - `/docs/api/websocket-test.md`
+  - `/docs/api/chat-collection.json`
+
+### RA PSP — RA4: Protege las aplicaciones y los datos definiendo y aplicando criterios de seguridad en el acceso
+
+**CE 4.f: Se ha implementado autenticación en la comunicación WebSocket.**
+
+- **Implementación:** `JwtHandshakeInterceptor` intercepta el handshake HTTP/WebSocket, extrae el JWT del query param `?token=`, lo valida con `JwtTokenProvider`, y almacena el userId en los atributos de sesión. Si el token es inválido, expirado o ausente, la conexión se rechaza (el handshake retorna `false`). Un `ChannelInterceptor` en `WebSocketConfig` establece el `Principal` STOMP a partir del userId para habilitar `@SendToUser`.
+- **Justificación:** La autenticación WebSocket aplica las mismas reglas de seguridad que la API REST (JWT con expiración), impidiendo acceso no autorizado al sistema de mensajería.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/security/JwtHandshakeInterceptor.java`
+  - `/backend/src/main/java/com/eramix/config/WebSocketConfig.java`
+
+### RA Acceso a Datos — RA2: CE 2.f y 2.j: Persistencia transaccional y paginación avanzada
+
+- **Implementación:** `ChatService.saveMessage()` persiste mensajes en transacción con `@Transactional`: guarda el `Message`, actualiza `lastMessageAt` de la `Conversation`, y crea una `Notification` para el destinatario, todo atómicamente. El historial de mensajes usa cursor-based pagination (WHERE id < cursor ORDER BY id DESC LIMIT size) en lugar de offset-based, garantizando consistencia cuando se insertan nuevos mensajes durante la navegación del historial.
+- **Justificación:** La transaccionalidad garantiza que un mensaje nunca se persiste sin actualizar la conversación ni sin generar notificación. La paginación por cursor es O(1) vs O(N) del offset para datasets grandes, y es consistente ante inserciones concurrentes.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/service/ChatService.java`
+  - `/backend/src/main/java/com/eramix/repository/MessageRepository.java`
+  - `/backend/src/main/java/com/eramix/controller/ConversationController.java`

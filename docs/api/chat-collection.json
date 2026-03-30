@@ -1,0 +1,74 @@
+{
+  "info": {
+    "name": "EraMix – Chat & WebSocket API v1",
+    "description": "Colección de endpoints REST para el sistema de mensajería.\n\nNota: Los mensajes en tiempo real se envían via WebSocket STOMP, no REST.\nVer /docs/api/websocket-test.md para instrucciones de WebSocket.\n\nVariables:\n- {{baseUrl}}: URL base (default http://localhost:8090)\n- {{accessToken}}: JWT obtenido tras login",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8090", "type": "default" },
+    { "key": "accessToken", "value": "", "type": "default" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Conversations",
+      "description": "Endpoints REST para gestión de conversaciones y mensajes.",
+      "item": [
+        {
+          "name": "GET /conversations – Listar conversaciones",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/conversations", "host": ["{{baseUrl}}"], "path": ["api","v1","conversations"] }
+          }
+        },
+        {
+          "name": "GET /conversations/:id – Detalle de conversación",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/conversations/1", "host": ["{{baseUrl}}"], "path": ["api","v1","conversations","1"] }
+          }
+        },
+        {
+          "name": "GET /conversations/:id/messages – Mensajes (cursor-based)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/conversations/1/messages?size=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","conversations","1","messages"],
+              "query": [
+                { "key": "size", "value": "30" },
+                { "key": "cursor", "value": "", "disabled": true, "description": "ID del último mensaje cargado para paginación" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /conversations/:id/messages?cursor – Página siguiente",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/conversations/1/messages?cursor=50&size=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","conversations","1","messages"],
+              "query": [
+                { "key": "cursor", "value": "50" },
+                { "key": "size", "value": "30" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /conversations/:id/read – Marcar como leídos",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{baseUrl}}/api/v1/conversations/1/read", "host": ["{{baseUrl}}"], "path": ["api","v1","conversations","1","read"] }
+          }
+        }
+      ]
+    }
+  ]
+}
