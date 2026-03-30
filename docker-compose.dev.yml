@@ -1,0 +1,22 @@
+services:
+  db:
+    image: mysql:8
+    container_name: eramix-db-dev
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${DB_NAME:-eramix}
+      MYSQL_USER: ${DB_USERNAME:-eramix_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-eramix_pass}
+    volumes:
+      - eramix-db-dev-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  eramix-db-dev-data:

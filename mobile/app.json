@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "EraMix",
+    "slug": "eramix",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "scheme": "eramix",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#003399"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.eramix.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#003399"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.eramix.app"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-location",
+      "expo-image-picker",
+      "expo-notifications"
+    ]
+  }
+}
