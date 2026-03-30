@@ -576,3 +576,102 @@ Cada fase documenta:
 - **Archivos evidencia:**
   - `/mobile/src/design-system/fonts.ts`
   - `/mobile/src/design-system/tokens.ts` (typography)
+
+---
+
+## Fase 8 — Frontend: Perfil de Usuario y Configuración
+
+### RA 2: Se han implementado las pantallas de perfil de usuario con navegación completa.
+
+**CE 2.a: Se han creado los endpoints de backend necesarios para catálogos y usuarios bloqueados.**
+
+- **Implementación:** Se creó `CatalogController` con 4 endpoints REST: `GET /api/v1/catalog/interests` (lista todos los intereses), `GET /api/v1/catalog/languages` (lista idiomas), `GET /api/v1/catalog/universities` (lista universidades), `GET /api/v1/catalog/universities/search?query=` (búsqueda). Se añadió `GET /api/v1/friends/blocked` al `FriendController` con método `getBlockedUsers()` en `FriendService`.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/controller/CatalogController.java`
+  - `/backend/src/main/java/com/eramix/controller/FriendController.java`
+  - `/backend/src/main/java/com/eramix/service/FriendService.java`
+
+**CE 2.b: Se ha implementado la capa de servicios API del frontend para perfil y catálogos.**
+
+- **Implementación:** Servicio `profileService.ts` con 4 namespaces: `profileApi` (getMyProfile, getProfile, updateProfile, updateProfilePhoto, addPhoto, deletePhoto, getMyPhotos, updateLocation con soporte multipart/form-data), `catalogApi` (getInterests, getLanguages, getUniversities, searchUniversities), `friendsApi` (getBlockedUsers, blockUser, unblockUser), `accountApi` (deleteAccount). Todos los métodos extraen `data.data` del wrapper `ApiResponse`.
+- **Archivos evidencia:**
+  - `/mobile/src/api/profileService.ts`
+  - `/mobile/src/api/index.ts`
+
+**CE 2.c: Se ha implementado el store Zustand para gestión de estado del perfil.**
+
+- **Implementación:** Store `useProfileStore` con estado para perfil, fotos, catálogos (interests, languages, universities) y usuarios bloqueados. Acciones asíncronas para fetch/update/delete con control de loading. Los catálogos implementan cache (no re-fetch si ya cargados). Reset completo para logout.
+- **Archivos evidencia:**
+  - `/mobile/src/store/useProfileStore.ts`
+  - `/mobile/src/store/index.ts`
+
+**CE 2.d: Se ha implementado la pantalla de perfil con header colapsable.**
+
+- **Implementación:** `ProfileScreen` con header animado (320→120px) usando `Animated.ScrollView`. Avatar con foto o iniciales, nombre y ubicación con parallax. Stats row (amigos, eventos, fotos) en GlassCards. Secciones: bio, universidad (origen/destino con fechas de movilidad), intereses (chips seleccionados), idiomas (con badge de nivel), galería de fotos horizontal. Pull-to-refresh con `RefreshControl`. Auto-fetch al enfocar con `useFocusEffect`.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/profile/ProfileScreen.tsx`
+
+**CE 2.e: Se ha implementado la pantalla de edición de perfil.**
+
+- **Implementación:** `EditProfileScreen` con formulario (firstName, lastName, bio, destinationCity, destinationCountry) usando `GlassInput`. Foto de perfil editable con `expo-image-picker` (crop cuadrado, quality 0.8). Upload multipart con overlay de loading. Links rápidos a Intereses, Idiomas y Fotos. Solo envía campos modificados al backend. `KeyboardAvoidingView` para iOS.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/profile/EditProfileScreen.tsx`
+
+**CE 2.f: Se ha implementado la pantalla de gestión de fotos.**
+
+- **Implementación:** `EditPhotosScreen` con grid 3 columnas. Cada foto tiene botón de eliminar (✕ rojo). Máximo 6 fotos con contador. Botón "Añadir foto" con `expo-image-picker`. Confirmación antes de eliminar con `Alert`. Estados: loading, empty (EmptyState component), grid con fotos.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/profile/EditPhotosScreen.tsx`
+
+**CE 2.g: Se ha implementado la pantalla de intereses con selección por categorías.**
+
+- **Implementación:** `InterestsScreen` que carga catálogo completo de intereses. Agrupados por categoría con `Map`. Cada categoría en `GlassCard` con título. Chips toggle (seleccionado/no seleccionado) con emoji del interés. Estado local `Set<number>` sincronizado con perfil. Footer fijo con botón "Guardar (N seleccionados)". Envía `interestIds[]` al backend.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/profile/InterestsScreen.tsx`
+
+**CE 2.h: Se ha implementado la pantalla de idiomas con niveles de competencia.**
+
+- **Implementación:** `LanguagesScreen` con lista de idiomas del catálogo. Toggle para seleccionar/deseleccionar idioma. Al seleccionar, se expanden 6 niveles (BEGINNER→NATIVE) como pills con emoji. Nivel activo resaltado con estilo `eu.star`. Envía array `UserLanguageRequest[]` (languageId + proficiencyLevel) al backend.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/profile/LanguagesScreen.tsx`
+
+**CE 2.i: Se ha implementado la pantalla de ajustes con estructura de secciones.**
+
+- **Implementación:** `SettingsScreen` con secciones "Cuenta" (Privacidad, Notificaciones, Bloqueados) y "Zona peligrosa" (Cerrar sesión, Eliminar cuenta). Cada opción con emoji, label, subtitle y navegación. Elementos danger en rojo. Footer con info de app (nombre + versión). Navegación a sub-pantallas del `SettingsStackNavigator`.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/settings/SettingsScreen.tsx`
+
+**CE 2.j: Se han implementado las pantallas de configuración de privacidad y notificaciones.**
+
+- **Implementación:** `PrivacySettingsScreen` con 5 toggles Switch (ubicación, estado online, universidad, solicitudes, búsquedas). `NotificationSettingsScreen` con 5 toggles (solicitudes, mensajes, eventos, cercanos, stories). Ambas con GlassCard, descripciones por toggle, y colores `eu.star`/`eu.deep` para switch activo.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/settings/PrivacySettingsScreen.tsx`
+  - `/mobile/src/screens/settings/NotificationSettingsScreen.tsx`
+
+**CE 2.k: Se ha implementado la pantalla de usuarios bloqueados.**
+
+- **Implementación:** `BlockedUsersScreen` con FlatList de usuarios bloqueados. Cada usuario muestra avatar (foto/fallback), nombre y botón "Desbloquear" (borde warning). Confirmación con Alert antes de desbloquear. EmptyState cuando no hay bloqueos. Pull de datos desde `friendsApi.getBlockedUsers()`.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/settings/BlockedUsersScreen.tsx`
+
+**CE 2.l: Se ha implementado la pantalla de eliminación de cuenta.**
+
+- **Implementación:** `DeleteAccountScreen` con card de advertencia prominente (fondo error, lista de consecuencias: perfil, fotos, amigos, chat, eventos). Campo de contraseña para confirmar. Doble confirmación: validación campo vacío + Alert nativo destructivo. Llama a `DELETE /api/v1/auth/account` y ejecuta `clearSession()` para logout.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/settings/DeleteAccountScreen.tsx`
+
+**CE 2.m: Se ha implementado la navegación por stacks para perfil y ajustes.**
+
+- **Implementación:** `ProfileNavigator` (Stack Navigator) con 5 pantallas: ProfileMain, EditProfile, EditPhotos, Interests, Languages. `SettingsNavigator` (Stack Navigator) con 5 pantallas: SettingsMain, PrivacySettings, NotificationSettings, BlockedUsers, DeleteAccount. Ambos integrados en `MainNavigator` reemplazando los placeholder screens. Tipos de navegación `ProfileStackParamList` y `SettingsStackParamList` en `types/index.ts`.
+- **Archivos evidencia:**
+  - `/mobile/src/navigation/ProfileNavigator.tsx`
+  - `/mobile/src/navigation/SettingsNavigator.tsx`
+  - `/mobile/src/navigation/MainNavigator.tsx`
+  - `/mobile/src/types/index.ts`
+
+**CE 2.n: Se han corregido los tipos del frontend para alinearse con los DTOs del backend.**
+
+- **Implementación:** `UserPhotoResponse` actualizado (position→displayOrder, uploadedAt→createdAt). `UserLanguageSummary` actualizado (languageId→id, languageName→name, level→proficiencyLevel, añadido code). Nuevos tipos: `UserUpdateRequest`, `UserLanguageRequest`, `LocationUpdateRequest`, `Interest`, `Language`, `University`, `BlockedUser`.
+- **Archivos evidencia:**
+  - `/mobile/src/types/user.ts`
+  - `/mobile/src/types/index.ts`

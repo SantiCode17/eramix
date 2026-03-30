@@ -9,10 +9,10 @@ import {
   EventsScreen,
   ChatListScreen,
   NotificationsScreen,
-  ProfileScreen,
-  SettingsScreen,
-  AboutScreen,
 } from "@/screens/main";
+import ProfileNavigator from "./ProfileNavigator";
+import SettingsNavigator from "./SettingsNavigator";
+import { AboutScreen } from "@/screens/main";
 import { useAuthStore } from "@/store/useAuthStore";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { MainTabParamList, DrawerParamList } from "@/types";
@@ -70,7 +70,7 @@ function HomeTabs(): React.JSX.Element {
       <Tab.Screen name="Events" component={EventsScreen} />
       <Tab.Screen name="Chat" component={ChatListScreen} />
       <Tab.Screen name="Notifications" component={NotificationsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={ProfileNavigator} />
     </Tab.Navigator>
   );
 }
@@ -154,7 +154,7 @@ export default function MainNavigator(): React.JSX.Element {
       }}
     >
       <Drawer.Screen name="HomeTabs" component={HomeTabs} />
-      <Drawer.Screen name="Settings" component={SettingsScreen} />
+      <Drawer.Screen name="Settings" component={SettingsNavigator} />
       <Drawer.Screen name="About" component={AboutScreen} />
     </Drawer.Navigator>
   );

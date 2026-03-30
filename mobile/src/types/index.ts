@@ -1,4 +1,17 @@
-export type { User, UniversitySummary, InterestSummary, UserLanguageSummary, UserPhotoResponse } from "./user";
+export type {
+  User,
+  UniversitySummary,
+  InterestSummary,
+  UserLanguageSummary,
+  UserPhotoResponse,
+  UserUpdateRequest,
+  UserLanguageRequest,
+  LocationUpdateRequest,
+  Interest,
+  Language,
+  University,
+  BlockedUser,
+} from "./user";
 export type {
   LoginRequest,
   RegisterRequest,
@@ -26,6 +39,23 @@ export type MainTabParamList = {
   Chat: undefined;
   Notifications: undefined;
   Profile: undefined;
+};
+
+export type ProfileStackParamList = {
+  ProfileMain: undefined;
+  EditProfile: undefined;
+  EditPhotos: undefined;
+  Interests: undefined;
+  Languages: undefined;
+  ViewProfile: { userId: number };
+};
+
+export type SettingsStackParamList = {
+  SettingsMain: undefined;
+  PrivacySettings: undefined;
+  NotificationSettings: undefined;
+  BlockedUsers: undefined;
+  DeleteAccount: undefined;
 };
 
 export type DrawerParamList = {

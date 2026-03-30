@@ -17,8 +17,24 @@ export {
   EventsScreen,
   ChatListScreen,
   NotificationsScreen,
-  ProfileScreen,
-  SettingsScreen,
   AboutScreen,
 } from "./main";
+
+// Profile screens
+export {
+  ProfileScreen,
+  EditProfileScreen,
+  EditPhotosScreen,
+  InterestsScreen,
+  LanguagesScreen,
+} from "./profile";
+
+// Settings screens
+export {
+  SettingsScreen,
+  PrivacySettingsScreen,
+  NotificationSettingsScreen,
+  BlockedUsersScreen,
+  DeleteAccountScreen,
+} from "./settings";
 

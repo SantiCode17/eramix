@@ -210,6 +210,17 @@ public class FriendService {
         friendRequestRepository.delete(request);
     }
 
+    // ── 10. GET /blocked ── Listar usuarios bloqueados ───
+
+    @Transactional(readOnly = true)
+    public List<FriendRequestResponse> getBlockedUsers(Long userId) {
+        return friendRequestRepository
+                .findBySenderIdAndStatus(userId, FriendRequestStatus.BLOCKED)
+                .stream()
+                .map(this::mapToRequestResponse)
+                .toList();
+    }
+
     // ── Helpers ───────────────────────────────────────────
 
     private void createFriendship(User user1, User user2) {

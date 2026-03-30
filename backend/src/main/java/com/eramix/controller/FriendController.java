@@ -92,6 +92,13 @@ public class FriendController {
         return ResponseEntity.ok(ApiResponse.ok("Usuario desbloqueado", null));
     }
 
+    // ── 10. GET /blocked ── Listar usuarios bloqueados ───
+
+    @GetMapping("/blocked")
+    public ResponseEntity<ApiResponse<List<FriendRequestResponse>>> getBlockedUsers() {
+        return ResponseEntity.ok(ApiResponse.ok(friendService.getBlockedUsers(currentUserId())));
+    }
+
     // ── Helper ────────────────────────────────────────────
 
     private Long currentUserId() {
