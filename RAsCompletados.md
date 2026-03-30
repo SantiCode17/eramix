@@ -156,3 +156,113 @@ Cada fase documenta:
   - `/mobile/src/design-system/tokens.ts`
   - `/mobile/src/design-system/fonts.ts`
   - `/mobile/App.tsx` (carga de fuentes con fallback)
+
+---
+
+## Fase 3: Base de Datos — Modelo Relacional Completo y Capa JPA
+
+### RA Acceso a Datos — RA2: Desarrolla aplicaciones que gestionan información almacenada en bases de datos relacionales
+
+**CE 2.a: Se han identificado las ventajas e inconvenientes de los distintos modelos de datos.**
+
+- **Implementación:** Se diseña un modelo relacional normalizado (3NF) con 16 tablas que cubren: gestión de usuarios, internacionalización (idiomas con ISO 639-1, universidades europeas con coordenadas), social graph (amistades, solicitudes), mensajería, eventos, stories y notificaciones. Se documenta un diagrama ERD completo en Mermaid con todas las cardinalidades, PKs, FKs y restricciones.
+- **Justificación:** El modelo relacional se selecciona por la naturaleza de los datos (relaciones muchos-a-muchos en intereses/idiomas, integridad referencial en amistades, consistencia transaccional en mensajería). Se justifica frente a NoSQL por la necesidad de JOINs complejos y constraints ACID.
+- **Archivos evidencia:**
+  - `/docs/database/ERD.md`
+
+**CE 2.b: Se han aplicado mecanismos de mapeo entre objetos y tablas (ORM).**
+
+- **Implementación:** Se implementan 15 entidades JPA con Hibernate 6 mapeando fielmente el esquema SQL: relaciones `@ManyToOne` LAZY, `@ManyToMany` con join table (`user_interest`), `@OneToMany` con cascada, `@IdClass` para PKs compuestas (`UserLanguage`, `EventParticipant`), `@NamedEntityGraph("User.profile")` para carga optimizada del perfil. `BaseEntity` (MappedSuperclass) provee id autoincremental y auditoría (`@CreatedDate`, `@LastModifiedDate`).
+- **Justificación:** El mapeo ORM elimina SQL manual y garantiza type-safety. Las estrategias de fetch (LAZY por defecto) previenen el problema N+1. Los EntityGraphs permiten carga selectiva.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/entity/User.java`
+  - `/backend/src/main/java/com/eramix/entity/BaseEntity.java`
+  - `/backend/src/main/java/com/eramix/entity/University.java`
+  - `/backend/src/main/java/com/eramix/entity/Interest.java`
+  - `/backend/src/main/java/com/eramix/entity/Language.java`
+  - `/backend/src/main/java/com/eramix/entity/UserLanguage.java`
+  - `/backend/src/main/java/com/eramix/entity/UserPhoto.java`
+  - `/backend/src/main/java/com/eramix/entity/FriendRequest.java`
+  - `/backend/src/main/java/com/eramix/entity/Friendship.java`
+  - `/backend/src/main/java/com/eramix/entity/Conversation.java`
+  - `/backend/src/main/java/com/eramix/entity/Message.java`
+  - `/backend/src/main/java/com/eramix/entity/Event.java`
+  - `/backend/src/main/java/com/eramix/entity/EventParticipant.java`
+  - `/backend/src/main/java/com/eramix/entity/Story.java`
+  - `/backend/src/main/java/com/eramix/entity/StoryView.java`
+  - `/backend/src/main/java/com/eramix/entity/Notification.java`
+  - `/backend/src/main/java/com/eramix/entity/RefreshToken.java`
+
+**CE 2.c: Se han utilizado patrones DAO/Repository para separar la lógica de acceso a datos.**
+
+- **Implementación:** Se implementan 16 interfaces Spring Data JPA que extienden `JpaRepository`. Cada repositorio define derived queries (method name parsing), `@Query` con JPQL para consultas complejas, y `@Modifying` para operaciones bulk. Ejemplos: `UserRepository.findByFilters()` con parámetros nullable, `MessageRepository.markAsRead()` como UPDATE bulk, `FriendRequestRepository.findBetweenUsers()` con consulta bidireccional.
+- **Justificación:** El patrón Repository de Spring Data elimina implementación boilerplate. Las queries derivadas garantizan type-safety en tiempo de compilación. La separación de capas (Entity → Repository → Service → Controller) permite testing independiente.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/repository/UserRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/InterestRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/LanguageRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/UniversityRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/UserPhotoRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/UserLanguageRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/FriendRequestRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/FriendshipRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/ConversationRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/MessageRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/EventRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/EventParticipantRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/StoryRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/StoryViewRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/NotificationRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/RefreshTokenRepository.java`
+
+**CE 2.d: Se han definido e implementado DTOs para la transferencia de datos entre capas.**
+
+- **Implementación:** Se implementan 27 DTOs organizados en subpaquetes por dominio: `auth` (RegisterRequest, LoginRequest, AuthResponse, RefreshTokenRequest), `user` (UserProfileResponse con inner classes UniversitySummary/InterestSummary/UserLanguageSummary, UserUpdateRequest, UserLanguageRequest, UserPhotoResponse, LocationUpdateRequest, UserSearchRequest, NearbyUserResponse, UniversityResponse), `social` (FriendRequestResponse/Create/Action, FriendshipResponse), `messaging` (ConversationResponse, MessageResponse, SendMessageRequest), `event` (EventRequest/Response, EventParticipantRequest/Response), `story` (StoryResponse, StoryCreateRequest), `notification` (NotificationResponse), y genéricos (ApiResponse<T>, PageResponse<T>).
+- **Justificación:** Los DTOs garantizan que nunca se expone `passwordHash` ni datos internos. Las validaciones con Bean Validation (`@NotBlank`, `@Email`, `@Size`, `@Past`, `@DecimalMin/Max`) protegen la integridad de los datos de entrada. El patrón Request/Response separa claramente input de output.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/dto/auth/`
+  - `/backend/src/main/java/com/eramix/dto/user/`
+  - `/backend/src/main/java/com/eramix/dto/social/`
+  - `/backend/src/main/java/com/eramix/dto/messaging/`
+  - `/backend/src/main/java/com/eramix/dto/event/`
+  - `/backend/src/main/java/com/eramix/dto/story/`
+  - `/backend/src/main/java/com/eramix/dto/notification/`
+  - `/backend/src/main/java/com/eramix/dto/ApiResponse.java`
+  - `/backend/src/main/java/com/eramix/dto/PageResponse.java`
+
+**CE 2.e: Se han utilizado mecanismos de migración de esquema de base de datos.**
+
+- **Implementación:** Se utiliza Flyway para gestión de migraciones versionadas: V1 (DDL completo: 16 tablas con índices, FKs, constraints), V2 (datos semilla: 30 idiomas, 44 intereses, 30 universidades europeas), V3 (stored procedure Haversine como migración Java con `BaseJavaMigration`). Configuración: `ddl-auto=validate` (Hibernate solo valida, no modifica), `baseline-on-migrate=true`.
+- **Justificación:** Flyway garantiza migraciones reproducibles, versionadas y auditables. La validación Hibernate verifica concordancia entidades-esquema. V3 como migración Java resuelve la incompatibilidad de Flyway Community con delimitadores MySQL en stored procedures.
+- **Archivos evidencia:**
+  - `/backend/src/main/resources/db/migration/V1__create_schema.sql`
+  - `/backend/src/main/resources/db/migration/V2__seed_data.sql`
+  - `/backend/src/main/java/com/eramix/migration/V3__create_haversine_procedure.java`
+  - `/backend/src/main/resources/application.properties`
+
+**CE 2.f: Se han implementado procedimientos almacenados y funciones geoespaciales.**
+
+- **Implementación:** Se implementa el stored procedure `findUsersNearby` que utiliza la fórmula de Haversine para calcular distancias esféricas entre coordenadas geográficas. Parámetros: latitud/longitud de referencia, radio en km, y usuario a excluir. Incluye clamping con `LEAST/GREATEST` para prevenir errores de dominio en `ACOS`. Filtra usuarios activos con coordenadas y ordena por distancia ascendente.
+- **Justificación:** La búsqueda por proximidad es funcionalidad core de la app (encontrar Erasmus cercanos). El stored procedure en MySQL es más eficiente que calcular distancias en la capa de aplicación para datasets grandes.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/migration/V3__create_haversine_procedure.java`
+  - `/docs/database/ERD.md` (documentación del procedimiento)
+
+### RA Proyecto Intermodular — RA2: Diseña proyectos desarrollando explícitamente las fases que los componen
+
+**CE 2.e: Se ha definido la estructura de datos del proyecto con trazabilidad completa.**
+
+- **Implementación:** El modelo de datos está documentado en un ERD Mermaid con 16 tablas, todas las relaciones con cardinalidad, y notas de diseño. La implementación JPA refleja fielmente el ERD. Los datos semilla incluyen contenido real (universidades europeas con coordenadas, idiomas ISO, intereses categorizados con emojis).
+- **Justificación:** Existe trazabilidad directa ERD → SQL → Entidad JPA → Repositorio → DTO. Cada capa es verificable independientemente.
+- **Archivos evidencia:**
+  - `/docs/database/ERD.md`
+  - `/backend/src/main/resources/db/migration/V1__create_schema.sql`
+  - `/backend/src/main/java/com/eramix/entity/`
+
+**CE 2.h: Se ha elaborado la documentación técnica del modelo de datos.**
+
+- **Implementación:** Documentación completa incluye: ERD con Mermaid (renderizable en GitHub), convenciones de nombrado (snake_case SQL, camelCase Java), estrategia de indexación documentada, y 6 enums documentados. Cada entidad Java tiene annotations que documentan su mapeo.
+- **Justificación:** La documentación técnica permite a cualquier desarrollador comprender el modelo sin necesidad de leer el código SQL.
+- **Archivos evidencia:**
+  - `/docs/database/ERD.md`
+  - `/backend/src/main/java/com/eramix/entity/enums/`
