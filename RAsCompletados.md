@@ -94,3 +94,65 @@ Cada fase documenta:
 - **Justificación:** La documentación permite a cualquier desarrollador clonar el repositorio y tener el entorno funcional siguiendo las instrucciones.
 - **Archivos evidencia:**
   - `/README.md`
+
+---
+
+## Fase 2: Design System — European Glass (Componentes Atómicos)
+
+### RA Multimedia (DAM) — CE 2.a: Se han analizado las tecnologías disponibles para la creación de contenido visual animado
+
+- **Implementación:** Se evalúan las APIs de animación disponibles en React Native: `Animated` (nativa, sin dependencia extra, rendimiento con `useNativeDriver`), `Reanimated` (más potente pero mayor footprint), y la integración con `expo-haptics` para feedback háptico. Se selecciona `Animated` API para mantener ligereza y compatibilidad. Se implementan 4 hooks de animación reutilizables: `useFadeIn` (opacity timing), `useSlideUp` (parallel opacity + translateY), `useScalePress` (spring scale + haptic feedback), `useStaggeredList` (array de animaciones escalonadas).
+- **Justificación:** El análisis compara capacidades, rendimiento y footprint de las tecnologías. Se selecciona la más adecuada para cada caso de uso con justificación técnica. Se respeta `AccessibilityInfo.isReduceMotionEnabled` para accesibilidad.
+- **Archivos evidencia:**
+  - `/mobile/src/design-system/animations/useFadeIn.ts`
+  - `/mobile/src/design-system/animations/useSlideUp.ts`
+  - `/mobile/src/design-system/animations/useScalePress.ts`
+  - `/mobile/src/design-system/animations/useStaggeredList.ts`
+  - `/mobile/src/design-system/animations/index.ts`
+
+### RA Multimedia (DAM) — CE 2.b: Se ha implementado una librería de componentes visuales reutilizables con efectos de glassmorphism
+
+- **Implementación:** Se implementan 14 componentes atómicos del Design System "European Glass": 4 componentes glass (`GlassCard`, `GlassButton`, `GlassInput`, `GlassModal`) con `expo-blur` BlurView y `expo-linear-gradient`, 8 componentes menores (`Avatar`, `Badge`, `Chip`, `Tag`, `Divider`, `LoadingSpinner`, `EmptyState`, `ErrorState`), y 2 componentes de navegación (`TabBar`, `Header`). Cada componente: acepta variantes configurables, usa tokens del design system, respeta accesibilidad, incluye microinteracciones (spring scale, shimmer, floating labels).
+- **Justificación:** La librería es cohesiva, reutilizable y extensible. Se emplea composición de componentes, tipado estricto TypeScript, y separación de responsabilidades.
+- **Archivos evidencia:**
+  - `/mobile/src/design-system/components/GlassCard/GlassCard.tsx`
+  - `/mobile/src/design-system/components/GlassButton/GlassButton.tsx`
+  - `/mobile/src/design-system/components/GlassInput/GlassInput.tsx`
+  - `/mobile/src/design-system/components/GlassModal/GlassModal.tsx`
+  - `/mobile/src/design-system/components/Avatar/Avatar.tsx`
+  - `/mobile/src/design-system/components/Badge/Badge.tsx`
+  - `/mobile/src/design-system/components/Chip/Chip.tsx`
+  - `/mobile/src/design-system/components/Tag/Tag.tsx`
+  - `/mobile/src/design-system/components/Divider/Divider.tsx`
+  - `/mobile/src/design-system/components/LoadingSpinner/LoadingSpinner.tsx`
+  - `/mobile/src/design-system/components/EmptyState/EmptyState.tsx`
+  - `/mobile/src/design-system/components/ErrorState/ErrorState.tsx`
+  - `/mobile/src/design-system/components/TabBar/TabBar.tsx`
+  - `/mobile/src/design-system/components/Header/Header.tsx`
+  - `/mobile/src/design-system/components/index.ts`
+
+### RA Proyecto Intermodular — RA3: CE 3.f: Se han previsto los mecanismos necesarios para verificar la calidad del proyecto
+
+- **Implementación:** Se crea una pantalla `ComponentGallery` (accesible solo en modo `__DEV__`) que renderiza todos los componentes del design system con sus variantes, estados (loading, disabled, error, success), y configuraciones. Permite verificación visual en tiempo real durante el desarrollo. El compilador TypeScript verifica `tsc --noEmit` con 0 errores en toda la librería.
+- **Justificación:** La galería de componentes funciona como mecanismo de QA visual: cada componente se muestra en contexto real con todas sus variantes para detectar defectos visuales.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/dev/ComponentGallery.tsx`
+  - `/mobile/src/navigation/RootNavigator.tsx` (registro condicional `__DEV__`)
+
+### RA Proyecto Intermodular — RA2: CE 2.a: Se ha desarrollado adecuadamente la estructura modular del proyecto
+
+- **Implementación:** La arquitectura del design system sigue el patrón Atomic Design: tokens base (`tokens.ts`, `fonts.ts`) → hooks de animación → componentes atómicos → barrel exports con re-exportaciones limpias. Cada componente tiene su directorio con componente + barrel index. El sistema es importable desde un único punto de entrada: `import { GlassCard, colors } from "@/design-system"`.
+- **Justificación:** La modularidad permite importación selectiva, tree-shaking eficiente, y navegación clara del código. Las convenciones de nombrado y estructura son consistentes.
+- **Archivos evidencia:**
+  - `/mobile/src/design-system/tokens.ts`
+  - `/mobile/src/design-system/fonts.ts`
+  - `/mobile/src/design-system/index.ts`
+
+### RA Proyecto Intermodular — RA2: CE 2.d: Se han definido los estándares de calidad visual y de experiencia de usuario
+
+- **Implementación:** El sistema de tokens tipado con `as const` garantiza consistencia de colores, tipografía, espaciado, radios de borde, opacidades y sombras en todos los componentes. La paleta cromática EU (deep blue #003399, star yellow #FFCC00, orange #FF6B2B) se aplica uniformemente. Se implementa carga de fuentes custom (Inter + Space Grotesk) con pantalla de carga hasta que estén disponibles.
+- **Justificación:** Los estándares de calidad visual están codificados como tokens inmutables, garantizando coherencia y mantenibilidad.
+- **Archivos evidencia:**
+  - `/mobile/src/design-system/tokens.ts`
+  - `/mobile/src/design-system/fonts.ts`
+  - `/mobile/App.tsx` (carga de fuentes con fallback)
