@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -20,5 +20,5 @@ public class FriendshipResponse {
     private String friendProfilePhotoUrl;
     private String friendDestinationCity;
     private String friendDestinationCountry;
-    private LocalDateTime friendsSince;
+    private Instant friendsSince;
 }

@@ -1,0 +1,468 @@
+{
+  "info": {
+    "name": "EraMix – Business Logic API v1",
+    "description": "Colección completa de endpoints de lógica de negocio principal de EraMix.\n\nInclye: Perfiles de usuario, Amistades, Búsqueda/Matching, Eventos, Stories y Notificaciones.\n\nVariables:\n- {{baseUrl}}: URL base del backend (default http://localhost:8090)\n- {{accessToken}}: JWT obtenido tras register/login",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8090", "type": "default" },
+    { "key": "accessToken", "value": "", "type": "default" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "0. Auth Setup",
+      "description": "Registrar y obtener token para usar en el resto de requests.",
+      "item": [
+        {
+          "name": "POST /auth/register (get token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  var json = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testapi@erasmus.eu\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"API\",\n  \"dateOfBirth\": \"2000-01-15\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/register", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","register"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. User Profile",
+      "description": "Gestión de perfiles de usuario: consultar, actualizar, fotos, ubicación.",
+      "item": [
+        {
+          "name": "GET /users/me – Mi perfil",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/me", "host": ["{{baseUrl}}"], "path": ["api","v1","users","me"] }
+          }
+        },
+        {
+          "name": "GET /users/:id – Perfil por ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/1", "host": ["{{baseUrl}}"], "path": ["api","v1","users","1"] }
+          }
+        },
+        {
+          "name": "PUT /users/me – Actualizar perfil",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Carlos\",\n  \"lastName\": \"García\",\n  \"bio\": \"Erasmus en Madrid desde septiembre 🇪🇸\",\n  \"homeUniversity\": \"Università di Bologna\",\n  \"hostUniversity\": \"Universidad Complutense de Madrid\",\n  \"destinationCity\": \"Madrid\",\n  \"destinationCountry\": \"España\",\n  \"mobilityStartDate\": \"2026-09-01\",\n  \"mobilityEndDate\": \"2027-06-30\",\n  \"interestIds\": [1, 5, 12],\n  \"languages\": [\n    { \"languageId\": 1, \"level\": \"NATIVE\" },\n    { \"languageId\": 3, \"level\": \"INTERMEDIATE\" }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/users/me", "host": ["{{baseUrl}}"], "path": ["api","v1","users","me"] }
+          }
+        },
+        {
+          "name": "PUT /users/me/location – Actualizar ubicación",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 40.4168,\n  \"longitude\": -3.7038\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/users/me/location", "host": ["{{baseUrl}}"], "path": ["api","v1","users","me","location"] }
+          }
+        },
+        {
+          "name": "POST /users/me/photos – Subir foto",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "/path/to/photo.jpg" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/users/me/photos", "host": ["{{baseUrl}}"], "path": ["api","v1","users","me","photos"] }
+          }
+        },
+        {
+          "name": "DELETE /users/me/photos/:photoId – Eliminar foto",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/me/photos/1", "host": ["{{baseUrl}}"], "path": ["api","v1","users","me","photos","1"] }
+          }
+        },
+        {
+          "name": "DELETE /users/me – Desactivar cuenta",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/users/me", "host": ["{{baseUrl}}"], "path": ["api","v1","users","me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Friends",
+      "description": "Solicitudes de amistad, listado, bloqueo/desbloqueo.",
+      "item": [
+        {
+          "name": "POST /friends/requests – Enviar solicitud",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/friends/requests", "host": ["{{baseUrl}}"], "path": ["api","v1","friends","requests"] }
+          }
+        },
+        {
+          "name": "GET /friends/requests/received – Solicitudes recibidas",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/friends/requests/received", "host": ["{{baseUrl}}"], "path": ["api","v1","friends","requests","received"] }
+          }
+        },
+        {
+          "name": "GET /friends/requests/sent – Solicitudes enviadas",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/friends/requests/sent", "host": ["{{baseUrl}}"], "path": ["api","v1","friends","requests","sent"] }
+          }
+        },
+        {
+          "name": "PUT /friends/requests/:id – Aceptar/Rechazar",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"ACCEPTED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/friends/requests/1", "host": ["{{baseUrl}}"], "path": ["api","v1","friends","requests","1"] }
+          }
+        },
+        {
+          "name": "DELETE /friends/requests/:id – Cancelar solicitud",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/friends/requests/1", "host": ["{{baseUrl}}"], "path": ["api","v1","friends","requests","1"] }
+          }
+        },
+        {
+          "name": "GET /friends – Listar amigos",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/friends", "host": ["{{baseUrl}}"], "path": ["api","v1","friends"] }
+          }
+        },
+        {
+          "name": "DELETE /friends/:friendId – Eliminar amigo",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/friends/1", "host": ["{{baseUrl}}"], "path": ["api","v1","friends","1"] }
+          }
+        },
+        {
+          "name": "POST /friends/block/:blockedId – Bloquear usuario",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/friends/block/1", "host": ["{{baseUrl}}"], "path": ["api","v1","friends","block","1"] }
+          }
+        },
+        {
+          "name": "DELETE /friends/block/:blockedId – Desbloquear",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/friends/block/1", "host": ["{{baseUrl}}"], "path": ["api","v1","friends","block","1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Search & Matching",
+      "description": "Búsqueda de usuarios por filtros, proximidad (Haversine), ciudad y país.",
+      "item": [
+        {
+          "name": "POST /search – Búsqueda con filtros",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Madrid\",\n  \"country\": \"España\",\n  \"university\": \"Complutense\",\n  \"page\": 0,\n  \"size\": 20\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/search", "host": ["{{baseUrl}}"], "path": ["api","v1","search"] }
+          }
+        },
+        {
+          "name": "GET /search/nearby – Usuarios cercanos (Haversine)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/nearby?latitude=40.4168&longitude=-3.7038&radiusKm=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","search","nearby"],
+              "query": [
+                { "key": "latitude", "value": "40.4168" },
+                { "key": "longitude", "value": "-3.7038" },
+                { "key": "radiusKm", "value": "50" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /search/by-city – Usuarios por ciudad",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/by-city?city=Madrid",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","search","by-city"],
+              "query": [{ "key": "city", "value": "Madrid" }]
+            }
+          }
+        },
+        {
+          "name": "GET /search/by-country – Usuarios por país",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search/by-country?country=España",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","search","by-country"],
+              "query": [{ "key": "country", "value": "España" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Events",
+      "description": "CRUD de eventos, participantes, unirse/salir.",
+      "item": [
+        {
+          "name": "POST /events – Crear evento",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Erasmus Meetup Madrid\",\n  \"description\": \"Primer encuentro erasmus en Madrid\",\n  \"location\": \"Plaza Mayor\",\n  \"category\": \"SOCIAL\",\n  \"maxParticipants\": 50,\n  \"startDatetime\": \"2026-04-15T18:00:00Z\",\n  \"endDatetime\": \"2026-04-15T22:00:00Z\",\n  \"isPublic\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/events", "host": ["{{baseUrl}}"], "path": ["api","v1","events"] }
+          }
+        },
+        {
+          "name": "GET /events/:id – Detalle de evento",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/events/1", "host": ["{{baseUrl}}"], "path": ["api","v1","events","1"] }
+          }
+        },
+        {
+          "name": "PUT /events/:id – Actualizar evento",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Erasmus Meetup Madrid (updated)\",\n  \"description\": \"Encuentro actualizado\",\n  \"location\": \"Parque del Retiro\",\n  \"category\": \"SOCIAL\",\n  \"maxParticipants\": 100,\n  \"startDatetime\": \"2026-04-15T18:00:00Z\",\n  \"endDatetime\": \"2026-04-15T23:00:00Z\",\n  \"isPublic\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/events/1", "host": ["{{baseUrl}}"], "path": ["api","v1","events","1"] }
+          }
+        },
+        {
+          "name": "DELETE /events/:id – Eliminar evento",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/events/1", "host": ["{{baseUrl}}"], "path": ["api","v1","events","1"] }
+          }
+        },
+        {
+          "name": "POST /events/:id/join – Unirse al evento",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/events/1/join", "host": ["{{baseUrl}}"], "path": ["api","v1","events","1","join"] }
+          }
+        },
+        {
+          "name": "DELETE /events/:id/leave – Salir del evento",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/events/1/leave", "host": ["{{baseUrl}}"], "path": ["api","v1","events","1","leave"] }
+          }
+        },
+        {
+          "name": "GET /events/:id/participants – Participantes",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/events/1/participants", "host": ["{{baseUrl}}"], "path": ["api","v1","events","1","participants"] }
+          }
+        },
+        {
+          "name": "GET /events/upcoming – Eventos próximos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/upcoming?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","events","upcoming"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /events/upcoming?category – Filtrar por categoría",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/events/upcoming?category=SOCIAL&page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","events","upcoming"],
+              "query": [
+                { "key": "category", "value": "SOCIAL" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /events/my-events – Mis eventos creados",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/events/my-events", "host": ["{{baseUrl}}"], "path": ["api","v1","events","my-events"] }
+          }
+        },
+        {
+          "name": "GET /events/joined – Eventos en los que participo",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/events/joined", "host": ["{{baseUrl}}"], "path": ["api","v1","events","joined"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Stories",
+      "description": "Crear, eliminar, ver y feed de stories (24h de duración).",
+      "item": [
+        {
+          "name": "POST /stories – Crear story (multipart)",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "/path/to/story-image.jpg" },
+                { "key": "caption", "value": "Mi primer día en Madrid 🇪🇸", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/stories", "host": ["{{baseUrl}}"], "path": ["api","v1","stories"] }
+          }
+        },
+        {
+          "name": "DELETE /stories/:id – Eliminar story",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/stories/1", "host": ["{{baseUrl}}"], "path": ["api","v1","stories","1"] }
+          }
+        },
+        {
+          "name": "POST /stories/:id/view – Registrar visualización",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/v1/stories/1/view", "host": ["{{baseUrl}}"], "path": ["api","v1","stories","1","view"] }
+          }
+        },
+        {
+          "name": "GET /stories/feed – Feed de stories (amigos + propias)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/stories/feed", "host": ["{{baseUrl}}"], "path": ["api","v1","stories","feed"] }
+          }
+        },
+        {
+          "name": "GET /stories/user/:userId – Stories de un usuario",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/stories/user/1", "host": ["{{baseUrl}}"], "path": ["api","v1","stories","user","1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Notifications",
+      "description": "Listado paginado, conteo de no leídas, marcar como leída.",
+      "item": [
+        {
+          "name": "GET /notifications – Listar (paginadas)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications?page=0&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","notifications"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /notifications/unread-count – Contar no leídas",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/unread-count", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","unread-count"] }
+          }
+        },
+        {
+          "name": "PUT /notifications/:id/read – Marcar como leída",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/1/read", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","1","read"] }
+          }
+        },
+        {
+          "name": "PUT /notifications/read-all – Marcar todas como leídas",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/read-all", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","read-all"] }
+          }
+        },
+        {
+          "name": "DELETE /notifications/:id – Eliminar notificación",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/notifications/1", "host": ["{{baseUrl}}"], "path": ["api","v1","notifications","1"] }
+          }
+        }
+      ]
+    }
+  ]
+}

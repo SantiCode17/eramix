@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -16,5 +16,5 @@ public class UserPhotoResponse {
     private Long id;
     private String photoUrl;
     private Integer displayOrder;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

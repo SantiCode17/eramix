@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -18,5 +18,5 @@ public class EventParticipantResponse {
     private String lastName;
     private String profilePhotoUrl;
     private String status;
-    private LocalDateTime joinedAt;
+    private Instant joinedAt;
 }

@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -24,11 +24,11 @@ public class EventResponse {
     private String location;
     private Double latitude;
     private Double longitude;
-    private LocalDateTime startDatetime;
-    private LocalDateTime endDatetime;
+    private Instant startDatetime;
+    private Instant endDatetime;
     private Integer maxParticipants;
     private Boolean isPublic;
     private Long participantCount;
     private String currentUserStatus;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

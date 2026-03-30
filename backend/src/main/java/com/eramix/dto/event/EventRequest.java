@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -33,9 +33,9 @@ public class EventRequest {
     private Double longitude;
 
     @NotNull(message = "La fecha de inicio es obligatoria")
-    private LocalDateTime startDatetime;
+    private Instant startDatetime;
 
-    private LocalDateTime endDatetime;
+    private Instant endDatetime;
 
     private Integer maxParticipants;
 

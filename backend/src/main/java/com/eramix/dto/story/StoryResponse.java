@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -20,8 +20,8 @@ public class StoryResponse {
     private String userProfilePhotoUrl;
     private String mediaUrl;
     private String caption;
-    private LocalDateTime createdAt;
-    private LocalDateTime expiresAt;
+    private Instant createdAt;
+    private Instant expiresAt;
     private Long viewCount;
     private Boolean viewedByCurrentUser;
 }

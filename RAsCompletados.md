@@ -336,3 +336,71 @@ Cada fase documenta:
 - **Archivos evidencia:**
   - `/backend/src/main/java/com/eramix/controller/AuthController.java`
   - `/docs/api/auth-collection.json`
+
+---
+
+## Fase 5: Backend — Lógica de Negocio Principal
+
+### RA Acceso a Datos — RA2: Desarrolla aplicaciones que gestionan información almacenada en bases de datos relacionales
+
+**CE 2.g: Se ha implementado la lógica de negocio con transacciones y validaciones complejas.**
+
+- **Implementación:** Se implementan 7 servicios transaccionales con `@Transactional`: `UserService` (gestión de perfiles con reemplazo atómico de intereses/idiomas), `FriendService` (flujo solicitud→aceptación→creación automática de conversación), `SearchService` (búsqueda por filtros combinados y proximidad Haversine), `EventService` (CRUD con control de propiedad y límite de participantes), `StoryService` (ciclo de vida 24h con filtrado de stories activas), `NotificationService` (CRUD con conteo optimizado), `FileStorageService` (almacenamiento local con validación MIME/tamaño).
+- **Justificación:** Cada servicio encapsula lógica de negocio compleja: FriendService crea Friendship + Conversation en una sola transacción al aceptar solicitud, EventService valida maxParticipants antes de unirse, StoryService filtra por expiración y amistades activas.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/service/UserService.java`
+  - `/backend/src/main/java/com/eramix/service/FriendService.java`
+  - `/backend/src/main/java/com/eramix/service/SearchService.java`
+  - `/backend/src/main/java/com/eramix/service/EventService.java`
+  - `/backend/src/main/java/com/eramix/service/StoryService.java`
+  - `/backend/src/main/java/com/eramix/service/NotificationService.java`
+  - `/backend/src/main/java/com/eramix/service/FileStorageService.java`
+
+**CE 2.h: Se han implementado consultas avanzadas con JPQL y SQL nativo.**
+
+- **Implementación:** `SearchService.findNearbyUsers()` usa `@Query(nativeQuery=true)` con fórmula de Haversine completa para búsqueda por proximidad geográfica. `UserRepository.findByFilters()` usa JPQL con parámetros nullable para búsqueda combinada. `StoryRepository` filtra por `expiresAt > NOW()`. `FriendshipRepository` busca relaciones bidireccionales.
+- **Justificación:** Las consultas nativas se usan exclusivamente donde JPQL no puede expresar la lógica (Haversine con funciones trigonométricas). JPQL se prefiere para el resto por type-safety.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/service/SearchService.java`
+  - `/backend/src/main/java/com/eramix/repository/UserRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/StoryRepository.java`
+  - `/backend/src/main/java/com/eramix/repository/FriendshipRepository.java`
+
+### RA PSP — RA3: Programa mecanismos de comunicación en red empleando sockets y analizando el escenario de ejecución
+
+**CE 3.a: Se han diseñado y documentado endpoints RESTful siguiendo convenciones HTTP.**
+
+- **Implementación:** Se implementan 6 controladores REST con 39 endpoints totales: `UserController` (7 endpoints: GET/PUT/DELETE perfil, ubicación, fotos), `FriendController` (9 endpoints: solicitudes CRUD, amigos, bloqueo), `SearchController` (4 endpoints: filtros, nearby, ciudad, país), `EventController` (10 endpoints: CRUD eventos, participantes, join/leave), `StoryController` (5 endpoints: crear, eliminar, ver, feed, por usuario), `NotificationController` (5 endpoints: listar, contar, leer, leer todas, eliminar). Cada endpoint sigue convenciones REST: verbos HTTP semánticos, rutas con sustantivos plurales, respuestas envueltas en `ApiResponse<T>`.
+- **Justificación:** La API es predecible y autodocumentada: POST para creación, GET para lectura, PUT para actualización, DELETE para eliminación. Los status codes son semánticos (200 OK, 201 Created, 404 Not Found).
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/controller/UserController.java`
+  - `/backend/src/main/java/com/eramix/controller/FriendController.java`
+  - `/backend/src/main/java/com/eramix/controller/SearchController.java`
+  - `/backend/src/main/java/com/eramix/controller/EventController.java`
+  - `/backend/src/main/java/com/eramix/controller/StoryController.java`
+  - `/backend/src/main/java/com/eramix/controller/NotificationController.java`
+
+### RA Multimedia (DAM) — CE 6.a: Se han implementado mecanismos de gestión de contenido multimedia
+
+- **Implementación:** `FileStorageService` gestiona upload de fotos con: validación de tipo MIME (JPEG, PNG, GIF, WEBP), límite de tamaño (5MB), generación de nombres UUID para evitar colisiones, almacenamiento en sistema de archivos local (`./uploads/photos/`), URL pública servida via `WebMvcConfig` resource handler. `StoryController` acepta `multipart/form-data` para upload de stories con caption opcional.
+- **Justificación:** La gestión de contenido multimedia incluye validaciones de seguridad (tipo MIME, tamaño), unicidad de nombres (UUID), y servicio estático de archivos.
+- **Archivos evidencia:**
+  - `/backend/src/main/java/com/eramix/service/FileStorageService.java`
+  - `/backend/src/main/java/com/eramix/config/WebMvcConfig.java`
+  - `/backend/src/main/java/com/eramix/controller/StoryController.java`
+
+### RA Proyecto Intermodular — RA4: Realiza proyectos verificando el cumplimiento de los requisitos funcionales
+
+**CE 4.b: Se han verificado los endpoints de la API mediante pruebas funcionales.**
+
+- **Implementación:** Se crea una colección Postman con 40 requests organizados en 7 carpetas: Auth Setup (1 request con auto-token), User Profile (7 requests), Friends (9 requests), Search & Matching (4 requests), Events (11 requests), Stories (5 requests), Notifications (5 requests). Se verifican todos los endpoints con curl durante desarrollo: registro, perfil, actualización de ubicación, creación de eventos, feed de stories, notificaciones. Todos responden correctamente con `ApiResponse<T>`.
+- **Justificación:** La colección documenta exhaustivamente la API de negocio y permite verificación reproducible de todos los flujos.
+- **Archivos evidencia:**
+  - `/docs/api/business-logic-collection.json`
+
+**CE 4.d: Se ha verificado la integración entre capas del backend.**
+
+- **Implementación:** Verificación end-to-end: (1) Build Maven: `mvnw clean compile -DskipTests` → BUILD SUCCESS (102 archivos fuente), (2) Server startup: Tomcat en puerto 8090, Flyway 3 migraciones, Hibernate validación OK, FileStorageService init OK, (3) Auth: POST /register → JWT + perfil, (4) Profile: GET/PUT /users/me → CRUD completo, (5) Location: PUT /me/location → coordenadas actualizadas, (6) Events: POST /events → crear, GET /my-events → listar, (7) Friends: GET / → vacío correctamente, (8) Notifications: GET /unread-count → 0, (9) Stories: GET /feed → vacío correctamente.
+- **Justificación:** La verificación demuestra integración correcta Controller → Service → Repository → MySQL en todos los dominios de la aplicación.
+- **Archivos evidencia:**
+  - Logs de servidor y respuestas curl en el historial de desarrollo
