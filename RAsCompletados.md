@@ -468,3 +468,111 @@ Cada fase documenta:
   - `/backend/src/main/java/com/eramix/service/ChatService.java`
   - `/backend/src/main/java/com/eramix/repository/MessageRepository.java`
   - `/backend/src/main/java/com/eramix/controller/ConversationController.java`
+
+---
+
+## Fase 7: Frontend — Navegación, Autenticación y Onboarding
+
+### RA Programación Multimedia y Dispositivos Móviles — RA2: Programa aplicaciones para dispositivos móviles analizando y empleando las tecnologías y librerías específicas
+
+**CE 2.a: Se ha analizado y seleccionado la arquitectura de navegación adecuada para la aplicación móvil.**
+
+- **Implementación:** Arquitectura jerárquica de 3 niveles: `RootNavigator` (Stack) controla la transición Auth↔Main mediante estado reactivo de Zustand. `AuthNavigator` (Stack) gestiona Splash → Onboarding → Login/Register/ForgotPassword/ResetPassword. `MainNavigator` combina Drawer (menú lateral con Settings/About/Logout) y Bottom Tabs (Discover, Events, Chat, Notifications, Profile). La decisión de qué grupo mostrar es reactiva: cambia el estado `isAuthenticated` en Zustand → se re-renderiza el árbol de navegación sin transiciones abruptas.
+- **Justificación:** La separación en 3 niveles permite gestionar el ciclo de vida de sesión de forma declarativa. React Navigation v7 con Stack/Drawer/Tabs proporciona una experiencia nativa con gestos y animaciones del SO.
+- **Archivos evidencia:**
+  - `/mobile/src/navigation/RootNavigator.tsx`
+  - `/mobile/src/navigation/AuthNavigator.tsx`
+  - `/mobile/src/navigation/MainNavigator.tsx`
+  - `/mobile/src/types/index.ts` (tipos de navegación)
+
+**CE 2.b: Se han implementado pantallas con componentes visuales reutilizables del design system.**
+
+- **Implementación:** Todas las pantallas de autenticación (Login, Register, ForgotPassword, ResetPassword) usan componentes del design system European Glass: `GlassInput` (inputs con label animada, estados de error/success, iconos), `GlassButton` (3 variantes: primary/secondary/ghost, 3 tamaños, estado de loading con spinner), `GlassCard` (contenedores glassmorphism para errores y mensajes). Los tokens de diseño (`colors`, `typography`, `spacing`, `radii`) se aplican de forma consistente en todas las pantallas.
+- **Justificación:** Los componentes del design system garantizan consistencia visual, accesibilidad (touch targets de 44px, contraste de texto), y mantenibilidad (cambios centralizados en tokens).
+- **Archivos evidencia:**
+  - `/mobile/src/screens/auth/LoginScreen.tsx`
+  - `/mobile/src/screens/auth/RegisterScreen.tsx`
+  - `/mobile/src/design-system/components/` (GlassInput, GlassButton, GlassCard)
+
+**CE 2.e: Se han implementado animaciones y transiciones en la interfaz de usuario.**
+
+- **Implementación:** Splash Screen con secuencia coreografiada: (1) fade-in del fondo gradient, (2) logo con spring scale + fade-in, (3) texto con slide-up. Total ~2 segundos usando `Animated.sequence` + `Animated.parallel`. Onboarding con parallax entre diapositivas: emoji con scale+opacity interpolados al scroll, texto con translateY paraláctico. Dots indicator con ancho animado (8px→24px). Transición Auth↔Main con fade animation en Stack Navigator.
+- **Justificación:** Las animaciones usan `useNativeDriver: true` donde es posible para ejecución en el hilo nativo (60fps). El parallax del onboarding mejora la percepción de profundidad.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/auth/SplashScreen.tsx`
+  - `/mobile/src/screens/auth/OnboardingScreen.tsx`
+
+**CE 2.f: Se ha implementado la gestión del estado de la aplicación con un store de estado global.**
+
+- **Implementación:** `useAuthStore` (Zustand) gestiona: `user`, `accessToken`, `isAuthenticated`, `isLoading`, `isInitialized`. Acciones: `initialize()` (lee SecureStore al arrancar), `login()`, `register()`, `refreshSession()`, `logout()`, `updateUser()`, `clearSession()`. `useAppStore` gestiona estados globales de UI (`isOnboardingComplete`). El store es reactivo: los selectores en componentes (`useAuthStore((s) => s.isAuthenticated)`) solo re-renderizan cuando cambia el valor seleccionado.
+- **Justificación:** Zustand vs Redux: API más simple, sin boilerplate, suscripciones granulares (evita re-renders innecesarios). Zustand vs Context: mejor rendimiento en updates frecuentes.
+- **Archivos evidencia:**
+  - `/mobile/src/store/useAuthStore.ts`
+  - `/mobile/src/store/useAppStore.ts`
+
+**CE 2.g: Se ha implementado la comunicación con servicios REST y la gestión de sesión JWT.**
+
+- **Implementación:** Cliente Axios con dos interceptores: (1) Request interceptor inyecta `Bearer <token>` en cada petición, excluyendo endpoints de auth. (2) Response interceptor captura 401, intenta refresh automático con el refresh token de SecureStore, reintenta la request original con el nuevo access token, y si el refresh falla, limpia la sesión y redirige al AuthNavigator. Cola de requests pendientes (`failedQueue`) para manejar múltiples 401 concurrentes durante el refresh. `authService` encapsula las 6 llamadas a la API de autenticación.
+- **Justificación:** El interceptor de refresh implementa el patrón "retry after refresh" que es estándar en aplicaciones con JWT. La cola de requests evita múltiples refresh simultáneos.
+- **Archivos evidencia:**
+  - `/mobile/src/api/client.ts`
+  - `/mobile/src/api/authService.ts`
+
+**CE 2.h: Se ha implementado el almacenamiento seguro de datos sensibles en el dispositivo.**
+
+- **Implementación:** Los tokens JWT (access y refresh) se almacenan en `expo-secure-store`, que usa Keychain en iOS y Encrypted SharedPreferences en Android. Las claves son constantes (`eramix_access_token`, `eramix_refresh_token`). Al hacer logout o cuando el refresh token expira, se eliminan ambos tokens de SecureStore. El flag de onboarding se almacena en `AsyncStorage` (no sensible).
+- **Justificación:** SecureStore proporciona cifrado nativo del SO (AES-256 en Android, Keychain Services en iOS), impidiendo que otras apps lean los tokens.
+- **Archivos evidencia:**
+  - `/mobile/src/api/client.ts` (TOKEN_KEYS)
+  - `/mobile/src/store/useAuthStore.ts` (SecureStore read/write/delete)
+
+**CE 2.i: Se ha implementado la validación de formularios en el cliente.**
+
+- **Implementación:** Login: validación en tiempo real de email (regex) y contraseña (min 8 chars). Register: validación en dos pasos — Step 1 valida email, password y confirmación; Step 2 valida nombre, apellidos y fecha de nacimiento (regex YYYY-MM-DD + validación de fecha pasada). ForgotPassword: validación de email. ResetPassword: validación de token, password y confirmación. Los errores se muestran campo a campo debajo de cada input con el prop `error` de `GlassInput`, y los errores de API se muestran en un `GlassCard` de error.
+- **Justificación:** La validación campo a campo en tiempo real mejora la UX (feedback inmediato) y reduce llamadas al backend con datos inválidos.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/auth/LoginScreen.tsx`
+  - `/mobile/src/screens/auth/RegisterScreen.tsx`
+
+**CE 2.j: Se ha documentado el proceso de desarrollo y las decisiones técnicas.**
+
+- **Implementación:** Documentación del flujo completo: arquitectura de navegación (3 niveles), gestión de sesión JWT con refresh automático, design system European Glass aplicado a las pantallas de auth. Los tipos de navegación se definen centralizados en `/mobile/src/types/index.ts`. El historial de commits documenta el progreso incremental.
+- **Archivos evidencia:**
+  - `/mobile/src/types/index.ts`
+  - `RAsCompletados.md` (este documento)
+
+### RA Programación Multimedia y Dispositivos Móviles — RA1: Desarrolla interfaces gráficas de usuario interactivas empleando componentes visuales
+
+**CE 1.c: Se han implementado interfaces adaptativas con componentes interactivos.**
+
+- **Implementación:** Las pantallas usan `KeyboardAvoidingView` para adaptarse al teclado virtual (behavior `padding` en iOS, `height` en Android). `ScrollView` con `keyboardShouldPersistTaps="handled"` permite interacción con el formulario sin cerrar el teclado. Los inputs tienen `textContentType` apropiado para autocompletado del SO. Las pantallas usan `Dimensions.get("window")` para cálculos relativos al tamaño de pantalla.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/auth/LoginScreen.tsx`
+  - `/mobile/src/screens/auth/RegisterScreen.tsx`
+
+**CE 1.d: Se ha gestionado la interacción del usuario con el formulario de registro multi-paso.**
+
+- **Implementación:** Registro en 2 pasos con indicador visual de progreso (dots + línea). Navegación entre pasos con botón "Siguiente"/"Atrás". La validación es por paso: no se puede avanzar al Step 2 sin validar Step 1. El estado se mantiene entre pasos (no se pierde al volver). Toggle de visibilidad de contraseña con icono interactivo.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/auth/RegisterScreen.tsx`
+
+**CE 1.f: Se ha implementado el flujo de onboarding con navegación horizontal.**
+
+- **Implementación:** 4 pantallas deslizables con `FlatList` horizontal paginada. Cada slide tiene gradient de fondo, emoji animado con parallax (scale + opacity), y texto con translateY animado. Indicador de dots con ancho animado (8→24px) y opacidad. La última slide muestra "Empezar" en vez de "Siguiente". El flag se persiste en AsyncStorage para no mostrar el onboarding de nuevo.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/auth/OnboardingScreen.tsx`
+
+**CE 1.g: Se ha implementado el manejo de errores y feedback visual.**
+
+- **Implementación:** Los errores de API se capturan con `AxiosError` y se muestran en `GlassCard` con estilo de error (fondo rojo semitransparente). Los mensajes de error son específicos: "Email o contraseña incorrectos" (401), "Ya existe una cuenta con ese email" (409), "Error de conexión" (timeout/network). ForgotPassword muestra estado de éxito con GlassCard verde. ResetPassword muestra pantalla de éxito con redirección a Login.
+- **Archivos evidencia:**
+  - `/mobile/src/screens/auth/LoginScreen.tsx`
+  - `/mobile/src/screens/auth/ForgotPasswordScreen.tsx`
+  - `/mobile/src/screens/auth/ResetPasswordScreen.tsx`
+
+**CE 1.h: Se ha implementado la integración de fuentes personalizadas y tipografía del design system.**
+
+- **Implementación:** Fuentes Inter (Regular, Medium, Bold) y Space Grotesk (SemiBold, Bold) cargadas con `expo-font` + `@expo-google-fonts`. El hook `useAppFonts` gestiona la carga asíncrona. La app muestra un loading indicator mientras las fuentes cargan. Los estilos de todas las pantallas usan las familias definidas en `typography.families` del design system.
+- **Archivos evidencia:**
+  - `/mobile/src/design-system/fonts.ts`
+  - `/mobile/src/design-system/tokens.ts` (typography)

@@ -1,16 +1,16 @@
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { HomeScreen, ComponentGallery } from "@/screens";
-
-export type RootStackParamList = {
-  Home: undefined;
-  ComponentGallery: undefined;
-};
+import { useAuthStore } from "@/store/useAuthStore";
+import AuthNavigator from "./AuthNavigator";
+import MainNavigator from "./MainNavigator";
+import type { RootStackParamList } from "@/types";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function RootNavigator(): React.JSX.Element {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -19,9 +19,18 @@ export default function RootNavigator(): React.JSX.Element {
           cardStyle: { backgroundColor: "transparent" },
         }}
       >
-        <Stack.Screen name="Home" component={HomeScreen} />
-        {__DEV__ && (
-          <Stack.Screen name="ComponentGallery" component={ComponentGallery} />
+        {isAuthenticated ? (
+          <Stack.Screen
+            name="Main"
+            component={MainNavigator}
+            options={{ animation: "fade" }}
+          />
+        ) : (
+          <Stack.Screen
+            name="Auth"
+            component={AuthNavigator}
+            options={{ animation: "fade" }}
+          />
         )}
       </Stack.Navigator>
     </NavigationContainer>

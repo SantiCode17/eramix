@@ -1,16 +1,9 @@
 import React from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation } from "@react-navigation/native";
-import type { StackNavigationProp } from "@react-navigation/stack";
-import type { RootStackParamList } from "@/navigation/RootNavigator";
 import { Colors, Typography } from "@/constants";
 
-type Nav = StackNavigationProp<RootStackParamList, "Home">;
-
 export default function HomeScreen(): React.JSX.Element {
-  const navigation = useNavigation<Nav>();
-
   return (
     <LinearGradient
       colors={[Colors.background.start, Colors.background.end]}
@@ -21,14 +14,6 @@ export default function HomeScreen(): React.JSX.Element {
       <View style={styles.content}>
         <Text style={styles.title}>EraMix</Text>
         <Text style={styles.subtitle}>Connect. Explore. Belong.</Text>
-        {__DEV__ && (
-          <Pressable
-            onPress={() => navigation.navigate("ComponentGallery")}
-            style={styles.devBtn}
-          >
-            <Text style={styles.devBtnText}>🎨 Component Gallery</Text>
-          </Pressable>
-        )}
       </View>
     </LinearGradient>
   );
