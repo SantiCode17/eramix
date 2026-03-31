@@ -32,6 +32,9 @@
       "expo-image-picker",
       "expo-notifications",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "apiUrl": "http://192.168.8.106:8090"
+    }
   }
 }

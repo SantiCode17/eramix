@@ -7,25 +7,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  interpolate,
-  Extrapolation,
-} from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { GlassInput, GlassButton, GlassCard } from "@/design-system";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { colors, typography, spacing } from "@/design-system/tokens";
 import { useAuthStore } from "@/store/useAuthStore";
 import Globe3D from "@/components/Globe3D";
 import type { AuthStackParamList } from "@/types";
 import { AxiosError } from "axios";
-
-const { width } = Dimensions.get("window");
 
 type Nav = StackNavigationProp<AuthStackParamList, "Login">;
 
@@ -40,6 +31,9 @@ export default function LoginScreen(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  // Day/night background state  (0 = day, 1 = night)
+  const [nightAmount, setNightAmount] = useState(0);
 
   const validateEmail = (value: string): boolean => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -93,48 +87,20 @@ export default function LoginScreen(): React.JSX.Element {
     }
   };
 
-  // Globe rotation drives background warmth
-  const bgWarmth = useSharedValue(0.3);
+  const handleDayNight = useCallback((n: number) => {
+    setNightAmount(n);
+  }, []);
 
-  const handleRotationChange = useCallback(
-    (normalizedX: number) => {
-      bgWarmth.value = normalizedX;
-    },
-    [bgWarmth],
-  );
-
-  // Animated background that shifts warm/cool based on globe rotation
-  const warmOverlayStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      bgWarmth.value,
-      [0, 0.5, 1],
-      [0.1, 0.3, 0.1],
-      Extrapolation.CLAMP,
-    );
-    return { opacity };
-  });
+  // Dynamic gradient: day = blue sky, night = dark navy
+  const bgStart = lerpColor("#1a6dd4", "#0a0e1a", nightAmount);
+  const bgEnd = lerpColor("#003399", "#070b15", nightAmount);
 
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
+        colors={[bgStart, bgEnd]}
         style={StyleSheet.absoluteFill}
       />
-
-      {/* Warm overlay that shifts with globe */}
-      <Animated.View style={[styles.warmOverlay, warmOverlayStyle]}>
-        <LinearGradient
-          colors={["rgba(255, 150, 50, 0.3)", "transparent"]}
-          style={StyleSheet.absoluteFill}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 0.6 }}
-        />
-      </Animated.View>
-
-      {/* Decorative arc behind globe */}
-      <View style={styles.arcContainer}>
-        <View style={styles.arc} />
-      </View>
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -147,11 +113,9 @@ export default function LoginScreen(): React.JSX.Element {
         >
           {/* 3D Globe */}
           <View style={styles.globeContainer}>
-            <Globe3D
-              size={180}
-              onRotationChange={handleRotationChange}
-            />
+            <Globe3D size={200} onDayNightChange={handleDayNight} />
             <Text style={styles.appName}>EraMix</Text>
+            <Text style={styles.tagline}>Tu aventura Erasmus empieza aquí</Text>
           </View>
 
           {/* Error card */}
@@ -240,31 +204,33 @@ export default function LoginScreen(): React.JSX.Element {
   );
 }
 
+/* ─── Helpers ─── */
+
+/** Linearly interpolate between two hex colors. t ∈ [0, 1] */
+function lerpColor(a: string, b: string, t: number): string {
+  const clamp = Math.max(0, Math.min(1, t));
+  const parse = (hex: string) => {
+    const h = hex.replace("#", "");
+    return [
+      parseInt(h.substring(0, 2), 16),
+      parseInt(h.substring(2, 4), 16),
+      parseInt(h.substring(4, 6), 16),
+    ];
+  };
+  const [r1, g1, b1] = parse(a);
+  const [r2, g2, b2] = parse(b);
+  const r = Math.round(r1 + (r2 - r1) * clamp);
+  const g = Math.round(g1 + (g2 - g1) * clamp);
+  const bl = Math.round(b1 + (b2 - b1) * clamp);
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${bl.toString(16).padStart(2, "0")}`;
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   flex: {
     flex: 1,
-  },
-  warmOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 0,
-  },
-  arcContainer: {
-    position: "absolute",
-    top: -width * 0.35,
-    left: -width * 0.15,
-    right: -width * 0.15,
-    alignItems: "center",
-  },
-  arc: {
-    width: width * 1.3,
-    height: width * 1.3,
-    borderRadius: width * 0.65,
-    borderWidth: 2.5,
-    borderColor: "rgba(76, 175, 80, 0.35)",
-    backgroundColor: "transparent",
   },
   scrollContent: {
     flexGrow: 1,
@@ -275,15 +241,21 @@ const styles = StyleSheet.create({
   },
   globeContainer: {
     alignItems: "center",
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
     marginTop: spacing.md,
   },
   appName: {
     fontFamily: typography.families.heading,
-    fontSize: 32,
+    fontSize: 36,
     color: colors.eu.star,
-    letterSpacing: 2,
-    marginTop: spacing.sm,
+    letterSpacing: 3,
+    marginTop: spacing.md,
+  },
+  tagline: {
+    fontFamily: typography.families.body,
+    fontSize: typography.sizes.caption.fontSize,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
   },
   errorCard: {
     marginBottom: spacing.md,
@@ -297,7 +269,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   form: {
-    gap: spacing.md,
+    gap: spacing.xs,
   },
   loginButton: {
     marginTop: spacing.sm,
@@ -338,7 +310,6 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     fontSize: 20,
-    padding: spacing.xs,
   },
   eyeButton: {
     padding: spacing.xs,

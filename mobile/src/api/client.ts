@@ -3,7 +3,7 @@ import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 
 const API_BASE_URL =
-  Constants.expoConfig?.extra?.apiUrl ?? "http://10.0.2.2:8090";
+  Constants.expoConfig?.extra?.apiUrl ?? "http://192.168.8.106:8090";
 
 export const apiClient = axios.create({
   baseURL: `${API_BASE_URL}/api`,
