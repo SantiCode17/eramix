@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -15,6 +15,62 @@ const queryClient = new QueryClient({
   },
 });
 
+/* ── Error Boundary ──────────────────────────────── */
+interface EBState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  EBState
+> {
+  state: EBState = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error): EBState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("ErrorBoundary caught:", error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={styles.loading}>
+          <Text style={{ color: "#FF4444", fontSize: 18, marginBottom: 12 }}>
+            ⚠️ Error en la app
+          </Text>
+          <Text
+            style={{
+              color: "#FFCC00",
+              fontSize: 13,
+              textAlign: "center",
+              paddingHorizontal: 20,
+            }}
+          >
+            {this.state.error?.message ?? "Error desconocido"}
+          </Text>
+          <Text
+            style={{
+              color: "#888",
+              fontSize: 11,
+              textAlign: "center",
+              paddingHorizontal: 20,
+              marginTop: 8,
+            }}
+          >
+            {this.state.error?.stack?.slice(0, 500)}
+          </Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/* ── App ─────────────────────────────────────────── */
 export default function App(): React.JSX.Element {
   const { loaded: fontsLoaded } = useAppFonts();
 
@@ -28,10 +84,12 @@ export default function App(): React.JSX.Element {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="light" translucent backgroundColor="transparent" />
-        <RootNavigator />
-      </QueryClientProvider>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style="light" translucent backgroundColor="transparent" />
+          <RootNavigator />
+        </QueryClientProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

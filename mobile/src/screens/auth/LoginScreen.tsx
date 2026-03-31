@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,18 @@ import {
   Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
+} from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { GlassInput, GlassButton, GlassCard } from "@/design-system";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { useAuthStore } from "@/store/useAuthStore";
+import Globe3D from "@/components/Globe3D";
 import type { AuthStackParamList } from "@/types";
 import { AxiosError } from "axios";
 
@@ -86,6 +93,27 @@ export default function LoginScreen(): React.JSX.Element {
     }
   };
 
+  // Globe rotation drives background warmth
+  const bgWarmth = useSharedValue(0.3);
+
+  const handleRotationChange = useCallback(
+    (normalizedX: number) => {
+      bgWarmth.value = normalizedX;
+    },
+    [bgWarmth],
+  );
+
+  // Animated background that shifts warm/cool based on globe rotation
+  const warmOverlayStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      bgWarmth.value,
+      [0, 0.5, 1],
+      [0.1, 0.3, 0.1],
+      Extrapolation.CLAMP,
+    );
+    return { opacity };
+  });
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -93,9 +121,20 @@ export default function LoginScreen(): React.JSX.Element {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Decorative circles */}
-      <View style={styles.decorCircle1} />
-      <View style={styles.decorCircle2} />
+      {/* Warm overlay that shifts with globe */}
+      <Animated.View style={[styles.warmOverlay, warmOverlayStyle]}>
+        <LinearGradient
+          colors={["rgba(255, 150, 50, 0.3)", "transparent"]}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 0.6 }}
+        />
+      </Animated.View>
+
+      {/* Decorative arc behind globe */}
+      <View style={styles.arcContainer}>
+        <View style={styles.arc} />
+      </View>
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -106,11 +145,12 @@ export default function LoginScreen(): React.JSX.Element {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Logo */}
-          <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoEmoji}>🌍</Text>
-            </View>
+          {/* 3D Globe */}
+          <View style={styles.globeContainer}>
+            <Globe3D
+              size={180}
+              onRotationChange={handleRotationChange}
+            />
             <Text style={styles.appName}>EraMix</Text>
           </View>
 
@@ -148,7 +188,11 @@ export default function LoginScreen(): React.JSX.Element {
               secureTextEntry={!showPassword}
               textContentType="password"
               rightIcon={
-                <Pressable onPress={() => setShowPassword(!showPassword)}>
+                <Pressable
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  style={styles.eyeButton}
+                >
                   <Text style={styles.eyeIcon}>
                     {showPassword ? "🙈" : "👁️"}
                   </Text>
@@ -203,53 +247,43 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+  warmOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
+  },
+  arcContainer: {
+    position: "absolute",
+    top: -width * 0.35,
+    left: -width * 0.15,
+    right: -width * 0.15,
+    alignItems: "center",
+  },
+  arc: {
+    width: width * 1.3,
+    height: width * 1.3,
+    borderRadius: width * 0.65,
+    borderWidth: 2.5,
+    borderColor: "rgba(76, 175, 80, 0.35)",
+    backgroundColor: "transparent",
+  },
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxl,
+    paddingBottom: spacing.xxl,
+    paddingTop: spacing.lg,
   },
-  decorCircle1: {
-    position: "absolute",
-    top: -100,
-    right: -80,
-    width: width * 0.6,
-    height: width * 0.6,
-    borderRadius: width * 0.3,
-    backgroundColor: "rgba(255, 204, 0, 0.05)",
-  },
-  decorCircle2: {
-    position: "absolute",
-    bottom: -50,
-    left: -60,
-    width: width * 0.4,
-    height: width * 0.4,
-    borderRadius: width * 0.2,
-    backgroundColor: "rgba(255, 107, 43, 0.04)",
-  },
-  logoContainer: {
+  globeContainer: {
     alignItems: "center",
-    marginBottom: spacing.xxl,
-  },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 204, 0, 0.3)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.md,
-  },
-  logoEmoji: {
-    fontSize: 36,
+    marginBottom: spacing.lg,
+    marginTop: spacing.md,
   },
   appName: {
     fontFamily: typography.families.heading,
-    fontSize: 28,
+    fontSize: 32,
     color: colors.eu.star,
-    letterSpacing: 1.5,
+    letterSpacing: 2,
+    marginTop: spacing.sm,
   },
   errorCard: {
     marginBottom: spacing.md,
@@ -303,6 +337,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   eyeIcon: {
-    fontSize: 18,
+    fontSize: 20,
+    padding: spacing.xs,
+  },
+  eyeButton: {
+    padding: spacing.xs,
+    minWidth: 36,
+    minHeight: 36,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
 });

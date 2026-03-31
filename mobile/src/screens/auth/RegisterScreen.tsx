@@ -228,7 +228,11 @@ export default function RegisterScreen(): React.JSX.Element {
                   secureTextEntry={!showPassword}
                   textContentType="newPassword"
                   rightIcon={
-                    <Pressable onPress={() => setShowPassword(!showPassword)}>
+                    <Pressable
+                      onPress={() => setShowPassword(!showPassword)}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                      style={{ padding: 4, minWidth: 36, minHeight: 36, alignItems: "center", justifyContent: "center" }}
+                    >
                       <Text style={styles.eyeIcon}>
                         {showPassword ? "🙈" : "👁️"}
                       </Text>
