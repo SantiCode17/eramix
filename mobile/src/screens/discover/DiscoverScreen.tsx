@@ -6,6 +6,7 @@ import {
   Pressable,
   Dimensions,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
@@ -23,6 +24,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useDiscoverStore } from "@/store/useDiscoverStore";
 import { UserCard, CARD_WIDTH, FilterModal } from "./components";
+import { StoriesBar, StoryViewerScreen, CreateStoryScreen } from "@/screens/stories";
 import { EmptyState, Header, GlassButton } from "@/design-system";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { DiscoverStackParamList, DiscoverFilters } from "@/types";
@@ -48,6 +50,11 @@ export default function DiscoverScreen(): React.JSX.Element {
   } = useDiscoverStore();
 
   const [filterVisible, setFilterVisible] = useState(false);
+  const [storyViewerData, setStoryViewerData] = useState<{
+    groups: import("@/types/stories").UserStories[];
+    userId: number;
+  } | null>(null);
+  const [createStoryVisible, setCreateStoryVisible] = useState(false);
 
   // Swipe animation values
   const translateX = useSharedValue(0);
@@ -228,6 +235,14 @@ export default function DiscoverScreen(): React.JSX.Element {
         }
       />
 
+      {/* Stories Bar */}
+      <StoriesBar
+        onCreateStory={() => setCreateStoryVisible(true)}
+        onViewStories={(userId, groups) =>
+          setStoryViewerData({ userId, groups })
+        }
+      />
+
       {/* Card Stack */}
       <View style={styles.cardStack}>
         {loading && !currentUser ? (
@@ -315,6 +330,30 @@ export default function DiscoverScreen(): React.JSX.Element {
         filters={filters}
         onApply={handleApplyFilters}
       />
+
+      {/* Story Viewer Modal */}
+      <Modal
+        visible={!!storyViewerData}
+        animationType="fade"
+        statusBarTranslucent
+      >
+        {storyViewerData && (
+          <StoryViewerScreen
+            groups={storyViewerData.groups}
+            initialUserId={storyViewerData.userId}
+            onClose={() => setStoryViewerData(null)}
+          />
+        )}
+      </Modal>
+
+      {/* Create Story Modal */}
+      <Modal
+        visible={createStoryVisible}
+        animationType="slide"
+        statusBarTranslucent
+      >
+        <CreateStoryScreen onClose={() => setCreateStoryVisible(false)} />
+      </Modal>
     </View>
   );
 }

@@ -44,6 +44,20 @@ export type {
   TypingEvent,
   ChatStackParamList,
 } from "./chat";
+export type {
+  EventData,
+  EventCreateRequest,
+  EventParticipant,
+  EventsStackParamList,
+} from "./events";
+export type {
+  StoryData,
+  UserStories,
+} from "./stories";
+export type {
+  NotificationType,
+  NotificationData,
+} from "./notifications";
 
 // ── Navigation types ────────────────────────────────
 

@@ -5,15 +5,15 @@ import { createDrawerNavigator, DrawerContentScrollView } from "@react-navigatio
 import type { DrawerContentComponentProps } from "@react-navigation/drawer";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-  EventsScreen,
-  NotificationsScreen,
+  AboutScreen,
 } from "@/screens/main";
+import { NotificationsScreen } from "@/screens/notifications";
 import { GlobeScreen } from "@/screens/globe";
 import DiscoverNavigator from "./DiscoverNavigator";
+import EventsNavigator from "./EventsNavigator";
 import ChatNavigator from "./ChatNavigator";
 import ProfileNavigator from "./ProfileNavigator";
 import SettingsNavigator from "./SettingsNavigator";
-import { AboutScreen } from "@/screens/main";
 import { useAuthStore } from "@/store/useAuthStore";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { MainTabParamList, DrawerParamList } from "@/types";
@@ -70,7 +70,7 @@ function HomeTabs(): React.JSX.Element {
     >
       <Tab.Screen name="Discover" component={DiscoverNavigator} />
       <Tab.Screen name="Globe" component={GlobeScreen} />
-      <Tab.Screen name="Events" component={EventsScreen} />
+      <Tab.Screen name="Events" component={EventsNavigator} />
       <Tab.Screen name="Chat" component={ChatNavigator} />
       <Tab.Screen name="Notifications" component={NotificationsScreen} />
       <Tab.Screen name="Profile" component={ProfileNavigator} />

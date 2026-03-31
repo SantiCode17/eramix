@@ -31,7 +31,8 @@
       "expo-location",
       "expo-image-picker",
       "expo-notifications",
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "apiUrl": "http://192.168.8.106:8090"
