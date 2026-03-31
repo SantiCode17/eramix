@@ -71,3 +71,9 @@ export {
   LeaderboardScreen,
 } from "./gamification";
 
+// Challenge screens
+export {
+  ChallengesListScreen,
+  ChallengeDetailScreen,
+} from "./challenges";
+

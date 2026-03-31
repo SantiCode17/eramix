@@ -89,6 +89,11 @@ export type {
   LeaderboardEntry,
   GamificationStackParamList,
 } from "./gamification";
+export type {
+  Challenge,
+  ChallengeSubmission,
+  ChallengesStackParamList,
+} from "./challenges";
 
 // ── Navigation types ────────────────────────────────
 
@@ -133,6 +138,7 @@ export type DrawerParamList = {
   HomeTabs: undefined;
   Exchange: undefined;
   Gamification: undefined;
+  Challenges: undefined;
   Settings: undefined;
   About: undefined;
 };

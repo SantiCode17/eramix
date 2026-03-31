@@ -17,6 +17,7 @@ import CommunitiesNavigator from "./CommunitiesNavigator";
 import ProfileNavigator from "./ProfileNavigator";
 import ExchangeNavigator from "./ExchangeNavigator";
 import GamificationNavigator from "./GamificationNavigator";
+import ChallengesNavigator from "./ChallengesNavigator";
 import SettingsNavigator from "./SettingsNavigator";
 import { useAuthStore } from "@/store/useAuthStore";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
@@ -95,6 +96,7 @@ function CustomDrawerContent(props: DrawerContentComponentProps): React.JSX.Elem
     { label: "Inicio", emoji: "🏠", route: "HomeTabs" as const },
     { label: "Intercambio", emoji: "🗣️", route: "Exchange" as const },
     { label: "Logros", emoji: "🏆", route: "Gamification" as const },
+    { label: "Retos", emoji: "📸", route: "Challenges" as const },
     { label: "Ajustes", emoji: "⚙️", route: "Settings" as const },
     { label: "Acerca de", emoji: "ℹ️", route: "About" as const },
   ];
@@ -169,6 +171,7 @@ export default function MainNavigator(): React.JSX.Element {
       <Drawer.Screen name="HomeTabs" component={HomeTabs} />
       <Drawer.Screen name="Exchange" component={ExchangeNavigator} />
       <Drawer.Screen name="Gamification" component={GamificationNavigator} />
+      <Drawer.Screen name="Challenges" component={ChallengesNavigator} />
       <Drawer.Screen name="Settings" component={SettingsNavigator} />
       <Drawer.Screen name="About" component={AboutScreen} />
     </Drawer.Navigator>
