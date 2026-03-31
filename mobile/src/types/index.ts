@@ -94,6 +94,10 @@ export type {
   ChallengeSubmission,
   ChallengesStackParamList,
 } from "./challenges";
+export type {
+  HousingPost,
+  HousingStackParamList,
+} from "./housing";
 
 // ── Navigation types ────────────────────────────────
 
@@ -139,6 +143,7 @@ export type DrawerParamList = {
   Exchange: undefined;
   Gamification: undefined;
   Challenges: undefined;
+  Housing: undefined;
   Settings: undefined;
   About: undefined;
 };

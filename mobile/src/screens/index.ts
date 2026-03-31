@@ -77,3 +77,9 @@ export {
   ChallengeDetailScreen,
 } from "./challenges";
 
+// Housing screens
+export {
+  HousingListScreen,
+  HousingDetailScreen,
+} from "./housing";
+
