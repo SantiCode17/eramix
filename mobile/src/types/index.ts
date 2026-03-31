@@ -104,6 +104,11 @@ export type {
   PlaceCategory,
   CityGuideStackParamList,
 } from "./cityGuide";
+export type {
+  AiMessageData,
+  AiConversation,
+  AiAssistantStackParamList,
+} from "./aiAssistant";
 
 // ── Navigation types ────────────────────────────────
 
@@ -151,6 +156,7 @@ export type DrawerParamList = {
   Challenges: undefined;
   Housing: undefined;
   CityGuide: undefined;
+  AiAssistant: undefined;
   Settings: undefined;
   About: undefined;
 };

@@ -89,3 +89,8 @@ export {
   PlaceDetailScreen,
 } from "./cityGuide";
 
+// AI Assistant screens
+export {
+  AiChatScreen,
+} from "./aiAssistant";
+
