@@ -83,6 +83,12 @@ export type {
   ExchangeReview,
   ExchangeStackParamList,
 } from "./exchange";
+export type {
+  Achievement,
+  UserProgress,
+  LeaderboardEntry,
+  GamificationStackParamList,
+} from "./gamification";
 
 // ── Navigation types ────────────────────────────────
 
@@ -126,6 +132,7 @@ export type SettingsStackParamList = {
 export type DrawerParamList = {
   HomeTabs: undefined;
   Exchange: undefined;
+  Gamification: undefined;
   Settings: undefined;
   About: undefined;
 };

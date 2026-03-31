@@ -64,3 +64,10 @@ export {
   ExchangeSessionDetailScreen,
 } from "./exchange";
 
+// Gamification screens
+export {
+  GamificationHomeScreen,
+  AchievementsScreen,
+  LeaderboardScreen,
+} from "./gamification";
+
