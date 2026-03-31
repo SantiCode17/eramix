@@ -59,6 +59,31 @@ public class ChatController {
         log.debug("Mensaje id={} enviado: {} → {}", saved.getId(), senderId, recipientId);
     }
 
+    /**
+     * Indicador de escritura: /app/chat.typing
+     * Reenvía el evento al otro participante de la conversación.
+     */
+    @MessageMapping("/chat.typing")
+    public void typing(@Payload java.util.Map<String, Object> payload,
+                       SimpMessageHeaderAccessor headerAccessor) {
+
+        Long senderId = extractUserId(headerAccessor);
+        Long conversationId = ((Number) payload.get("conversationId")).longValue();
+        Boolean typing = (Boolean) payload.get("typing");
+
+        Long recipientId = chatService.getRecipientId(conversationId, senderId);
+
+        messagingTemplate.convertAndSendToUser(
+                String.valueOf(recipientId),
+                "/queue/typing",
+                java.util.Map.of(
+                        "conversationId", conversationId,
+                        "userId", senderId,
+                        "typing", typing
+                )
+        );
+    }
+
     private Long extractUserId(SimpMessageHeaderAccessor accessor) {
         if (accessor.getUser() instanceof UsernamePasswordAuthenticationToken auth) {
             return (Long) auth.getPrincipal();

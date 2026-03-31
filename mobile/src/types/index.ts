@@ -36,6 +36,14 @@ export type {
   CountryPin,
   GlobeStackParamList,
 } from "./globe";
+export type {
+  MessageData,
+  MessageType,
+  ConversationData,
+  SendMessagePayload,
+  TypingEvent,
+  ChatStackParamList,
+} from "./chat";
 
 // ── Navigation types ────────────────────────────────
 

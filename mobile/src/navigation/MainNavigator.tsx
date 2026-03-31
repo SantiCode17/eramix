@@ -6,11 +6,11 @@ import type { DrawerContentComponentProps } from "@react-navigation/drawer";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   EventsScreen,
-  ChatListScreen,
   NotificationsScreen,
 } from "@/screens/main";
 import { GlobeScreen } from "@/screens/globe";
 import DiscoverNavigator from "./DiscoverNavigator";
+import ChatNavigator from "./ChatNavigator";
 import ProfileNavigator from "./ProfileNavigator";
 import SettingsNavigator from "./SettingsNavigator";
 import { AboutScreen } from "@/screens/main";
@@ -71,7 +71,7 @@ function HomeTabs(): React.JSX.Element {
       <Tab.Screen name="Discover" component={DiscoverNavigator} />
       <Tab.Screen name="Globe" component={GlobeScreen} />
       <Tab.Screen name="Events" component={EventsScreen} />
-      <Tab.Screen name="Chat" component={ChatListScreen} />
+      <Tab.Screen name="Chat" component={ChatNavigator} />
       <Tab.Screen name="Notifications" component={NotificationsScreen} />
       <Tab.Screen name="Profile" component={ProfileNavigator} />
     </Tab.Navigator>
