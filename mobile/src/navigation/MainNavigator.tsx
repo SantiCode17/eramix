@@ -9,6 +9,7 @@ import {
   ChatListScreen,
   NotificationsScreen,
 } from "@/screens/main";
+import { GlobeScreen } from "@/screens/globe";
 import DiscoverNavigator from "./DiscoverNavigator";
 import ProfileNavigator from "./ProfileNavigator";
 import SettingsNavigator from "./SettingsNavigator";
@@ -25,6 +26,7 @@ const tabConfig: Record<
   { label: string; emoji: string }
 > = {
   Discover: { label: "Descubrir", emoji: "🔍" },
+  Globe: { label: "Globo", emoji: "🌍" },
   Events: { label: "Eventos", emoji: "🎉" },
   Chat: { label: "Chat", emoji: "💬" },
   Notifications: { label: "Alertas", emoji: "🔔" },
@@ -67,6 +69,7 @@ function HomeTabs(): React.JSX.Element {
       })}
     >
       <Tab.Screen name="Discover" component={DiscoverNavigator} />
+      <Tab.Screen name="Globe" component={GlobeScreen} />
       <Tab.Screen name="Events" component={EventsScreen} />
       <Tab.Screen name="Chat" component={ChatListScreen} />
       <Tab.Screen name="Notifications" component={NotificationsScreen} />

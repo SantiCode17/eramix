@@ -20,6 +20,9 @@ export {
   AboutScreen,
 } from "./main";
 
+// Globe screen
+export { GlobeScreen } from "./globe";
+
 // Profile screens
 export {
   ProfileScreen,

@@ -30,6 +30,12 @@ export type {
   DiscoverFilters,
   DiscoverStackParamList,
 } from "./discover";
+export type {
+  UniversityInfo,
+  CountryStats,
+  CountryPin,
+  GlobeStackParamList,
+} from "./globe";
 
 // ── Navigation types ────────────────────────────────
 
@@ -44,6 +50,7 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   Discover: undefined;
+  Globe: undefined;
   Events: undefined;
   Chat: undefined;
   Notifications: undefined;
