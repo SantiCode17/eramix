@@ -54,6 +54,8 @@ public class ChatService {
                 .content(request.getContent())
                 .type(MessageType.valueOf(request.getType()))
                 .mediaUrl(request.getMediaUrl())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
                 .isRead(false)
                 .build();
 
@@ -221,6 +223,8 @@ public class ChatService {
                 .content(m.getContent())
                 .type(m.getType().name())
                 .mediaUrl(m.getMediaUrl())
+                .latitude(m.getLatitude())
+                .longitude(m.getLongitude())
                 .isRead(m.getIsRead())
                 .createdAt(m.getCreatedAt())
                 .build();

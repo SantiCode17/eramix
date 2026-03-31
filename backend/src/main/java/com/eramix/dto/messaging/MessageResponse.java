@@ -21,6 +21,8 @@ public class MessageResponse {
     private String content;
     private String type;
     private String mediaUrl;
+    private Double latitude;
+    private Double longitude;
     private Boolean isRead;
     private Instant createdAt;
 }

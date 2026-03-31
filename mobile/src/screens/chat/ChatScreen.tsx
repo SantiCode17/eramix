@@ -107,7 +107,17 @@ const MessageBubble = React.memo(function MessageBubble({
             showTail && styles.bubbleTailOwn,
           ]}
         >
-          <Text style={styles.bubbleTextOwn}>{message.content}</Text>
+          {message.type === "IMAGE" && message.mediaUrl ? (
+            <Image source={{ uri: message.mediaUrl }} style={styles.mediaImage} resizeMode="cover" />
+          ) : message.type === "AUDIO" ? (
+            <Text style={styles.bubbleTextOwn}>🎤 Mensaje de voz</Text>
+          ) : message.type === "VIDEO" && message.mediaUrl ? (
+            <Text style={styles.bubbleTextOwn}>🎬 Video</Text>
+          ) : message.type === "LOCATION" && message.latitude && message.longitude ? (
+            <Text style={styles.bubbleTextOwn}>📍 Ubicación: {message.latitude.toFixed(4)}, {message.longitude.toFixed(4)}</Text>
+          ) : (
+            <Text style={styles.bubbleTextOwn}>{message.content}</Text>
+          )}
           <View style={styles.bubbleMeta}>
             <Text style={styles.bubbleTimeOwn}>{time}</Text>
             {message.isRead && (
@@ -123,7 +133,17 @@ const MessageBubble = React.memo(function MessageBubble({
             showTail && styles.bubbleTailOther,
           ]}
         >
-          <Text style={styles.bubbleTextOther}>{message.content}</Text>
+          {message.type === "IMAGE" && message.mediaUrl ? (
+            <Image source={{ uri: message.mediaUrl }} style={styles.mediaImage} resizeMode="cover" />
+          ) : message.type === "AUDIO" ? (
+            <Text style={styles.bubbleTextOther}>🎤 Mensaje de voz</Text>
+          ) : message.type === "VIDEO" && message.mediaUrl ? (
+            <Text style={styles.bubbleTextOther}>🎬 Video</Text>
+          ) : message.type === "LOCATION" && message.latitude && message.longitude ? (
+            <Text style={styles.bubbleTextOther}>📍 Ubicación: {message.latitude.toFixed(4)}, {message.longitude.toFixed(4)}</Text>
+          ) : (
+            <Text style={styles.bubbleTextOther}>{message.content}</Text>
+          )}
           <Text style={styles.bubbleTimeOther}>{time}</Text>
         </View>
       )}
@@ -524,6 +544,12 @@ const styles = StyleSheet.create({
   },
   bubbleTailOther: {
     borderBottomLeftRadius: 4,
+  },
+  mediaImage: {
+    width: 200,
+    height: 150,
+    borderRadius: radii.md,
+    marginBottom: spacing.xs,
   },
   bubbleTextOwn: {
     fontFamily: typography.families.body,

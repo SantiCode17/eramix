@@ -9,11 +9,13 @@ export interface MessageData {
   content: string;
   type: MessageType;
   mediaUrl: string | null;
+  latitude: number | null;
+  longitude: number | null;
   isRead: boolean;
   createdAt: string; // ISO instant
 }
 
-export type MessageType = "TEXT" | "IMAGE" | "FILE";
+export type MessageType = "TEXT" | "IMAGE" | "AUDIO" | "VIDEO" | "LOCATION";
 
 export interface ConversationData {
   id: number;
@@ -32,6 +34,8 @@ export interface SendMessagePayload {
   content: string;
   type?: MessageType;
   mediaUrl?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface TypingEvent {

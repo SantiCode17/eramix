@@ -32,6 +32,9 @@ public class Message extends BaseEntity {
     @Column(name = "media_url", length = 512)
     private String mediaUrl;
 
+    private Double latitude;
+    private Double longitude;
+
     @Column(name = "is_read", nullable = false)
     @Builder.Default
     private Boolean isRead = false;

@@ -25,4 +25,7 @@ public class SendMessageRequest {
     private String type = "TEXT";
 
     private String mediaUrl;
+
+    private Double latitude;
+    private Double longitude;
 }
