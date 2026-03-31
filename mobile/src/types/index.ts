@@ -58,6 +58,24 @@ export type {
   NotificationType,
   NotificationData,
 } from "./notifications";
+export type {
+  GroupMember,
+  GroupData,
+  GroupMessageData,
+  CreateGroupRequest,
+  SendGroupMessagePayload,
+  GroupsStackParamList,
+} from "./groups";
+export type {
+  CommunityCategory,
+  CommunityMemberPreview,
+  CommunityData,
+  CommunityCommentData,
+  CommunityPostData,
+  CreatePostRequest,
+  CreateCommentRequest,
+  CommunitiesStackParamList,
+} from "./communities";
 
 // ── Navigation types ────────────────────────────────
 
@@ -75,6 +93,8 @@ export type MainTabParamList = {
   Globe: undefined;
   Events: undefined;
   Chat: undefined;
+  Groups: undefined;
+  Communities: undefined;
   Notifications: undefined;
   Profile: undefined;
 };

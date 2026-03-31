@@ -5,12 +5,14 @@ import com.eramix.dto.user.UserProfileResponse;
 import com.eramix.entity.RefreshToken;
 import com.eramix.entity.University;
 import com.eramix.entity.User;
+import com.eramix.event.UserRegisteredEvent;
 import com.eramix.exception.*;
 import com.eramix.repository.RefreshTokenRepository;
 import com.eramix.repository.UniversityRepository;
 import com.eramix.repository.UserRepository;
 import com.eramix.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ public class AuthService {
     private final UniversityRepository universityRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * In-memory store for password reset tokens (dev only).
@@ -75,6 +78,15 @@ public class AuthService {
         }
 
         user = userRepository.save(user);
+
+        // Publish event for auto-community creation
+        String universityName = user.getHostUniversity() != null
+                ? user.getHostUniversity().getName() : null;
+        eventPublisher.publishEvent(new UserRegisteredEvent(
+                this, user.getId(), universityName,
+                user.getDestinationCity(), user.getDestinationCountry()
+        ));
+
         return buildAuthResponse(user);
     }
 

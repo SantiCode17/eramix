@@ -12,6 +12,8 @@ import { GlobeScreen } from "@/screens/globe";
 import DiscoverNavigator from "./DiscoverNavigator";
 import EventsNavigator from "./EventsNavigator";
 import ChatNavigator from "./ChatNavigator";
+import GroupsNavigator from "./GroupsNavigator";
+import CommunitiesNavigator from "./CommunitiesNavigator";
 import ProfileNavigator from "./ProfileNavigator";
 import SettingsNavigator from "./SettingsNavigator";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -29,6 +31,8 @@ const tabConfig: Record<
   Globe: { label: "Globo", emoji: "🌍" },
   Events: { label: "Eventos", emoji: "🎉" },
   Chat: { label: "Chat", emoji: "💬" },
+  Groups: { label: "Grupos", emoji: "👥" },
+  Communities: { label: "Comunidad", emoji: "🏘️" },
   Notifications: { label: "Alertas", emoji: "🔔" },
   Profile: { label: "Perfil", emoji: "👤" },
 };
@@ -72,6 +76,8 @@ function HomeTabs(): React.JSX.Element {
       <Tab.Screen name="Globe" component={GlobeScreen} />
       <Tab.Screen name="Events" component={EventsNavigator} />
       <Tab.Screen name="Chat" component={ChatNavigator} />
+      <Tab.Screen name="Groups" component={GroupsNavigator} />
+      <Tab.Screen name="Communities" component={CommunitiesNavigator} />
       <Tab.Screen name="Notifications" component={NotificationsScreen} />
       <Tab.Screen name="Profile" component={ProfileNavigator} />
     </Tab.Navigator>

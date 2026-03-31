@@ -41,3 +41,18 @@ export {
   DeleteAccountScreen,
 } from "./settings";
 
+// Group screens
+export {
+  GroupsListScreen,
+  GroupChatScreen,
+  CreateGroupScreen,
+  GroupSettingsScreen,
+} from "./groups";
+
+// Community screens
+export {
+  CommunitiesScreen,
+  CommunityFeedScreen,
+  CreateCommunityPostScreen,
+} from "./communities";
+
