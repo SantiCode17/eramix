@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Animated, StyleSheet, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,11 +19,11 @@ export default function SplashScreen(): React.JSX.Element {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   // Animations
-  const bgOpacity = useRef(new Animated.Value(0)).current;
-  const logoScale = useRef(new Animated.Value(0.3)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const textTranslateY = useRef(new Animated.Value(30)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
+  const [bgOpacity] = useState(() => new Animated.Value(0));
+  const [logoScale] = useState(() => new Animated.Value(0.3));
+  const [logoOpacity] = useState(() => new Animated.Value(0));
+  const [textTranslateY] = useState(() => new Animated.Value(30));
+  const [textOpacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     // 1. Run choreographed animation

@@ -56,3 +56,11 @@ export {
   CreateCommunityPostScreen,
 } from "./communities";
 
+// Exchange screens
+export {
+  ExchangeHomeScreen,
+  FindPartnerScreen,
+  ExchangeRequestsScreen,
+  ExchangeSessionDetailScreen,
+} from "./exchange";
+

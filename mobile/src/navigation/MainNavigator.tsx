@@ -15,6 +15,7 @@ import ChatNavigator from "./ChatNavigator";
 import GroupsNavigator from "./GroupsNavigator";
 import CommunitiesNavigator from "./CommunitiesNavigator";
 import ProfileNavigator from "./ProfileNavigator";
+import ExchangeNavigator from "./ExchangeNavigator";
 import SettingsNavigator from "./SettingsNavigator";
 import { useAuthStore } from "@/store/useAuthStore";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
@@ -91,6 +92,7 @@ function CustomDrawerContent(props: DrawerContentComponentProps): React.JSX.Elem
 
   const drawerItems = [
     { label: "Inicio", emoji: "🏠", route: "HomeTabs" as const },
+    { label: "Intercambio", emoji: "🗣️", route: "Exchange" as const },
     { label: "Ajustes", emoji: "⚙️", route: "Settings" as const },
     { label: "Acerca de", emoji: "ℹ️", route: "About" as const },
   ];
@@ -163,6 +165,7 @@ export default function MainNavigator(): React.JSX.Element {
       }}
     >
       <Drawer.Screen name="HomeTabs" component={HomeTabs} />
+      <Drawer.Screen name="Exchange" component={ExchangeNavigator} />
       <Drawer.Screen name="Settings" component={SettingsNavigator} />
       <Drawer.Screen name="About" component={AboutScreen} />
     </Drawer.Navigator>

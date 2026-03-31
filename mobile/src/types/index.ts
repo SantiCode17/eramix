@@ -76,6 +76,13 @@ export type {
   CreateCommentRequest,
   CommunitiesStackParamList,
 } from "./communities";
+export type {
+  ExchangePartner,
+  ExchangeRequest,
+  ExchangeSession,
+  ExchangeReview,
+  ExchangeStackParamList,
+} from "./exchange";
 
 // ── Navigation types ────────────────────────────────
 
@@ -118,6 +125,7 @@ export type SettingsStackParamList = {
 
 export type DrawerParamList = {
   HomeTabs: undefined;
+  Exchange: undefined;
   Settings: undefined;
   About: undefined;
 };

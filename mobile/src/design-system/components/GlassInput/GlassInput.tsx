@@ -42,7 +42,7 @@ export default function GlassInput({
   ...textInputProps
 }: GlassInputProps): React.JSX.Element {
   const [isFocused, setIsFocused] = useState(false);
-  const borderAnim = useRef(new Animated.Value(0)).current;
+  const [borderAnim] = useState(() => new Animated.Value(0));
   const inputRef = useRef<TextInput>(null);
 
   const handleFocus = useCallback(

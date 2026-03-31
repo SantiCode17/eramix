@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Animated, Easing, StyleSheet, ViewStyle, StyleProp } from "react-native";
 import { colors, spacing } from "../../tokens";
 
@@ -13,7 +13,7 @@ export default function LoadingSpinner({
   color = colors.eu.star,
   style,
 }: LoadingSpinnerProps): React.JSX.Element {
-  const rotation = useRef(new Animated.Value(0)).current;
+  const [rotation] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const loop = Animated.loop(

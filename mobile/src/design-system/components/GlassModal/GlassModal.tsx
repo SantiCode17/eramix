@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Modal,
@@ -33,8 +33,8 @@ export default function GlassModal({
   children,
   style,
 }: GlassModalProps): React.JSX.Element {
-  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
-  const backdropAnim = useRef(new Animated.Value(0)).current;
+  const [slideAnim] = useState(() => new Animated.Value(SCREEN_HEIGHT));
+  const [backdropAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (visible) {

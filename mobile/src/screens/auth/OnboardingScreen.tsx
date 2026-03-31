@@ -68,7 +68,7 @@ const slides: Slide[] = [
 export default function OnboardingScreen(): React.JSX.Element {
   const navigation = useNavigation<Nav>();
   const flatListRef = useRef<FlatList>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
+  const [scrollX] = useState(() => new Animated.Value(0));
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const onScroll = Animated.event(

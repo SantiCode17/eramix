@@ -39,7 +39,7 @@ export default function GlobeScreen(): React.JSX.Element {
   } = useGlobeStore();
 
   const [nightAmount, setNightAmount] = useState(0);
-  const panelAnim = useRef(new Animated.Value(PANEL_HEIGHT + 50)).current;
+  const [panelAnim] = useState(() => new Animated.Value(PANEL_HEIGHT + 50));
   const isPanelOpen = useRef(false);
 
   // Fetch data on mount

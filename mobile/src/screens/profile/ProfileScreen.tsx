@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -29,7 +29,7 @@ type Nav = StackNavigationProp<ProfileStackParamList, "ProfileMain">;
 export default function ProfileScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
-  const scrollY = useRef(new Animated.Value(0)).current;
+  const [scrollY] = useState(() => new Animated.Value(0));
 
   const {
     profile,
