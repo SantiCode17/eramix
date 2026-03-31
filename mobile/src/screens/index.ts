@@ -83,3 +83,9 @@ export {
   HousingDetailScreen,
 } from "./housing";
 
+// CityGuide screens
+export {
+  CityGuideListScreen,
+  PlaceDetailScreen,
+} from "./cityGuide";
+

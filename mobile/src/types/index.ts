@@ -98,6 +98,12 @@ export type {
   HousingPost,
   HousingStackParamList,
 } from "./housing";
+export type {
+  Place,
+  PlaceReview,
+  PlaceCategory,
+  CityGuideStackParamList,
+} from "./cityGuide";
 
 // ── Navigation types ────────────────────────────────
 
@@ -144,6 +150,7 @@ export type DrawerParamList = {
   Gamification: undefined;
   Challenges: undefined;
   Housing: undefined;
+  CityGuide: undefined;
   Settings: undefined;
   About: undefined;
 };
