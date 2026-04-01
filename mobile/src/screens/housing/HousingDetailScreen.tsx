@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   photo: { width: "100%", height: 220, borderRadius: radii.lg, marginBottom: spacing.md },
   card: { backgroundColor: colors.glass.white, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.glass.border, padding: spacing.lg },
   typeBadge: { alignSelf: "flex-start", backgroundColor: colors.eu.star + "20", borderRadius: radii.full, paddingHorizontal: spacing.sm, paddingVertical: spacing.xxs },
-  typeText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.small, color: colors.eu.star },
+  typeText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.bodySmall, color: colors.eu.star },
   title: { fontFamily: typography.families.heading, ...typography.sizes.h3, color: colors.text.primary, marginTop: spacing.sm },
   desc: { fontFamily: typography.families.body, ...typography.sizes.body, color: colors.text.secondary, marginTop: spacing.sm },
   infoRow: { flexDirection: "row", justifyContent: "space-between", marginTop: spacing.md },
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   value: { fontFamily: typography.families.body, ...typography.sizes.body, color: colors.text.primary },
   valueHighlight: { fontFamily: typography.families.heading, ...typography.sizes.body, color: colors.eu.star },
   authorRow: { marginTop: spacing.lg, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.glass.border },
-  authorLabel: { fontFamily: typography.families.body, ...typography.sizes.small, color: colors.text.secondary },
+  authorLabel: { fontFamily: typography.families.body, ...typography.sizes.bodySmall, color: colors.text.secondary },
   authorName: { fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary, marginTop: spacing.xs },
   emptyTitle: { fontFamily: typography.families.heading, ...typography.sizes.h3, color: colors.text.primary },
 });

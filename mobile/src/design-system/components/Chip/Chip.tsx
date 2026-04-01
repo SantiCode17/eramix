@@ -1,6 +1,8 @@
 import React from "react";
 import { Pressable, Text, View, StyleSheet, ViewStyle, StyleProp } from "react-native";
-import { colors, radii, typography, spacing, opacity } from "../../tokens";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+import { colors, radii, typography, borders } from "../../tokens";
 
 export interface ChipProps {
   label: string;
@@ -8,6 +10,9 @@ export interface ChipProps {
   onPress?: () => void;
   onRemove?: () => void;
   disabled?: boolean;
+  icon?: React.ComponentProps<typeof Ionicons>["name"];
+  variant?: "default" | "filled" | "accent";
+  size?: "sm" | "md";
   style?: StyleProp<ViewStyle>;
 }
 
@@ -17,23 +22,51 @@ export default function Chip({
   onPress,
   onRemove,
   disabled = false,
+  icon,
+  variant = "default",
+  size = "md",
   style,
 }: ChipProps): React.JSX.Element {
+  const isAccent = variant === "accent" || selected;
+  const isFilled = variant === "filled";
+  const isSm = size === "sm";
+
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={[
+      style={({ pressed }) => [
         styles.chip,
-        selected && styles.chipSelected,
+        isSm && styles.chipSm,
+        isAccent && styles.chipAccent,
+        isFilled && styles.chipFilled,
         disabled && styles.chipDisabled,
+        pressed && !disabled && { opacity: 0.8, transform: [{ scale: 0.97 }] },
         style,
       ]}
     >
+      {isAccent && (
+        <LinearGradient
+          colors={["rgba(255, 215, 0, 0.15)", "rgba(255, 109, 63, 0.08)"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
+      {icon ? (
+        <Ionicons
+          name={icon}
+          size={isSm ? 12 : 14}
+          color={isAccent ? colors.eu.star : colors.text.secondary}
+          style={{ marginRight: 4 }}
+        />
+      ) : null}
       <Text
         style={[
           styles.label,
-          selected && styles.labelSelected,
+          isSm && styles.labelSm,
+          isAccent && styles.labelAccent,
+          isFilled && styles.labelFilled,
           disabled && styles.labelDisabled,
         ]}
         numberOfLines={1}
@@ -42,7 +75,7 @@ export default function Chip({
       </Text>
       {onRemove && !disabled && (
         <Pressable onPress={onRemove} hitSlop={8} style={styles.removeBtn}>
-          <Text style={styles.removeIcon}>✕</Text>
+          <Ionicons name="close" size={12} color={colors.text.tertiary} />
         </Pressable>
       )}
     </Pressable>
@@ -54,38 +87,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: `rgba(255, 255, 255, ${opacity.border.mid})`,
-    backgroundColor: `rgba(255, 255, 255, ${opacity.glass.surface})`,
+    borderWidth: borders.thin,
+    borderColor: colors.glass.borderMid,
+    backgroundColor: colors.glass.white,
+    overflow: "hidden",
   },
-  chipSelected: {
-    backgroundColor: colors.eu.deep,
-    borderColor: colors.eu.star,
-  },
-  chipDisabled: {
-    opacity: 0.4,
-  },
+  chipSm: { paddingHorizontal: 10, paddingVertical: 5 },
+  chipAccent: { borderColor: "rgba(255, 215, 0, 0.30)", backgroundColor: "transparent" },
+  chipFilled: { borderColor: "transparent", backgroundColor: colors.eu.deep },
+  chipDisabled: { opacity: 0.35 },
   label: {
     color: colors.text.secondary,
-    fontSize: typography.sizes.caption.fontSize,
+    fontSize: 13,
     fontFamily: typography.families.bodyMedium,
-    fontWeight: "500",
+    letterSpacing: 0.1,
   },
-  labelSelected: {
-    color: colors.text.primary,
-  },
-  labelDisabled: {
-    color: colors.text.disabled,
-  },
-  removeBtn: {
-    marginLeft: spacing.xs,
-  },
-  removeIcon: {
-    color: colors.text.secondary,
-    fontSize: 10,
-    fontWeight: "700",
-  },
+  labelSm: { fontSize: 11 },
+  labelAccent: { color: colors.eu.star },
+  labelFilled: { color: colors.text.primary },
+  labelDisabled: { color: colors.text.disabled },
+  removeBtn: { marginLeft: 6, padding: 2 },
 });

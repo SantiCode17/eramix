@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlay,
+    backgroundColor: colors.overlay.heavy,
   },
   content: {
     maxHeight: SCREEN_HEIGHT * 0.85,

@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   },
   city: {
     fontFamily: typography.families.body,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.text.secondary,
   },
   ratingBadge: {
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   ratingText: {
     color: colors.eu.star,
     fontFamily: typography.families.bodyMedium,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
   },
   desc: {
     fontFamily: typography.families.body,
@@ -185,11 +185,11 @@ const styles = StyleSheet.create({
   catText: {
     color: colors.eu.light,
     fontFamily: typography.families.bodyMedium,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
   },
   reviewsText: {
     fontFamily: typography.families.body,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.text.secondary,
   },
   empty: {

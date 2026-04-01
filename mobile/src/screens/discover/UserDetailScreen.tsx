@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
   uniLocation: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
     marginTop: spacing.xxs,
   },
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   },
   langLevel: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
     marginTop: spacing.xxs,
   },

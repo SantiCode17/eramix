@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   },
   groupMeta: {
     fontFamily: typography.families.body,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.text.secondary,
     marginTop: spacing.sm,
   },
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   },
   memberRole: {
     fontFamily: typography.families.body,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.text.secondary,
   },
   removeBtn: {

@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     right: -10,
   },
   label: {
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.tab.fontSize,
     fontFamily: typography.families.body,
     color: colors.text.secondary,
     marginTop: spacing.xxs,

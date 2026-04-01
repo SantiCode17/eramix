@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   avatarPh: { backgroundColor: colors.eu.mid, justifyContent: "center", alignItems: "center" },
   avatarText: { fontFamily: typography.families.subheading, ...typography.sizes.caption, color: colors.text.primary },
   name: { fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary },
-  levelText: { fontFamily: typography.families.body, ...typography.sizes.small, color: colors.text.secondary },
+  levelText: { fontFamily: typography.families.body, ...typography.sizes.bodySmall, color: colors.text.secondary },
   xp: { fontFamily: typography.families.bodyBold, ...typography.sizes.caption, color: colors.eu.star },
   empty: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: spacing.xxl },
   emptyTitle: { fontFamily: typography.families.heading, ...typography.sizes.h3, color: colors.text.primary, marginTop: spacing.md },

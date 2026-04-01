@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   },
   rowDescription: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
     marginTop: spacing.xxs,
   },

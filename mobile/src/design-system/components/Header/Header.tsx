@@ -7,30 +7,30 @@ import {
   ViewStyle,
   StyleProp,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  colors,
-  typography,
-  spacing,
-  opacity,
-  blur as blurTokens,
-} from "../../tokens";
+import { Ionicons } from "@expo/vector-icons";
+import { colors, typography, spacing, borders } from "../../tokens";
 
 export interface HeaderProps {
   title?: string;
+  subtitle?: string;
   variant?: "transparent" | "glass" | "solid";
   left?: React.ReactNode;
   right?: React.ReactNode;
   onBack?: () => void;
+  large?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
 export default function Header({
   title,
+  subtitle,
   variant = "glass",
   left,
   right,
   onBack,
+  large = false,
   style,
 }: HeaderProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
@@ -39,27 +39,45 @@ export default function Header({
     if (left) return left;
     if (onBack) {
       return (
-        <Pressable onPress={onBack} hitSlop={10} style={styles.backBtn}>
-          <Text style={styles.backIcon}>←</Text>
+        <Pressable onPress={onBack} hitSlop={12} style={styles.backBtn}>
+          <View style={styles.backCircle}>
+            <Ionicons name="chevron-back" size={20} color={colors.text.primary} />
+          </View>
         </Pressable>
       );
     }
     return <View style={styles.placeholder} />;
   };
 
+  const titleEl = large ? (
+    <View style={styles.largeTitleContainer}>
+      <Text style={styles.largeTitle} numberOfLines={1}>{title}</Text>
+      {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
+    </View>
+  ) : (
+    <View style={styles.center}>
+      {title ? <Text style={styles.title} numberOfLines={1}>{title}</Text> : null}
+      {subtitle ? <Text style={styles.subtitleSmall} numberOfLines={1}>{subtitle}</Text> : null}
+    </View>
+  );
+
   const inner = (
-    <View style={[styles.container, { paddingTop: insets.top + spacing.xs }]}>
-      <View style={styles.side}>{renderLeft()}</View>
-      <View style={styles.center}>
-        {title ? (
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
-        ) : null}
-      </View>
-      <View style={[styles.side, styles.sideRight]}>
-        {right ?? <View style={styles.placeholder} />}
-      </View>
+    <View style={[styles.container, { paddingTop: insets.top + 4 }, large && styles.containerLarge]}>
+      {large ? (
+        <>
+          <View style={styles.topRow}>
+            <View style={styles.side}>{renderLeft()}</View>
+            <View style={[styles.side, styles.sideRight]}>{right ?? <View style={styles.placeholder} />}</View>
+          </View>
+          {titleEl}
+        </>
+      ) : (
+        <>
+          <View style={styles.side}>{renderLeft()}</View>
+          {titleEl}
+          <View style={[styles.side, styles.sideRight]}>{right ?? <View style={styles.placeholder} />}</View>
+        </>
+      )}
     </View>
   );
 
@@ -69,74 +87,55 @@ export default function Header({
 
   if (variant === "solid") {
     return (
-      <View
-        style={[
-          styles.wrapper,
-          { backgroundColor: colors.background.end },
-          styles.border,
-          style,
-        ]}
-      >
+      <View style={[styles.wrapper, styles.solidBg, styles.border, style]}>
         {inner}
       </View>
     );
   }
 
-  // glass (default)
   return (
-    <View style={[styles.wrapper, styles.border, style]}>
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(26, 26, 46, 0.92)" }]} />
-      <View style={[StyleSheet.absoluteFill, styles.glassOverlay]} />
+    <View style={[styles.wrapper, style]}>
+      <LinearGradient
+        colors={["rgba(11, 14, 42, 0.92)", "rgba(6, 8, 26, 0.80)"]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.border} />
       {inner}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    position: "relative",
-    overflow: "hidden",
-  },
-  border: {
-    borderBottomWidth: 1,
-    borderBottomColor: `rgba(255, 255, 255, ${opacity.border.subtle})`,
-  },
-  glassOverlay: {
-    backgroundColor: `rgba(255, 255, 255, ${opacity.glass.surface})`,
-  },
+  wrapper: { zIndex: 10, overflow: "hidden" },
+  solidBg: { backgroundColor: colors.background.start },
+  border: { borderBottomWidth: borders.hairline, borderBottomColor: colors.glass.border },
   container: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
-    minHeight: 44,
+    minHeight: 52,
   },
-  side: {
-    width: 48,
-    alignItems: "flex-start",
+  containerLarge: { flexDirection: "column", alignItems: "stretch", paddingBottom: spacing.md },
+  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.sm },
+  side: { minWidth: 44, alignItems: "flex-start" },
+  sideRight: { alignItems: "flex-end" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.sm },
+  title: { fontFamily: typography.families.subheading, fontSize: 18, color: colors.text.primary, letterSpacing: -0.3 },
+  subtitleSmall: { fontFamily: typography.families.body, fontSize: 12, color: colors.text.secondary, marginTop: 1 },
+  largeTitleContainer: { paddingHorizontal: 4 },
+  largeTitle: { fontFamily: typography.families.heading, fontSize: 30, color: colors.text.primary, letterSpacing: -0.8 },
+  subtitle: { fontFamily: typography.families.body, fontSize: 14, color: colors.text.secondary, marginTop: 2 },
+  backBtn: { padding: 2 },
+  backCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.glass.white,
+    borderWidth: borders.hairline,
+    borderColor: colors.glass.border,
+    alignItems: "center",
     justifyContent: "center",
   },
-  sideRight: {
-    alignItems: "flex-end",
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-  },
-  title: {
-    color: colors.text.primary,
-    fontSize: typography.sizes.body.fontSize,
-    fontFamily: typography.families.subheading,
-    fontWeight: "600",
-  },
-  backBtn: {
-    padding: spacing.xs,
-  },
-  backIcon: {
-    color: colors.text.primary,
-    fontSize: 22,
-  },
-  placeholder: {
-    width: 32,
-  },
+  placeholder: { width: 36 },
 });

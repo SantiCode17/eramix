@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   langText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.caption, color: colors.eu.star },
   arrow: { ...typography.sizes.h3, color: colors.text.secondary },
   infoRow: { marginBottom: spacing.md },
-  label: { fontFamily: typography.families.bodyMedium, ...typography.sizes.small, color: colors.text.secondary },
+  label: { fontFamily: typography.families.bodyMedium, ...typography.sizes.bodySmall, color: colors.text.secondary },
   value: { fontFamily: typography.families.body, ...typography.sizes.body, color: colors.text.primary, marginTop: spacing.xxs },
   btnRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.lg },
   completeBtn: { flex: 1, backgroundColor: colors.status.success + "20", borderRadius: radii.full, paddingVertical: spacing.md, alignItems: "center", borderWidth: 1, borderColor: colors.status.success },

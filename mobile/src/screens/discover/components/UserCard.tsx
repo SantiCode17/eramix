@@ -102,7 +102,7 @@ export default function UserCard({
           </View>
           <View style={styles.compatBar}>
             <LinearGradient
-              colors={[colors.accent.start, colors.accent.end]}
+              colors={[...colors.gradient.accent]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={[
@@ -261,12 +261,12 @@ const styles = StyleSheet.create({
   },
   compatLabel: {
     fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
   },
   compatValue: {
     fontFamily: typography.families.subheading,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.eu.star,
   },
   compatBar: {

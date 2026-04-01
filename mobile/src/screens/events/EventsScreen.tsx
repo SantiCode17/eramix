@@ -78,7 +78,7 @@ function EventCard({
             style={StyleSheet.absoluteFill}
           />
           <Ionicons
-            name={getCategoryIcon(event.category) ?? "calendar-outline"}
+            name={getCategoryIcon(event.category ?? undefined)}
             size={40}
             color="rgba(255,255,255,0.2)"
           />

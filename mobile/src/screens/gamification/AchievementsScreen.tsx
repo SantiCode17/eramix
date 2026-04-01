@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 36 },
   name: { fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary },
   nameLocked: { color: colors.text.secondary },
-  desc: { fontFamily: typography.families.body, ...typography.sizes.small, color: colors.text.secondary, marginTop: spacing.xxs },
+  desc: { fontFamily: typography.families.body, ...typography.sizes.bodySmall, color: colors.text.secondary, marginTop: spacing.xxs },
   meta: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.xs },
-  xp: { fontFamily: typography.families.bodyMedium, ...typography.sizes.small, color: colors.eu.star },
-  unlockedText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.small, color: colors.status.success },
+  xp: { fontFamily: typography.families.bodyMedium, ...typography.sizes.bodySmall, color: colors.eu.star },
+  unlockedText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.bodySmall, color: colors.status.success },
 });

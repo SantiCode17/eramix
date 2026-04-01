@@ -382,7 +382,7 @@ export default function CommunityFeedScreen() {
           }}
         >
           <LinearGradient
-            colors={[colors.accent.start, colors.accent.end]}
+            colors={[...colors.gradient.accent]}
             style={styles.fabGradient}
           >
             <Ionicons name="create-outline" size={24} color="#FFF" />
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   },
   joinLeaveText: {
     fontFamily: typography.families.bodyMedium,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.eu.star,
   },
 
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   },
   pinnedText: {
     fontFamily: typography.families.bodyMedium,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.eu.star,
   },
   postHeader: {
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
   },
   postTime: {
     fontFamily: typography.families.body,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.text.secondary,
   },
   postContent: {
@@ -547,12 +547,12 @@ const styles = StyleSheet.create({
   comment: { marginBottom: spacing.sm },
   commentAuthor: {
     fontFamily: typography.families.bodyMedium,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.text.primary,
   },
   commentBody: {
     fontFamily: typography.families.body,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.text.secondary,
   },
   commentInput: {

@@ -119,7 +119,7 @@ export default function EditPhotosScreen(): React.JSX.Element {
             columnWrapperStyle={styles.gridRow}
             ListEmptyComponent={
               <EmptyState
-                iconName="camera-outline"
+                icon="camera-outline"
                 title="Sin fotos"
                 message="Añade fotos para que otros te conozcan"
               />

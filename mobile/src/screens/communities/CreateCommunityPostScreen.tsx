@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   },
   charCount: {
     fontFamily: typography.families.body,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.text.secondary,
     textAlign: "right",
   },

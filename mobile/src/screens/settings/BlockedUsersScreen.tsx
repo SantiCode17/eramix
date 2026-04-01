@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
   unblockText: {
     fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.status.warning,
   },
 });

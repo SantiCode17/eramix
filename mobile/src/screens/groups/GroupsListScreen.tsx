@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   time: {
     fontFamily: typography.families.body,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.text.secondary,
   },
   itemFooter: {
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   badgeText: { color: "#FFF", fontSize: 11, fontWeight: "700" },
   memberCount: {
     fontFamily: typography.families.body,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.text.secondary,
     marginTop: 2,
   },

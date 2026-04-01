@@ -99,9 +99,9 @@ const styles = StyleSheet.create({
   },
   emoji: { fontSize: 40 },
   title: { fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary },
-  desc: { fontFamily: typography.families.body, ...typography.sizes.small, color: colors.text.secondary, marginTop: spacing.xxs },
+  desc: { fontFamily: typography.families.body, ...typography.sizes.bodySmall, color: colors.text.secondary, marginTop: spacing.xxs },
   metaRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.sm },
-  meta: { fontFamily: typography.families.body, ...typography.sizes.small, color: colors.text.secondary },
+  meta: { fontFamily: typography.families.body, ...typography.sizes.bodySmall, color: colors.text.secondary },
   empty: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: spacing.xxl },
   emptyTitle: { fontFamily: typography.families.heading, ...typography.sizes.h3, color: colors.text.primary, marginTop: spacing.md },
 });

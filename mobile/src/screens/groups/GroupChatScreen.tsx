@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   bubbleOther: { backgroundColor: colors.glass.whiteMid },
   senderName: {
     fontFamily: typography.families.bodyMedium,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.eu.star,
     marginBottom: 2,
   },
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   msgTextMine: { color: "#FFF" },
   msgTime: {
     fontFamily: typography.families.body,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.text.secondary,
     alignSelf: "flex-end",
     marginTop: 2,

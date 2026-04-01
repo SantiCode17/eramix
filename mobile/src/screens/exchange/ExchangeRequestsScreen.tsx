@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   name: { fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary },
   langRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm, flexWrap: "wrap" },
   langBadge: { backgroundColor: colors.eu.star + "20", paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radii.full },
-  langText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.small, color: colors.eu.star },
+  langText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.bodySmall, color: colors.eu.star },
   message: { fontFamily: typography.families.body, ...typography.sizes.caption, color: colors.text.secondary, fontStyle: "italic", marginTop: spacing.sm },
   btnRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.md },
   acceptBtn: { flex: 1, backgroundColor: colors.status.success + "20", borderRadius: radii.full, paddingVertical: spacing.sm, alignItems: "center" },

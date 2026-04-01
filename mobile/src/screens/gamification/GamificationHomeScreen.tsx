@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   },
   xpBarInner: { height: "100%", backgroundColor: colors.eu.star, borderRadius: radii.full },
   xpText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.caption, color: colors.text.primary, marginTop: spacing.sm },
-  totalXp: { fontFamily: typography.families.body, ...typography.sizes.small, color: colors.text.secondary, marginTop: spacing.xs },
+  totalXp: { fontFamily: typography.families.body, ...typography.sizes.bodySmall, color: colors.text.secondary, marginTop: spacing.xs },
   statsRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.lg },
   statCard: {
     flex: 1, backgroundColor: colors.glass.white, borderRadius: radii.lg,
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   statEmoji: { fontSize: 28 },
   statValue: { fontFamily: typography.families.heading, ...typography.sizes.h2, color: colors.text.primary, marginTop: spacing.xs },
-  statLabel: { fontFamily: typography.families.body, ...typography.sizes.small, color: colors.text.secondary },
+  statLabel: { fontFamily: typography.families.body, ...typography.sizes.bodySmall, color: colors.text.secondary },
   actions: { flexDirection: "row", gap: spacing.md, marginTop: spacing.lg },
   actionBtn: {
     flex: 1, backgroundColor: colors.glass.white, borderRadius: radii.lg,

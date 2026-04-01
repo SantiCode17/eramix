@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   },
   radiusText: {
     fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
   },
   radiusTextActive: {
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.primary,
   },
   // Selected card
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
   },
   selectedDistance: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
     marginTop: spacing.xxs,
   },

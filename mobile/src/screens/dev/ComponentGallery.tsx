@@ -153,7 +153,7 @@ export default function ComponentGallery(): React.JSX.Element {
         <Text style={styles.sectionTitle}>EmptyState</Text>
         <GlassCard variant="surface">
           <EmptyState
-            iconName="home-outline"
+            icon="home-outline"
             title="Sin publicaciones"
             message="Aún no hay publicaciones de vivienda disponibles."
             action={
@@ -168,9 +168,8 @@ export default function ComponentGallery(): React.JSX.Element {
         <Text style={styles.sectionTitle}>ErrorState</Text>
         <GlassCard variant="surface">
           <ErrorState
-            action={
-              <GlassButton title="Reintentar" variant="secondary" size="sm" onPress={() => {}} />
-            }
+            onRetry={() => {}}
+            retryLabel="Reintentar"
           />
         </GlassCard>
       </ScrollView>

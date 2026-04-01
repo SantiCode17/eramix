@@ -237,7 +237,7 @@ export default function FriendRequestsScreen(): React.JSX.Element {
           }
           ListEmptyComponent={
             <EmptyState
-              iconName={activeTab === "received" ? "mail-outline" : "send-outline"}
+              icon={activeTab === "received" ? "mail-outline" : "send-outline"}
               title={
                 activeTab === "received"
                   ? "Sin solicitudes recibidas"
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   },
   cardDate: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
     marginTop: spacing.xxs,
   },
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
   },
   statusBadge: {
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
   },
   statusAccepted: {
     color: colors.status.success,

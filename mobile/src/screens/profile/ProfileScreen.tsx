@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.primary,
   },
   scrollContent: {
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
     marginTop: 2,
   },
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
   uniRow: { marginBottom: spacing.xs },
   uniLabel: {
     fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.eu.star,
     marginBottom: spacing.xxs,
   },
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
   },
   uniLocation: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
   },
   divider: { marginVertical: spacing.sm },
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
   },
   langLevel: {
     fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.eu.star,
     textTransform: "capitalize",
   },

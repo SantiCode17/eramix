@@ -1,59 +1,71 @@
 import React from "react";
 import { View, Text, StyleSheet, ViewStyle, StyleProp } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import GlassButton from "../GlassButton/GlassButton";
 import { colors, typography, spacing } from "../../tokens";
 
 export interface ErrorStateProps {
   title?: string;
   message?: string;
-  action?: React.ReactNode;
+  onRetry?: () => void;
+  retryLabel?: string;
   style?: StyleProp<ViewStyle>;
 }
 
 export default function ErrorState({
-  title = "Algo salió mal",
-  message = "Ha ocurrido un error inesperado. Por favor, inténtalo de nuevo.",
-  action,
+  title = "Algo salio mal",
+  message = "Ha ocurrido un error inesperado. Intenta de nuevo.",
+  onRetry,
+  retryLabel = "Reintentar",
   style,
 }: ErrorStateProps): React.JSX.Element {
   return (
     <View style={[styles.container, style]}>
-      <Ionicons name="alert-circle-outline" size={48} color={colors.status.error} style={{ marginBottom: spacing.md }} />
+      <View style={styles.iconCircle}>
+        <Ionicons name="warning-outline" size={32} color={colors.status.error} />
+      </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
-      {action ? <View style={styles.action}>{action}</View> : null}
+      {onRetry ? (
+        <GlassButton title={retryLabel} variant="secondary" size="sm" onPress={onRetry} style={styles.button} />
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: "center",
     alignItems: "center",
-    padding: spacing.xl,
+    justifyContent: "center",
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxl,
+    gap: spacing.sm,
   },
-  icon: {
-    fontSize: 48,
-    marginBottom: spacing.md,
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.status.errorBg,
+    borderWidth: 1,
+    borderColor: "rgba(255, 79, 111, 0.20)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.xs,
   },
   title: {
-    color: colors.status.error,
-    fontSize: typography.sizes.h3.fontSize,
     fontFamily: typography.families.heading,
-    fontWeight: "700",
+    fontSize: 20,
+    color: colors.text.primary,
     textAlign: "center",
-    marginBottom: spacing.sm,
+    letterSpacing: -0.3,
   },
   message: {
-    color: colors.text.secondary,
-    fontSize: typography.sizes.body.fontSize,
     fontFamily: typography.families.body,
+    fontSize: 14,
+    color: colors.text.secondary,
     textAlign: "center",
-    lineHeight: typography.sizes.body.lineHeight,
-    marginBottom: spacing.lg,
+    lineHeight: 20,
+    maxWidth: 280,
   },
-  action: {
-    marginTop: spacing.sm,
-  },
+  button: { marginTop: spacing.md },
 });

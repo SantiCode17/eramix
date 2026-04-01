@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
   sectionTitle: {
     fontFamily: typography.families.subheading,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   rowSubtitle: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
     marginTop: spacing.xxs,
   },
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   appVersion: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.disabled,
     marginTop: spacing.xxs,
   },

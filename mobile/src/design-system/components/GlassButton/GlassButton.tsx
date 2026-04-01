@@ -1,27 +1,10 @@
-import React, { useState, useEffect } from "react";
-import {
-  Pressable,
-  Text,
-  StyleSheet,
-  Animated,
-  ActivityIndicator,
-  ViewStyle,
-  StyleProp,
-} from "react-native";
+import React, { useState } from "react";
+import { Pressable, Text, StyleSheet, Animated, ActivityIndicator, View, ViewStyle, StyleProp } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import {
-  colors,
-  typography,
-  spacing,
-  radii,
-  animation,
-  shadows,
-  opacity,
-  MIN_TOUCH_SIZE,
-} from "../../tokens";
+import { colors, typography, spacing, radii, animation, shadows, borders } from "../../tokens";
 
-export type GlassButtonVariant = "primary" | "secondary" | "ghost";
+export type GlassButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "success";
 export type GlassButtonSize = "sm" | "md" | "lg";
 
 export interface GlassButtonProps {
@@ -32,195 +15,77 @@ export interface GlassButtonProps {
   disabled?: boolean;
   loading?: boolean;
   icon?: React.ReactNode;
+  iconRight?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  fullWidth?: boolean;
 }
 
-const sizeConfig = {
-  sm: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, fontSize: typography.sizes.caption.fontSize },
-  md: { paddingVertical: spacing.sm + 4, paddingHorizontal: spacing.lg, fontSize: typography.sizes.button.fontSize },
-  lg: { paddingVertical: spacing.md, paddingHorizontal: spacing.xl, fontSize: typography.sizes.button.fontSize + 2 },
+const SZ = {
+  sm: { pv: 10, ph: 16, fs: 13, r: radii.sm, h: 38 },
+  md: { pv: 14, ph: 24, fs: 15, r: radii.md, h: 48 },
+  lg: { pv: 18, ph: 32, fs: 17, r: radii.lg, h: 56 },
+};
+
+const GRADS: Record<GlassButtonVariant, [string, string]> = {
+  primary: ["#FFD700", "#FF6D3F"],
+  secondary: ["rgba(255,255,255,0.10)", "rgba(255,255,255,0.04)"],
+  ghost: ["transparent", "transparent"],
+  danger: ["#FF4F6F", "#FF2D87"],
+  success: ["#00D68F", "#00BFA6"],
+};
+
+const TXT_C: Record<GlassButtonVariant, string> = {
+  primary: "#06081A",
+  secondary: colors.text.primary,
+  ghost: colors.text.secondary,
+  danger: "#FFFFFF",
+  success: "#06081A",
 };
 
 export default function GlassButton({
-  title,
-  variant = "primary",
-  size = "md",
-  onPress,
-  disabled = false,
-  loading = false,
-  icon,
-  style,
+  title, variant = "primary", size = "md", onPress, disabled = false,
+  loading = false, icon, iconRight, style, fullWidth = false,
 }: GlassButtonProps): React.JSX.Element {
   const [scaleAnim] = useState(() => new Animated.Value(1));
-  const [shimmerAnim] = useState(() => new Animated.Value(0));
-  const sizeValues = sizeConfig[size];
-
-  useEffect(() => {
-    if (variant === "primary" && !disabled) {
-      const shimmerLoop = Animated.loop(
-        Animated.timing(shimmerAnim, {
-          toValue: 1,
-          duration: 3000,
-          useNativeDriver: true,
-        })
-      );
-      shimmerLoop.start();
-      return () => shimmerLoop.stop();
-    }
-  }, [variant, disabled, shimmerAnim]);
-
+  const s = SZ[size];
+  const tc = disabled ? colors.text.disabled : TXT_C[variant];
   const handlePressIn = () => {
+    if (disabled) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Animated.spring(scaleAnim, {
-      toValue: animation.scale.press,
-      ...animation.spring.default,
-      useNativeDriver: true,
-    }).start();
+    Animated.spring(scaleAnim, { toValue: animation.scale.press, ...animation.spring.snappy, useNativeDriver: true }).start();
   };
-
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      ...animation.spring.default,
-      useNativeDriver: true,
-    }).start();
+    Animated.spring(scaleAnim, { toValue: 1, ...animation.spring.bouncy, useNativeDriver: true }).start();
   };
-
-  const shimmerTranslate = shimmerAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-200, 200],
-  });
-
-  const renderContent = () => (
-    <>
-      {loading ? (
-        <ActivityIndicator
-          size="small"
-          color={variant === "primary" ? colors.text.inverse : colors.text.primary}
-        />
-      ) : (
-        <>
-          {icon}
-          <Text
-            style={[
-              styles.text,
-              {
-                fontSize: sizeValues.fontSize,
-                fontFamily: typography.families.subheading,
-                color: variant === "primary" ? colors.text.inverse : colors.text.primary,
-                marginLeft: icon ? spacing.sm : 0,
-              },
-              disabled && styles.textDisabled,
-            ]}
-          >
-            {title}
-          </Text>
-        </>
-      )}
-    </>
-  );
-
-  if (variant === "primary") {
-    return (
-      <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
-        <Pressable
-          onPress={onPress}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          disabled={disabled || loading}
-          style={[styles.base, { minHeight: MIN_TOUCH_SIZE }]}
-        >
-          <LinearGradient
-            colors={disabled
-              ? ["rgba(255, 204, 0, 0.4)", "rgba(255, 107, 43, 0.4)"]
-              : [colors.accent.start, colors.accent.end]
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[
-              styles.gradient,
-              {
-                paddingVertical: sizeValues.paddingVertical,
-                paddingHorizontal: sizeValues.paddingHorizontal,
-                borderRadius: radii.full,
-              },
-              shadows.glow,
-            ]}
-          >
-            {renderContent()}
-            {!disabled && (
-              <Animated.View
-                style={[
-                  styles.shimmer,
-                  { transform: [{ translateX: shimmerTranslate }] },
-                ]}
-              />
-            )}
-          </LinearGradient>
-        </Pressable>
-      </Animated.View>
-    );
-  }
-
+  const shadow = variant === "primary" ? shadows.glow : variant === "danger" ? shadows.glowCoral : variant === "success" ? shadows.glowEmerald : shadows.none;
   return (
-    <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
-      <Pressable
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        disabled={disabled || loading}
-        style={[
-          styles.base,
-          styles.secondary,
-          {
-            paddingVertical: sizeValues.paddingVertical,
-            paddingHorizontal: sizeValues.paddingHorizontal,
-            borderRadius: radii.full,
-            minHeight: MIN_TOUCH_SIZE,
-            borderColor: variant === "ghost"
-              ? "transparent"
-              : `rgba(255, 255, 255, ${opacity.border.mid})`,
-          },
-          disabled && styles.secondaryDisabled,
-        ]}
-      >
-        {renderContent()}
+    <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, fullWidth && ({ width: "100%" } as ViewStyle), style]}>
+      <Pressable onPress={disabled || loading ? undefined : onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} style={[styles.pressable, disabled && styles.disabled]}>
+        <LinearGradient
+          colors={disabled ? ["rgba(255,255,255,0.06)", "rgba(255,255,255,0.03)"] as [string, string] : GRADS[variant]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={[styles.gradient, { borderRadius: s.r, paddingVertical: s.pv, paddingHorizontal: s.ph, minHeight: s.h }, variant !== "ghost" && !disabled && shadow, variant === "secondary" && styles.secondaryBorder]}
+        >
+          {loading ? <ActivityIndicator size="small" color={tc} /> : (
+            <View style={styles.content}>
+              {icon ? <View style={styles.iconL}>{icon}</View> : null}
+              <Text style={[styles.text, { fontSize: s.fs, color: tc, fontFamily: variant === "ghost" ? typography.families.bodyMedium : typography.families.subheading }]} numberOfLines={1}>{title}</Text>
+              {iconRight ? <View style={styles.iconR}>{iconRight}</View> : null}
+            </View>
+          )}
+        </LinearGradient>
       </Pressable>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  base: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  gradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  secondary: {
-    backgroundColor: colors.glass.white,
-    borderWidth: 1,
-  },
-  secondaryDisabled: {
-    opacity: 0.4,
-  },
-  text: {
-    textAlign: "center",
-  },
-  textDisabled: {
-    opacity: 0.5,
-  },
-  shimmer: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: 60,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    transform: [{ skewX: "-20deg" }],
-  },
+  pressable: { overflow: "hidden" },
+  disabled: { opacity: 0.45 },
+  gradient: { alignItems: "center", justifyContent: "center" },
+  content: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm },
+  iconL: { marginRight: 2 },
+  iconR: { marginLeft: 2 },
+  text: { letterSpacing: 0.3, textAlign: "center" },
+  secondaryBorder: { borderWidth: borders.thin, borderColor: colors.glass.borderMid },
 });

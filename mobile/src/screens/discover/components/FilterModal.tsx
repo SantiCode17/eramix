@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   },
   radiusText: {
     fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
   },
   radiusTextActive: {

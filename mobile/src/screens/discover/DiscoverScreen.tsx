@@ -315,12 +315,32 @@ export default function DiscoverScreen(): React.JSX.Element {
         )}
       </View>
 
-      {/* Bottom hint */}
+      {/* Action buttons */}
       {currentUser ? (
-        <View style={styles.bottomHint}>
-          <Text style={styles.hintText}>
-            ← Pasar    Desliza    Conectar →
-          </Text>
+        <View style={styles.actionBar}>
+          <Pressable
+            style={[styles.actionBtn, styles.actionBtnPass]}
+            onPress={handleManualDismiss}
+          >
+            <Ionicons name="close" size={26} color={colors.status.error} />
+          </Pressable>
+          <Pressable
+            style={[styles.actionBtn, styles.actionBtnInfo]}
+            onPress={() => navigation.navigate("UserDetail", { userId: currentUser.id })}
+          >
+            <Ionicons name="information-outline" size={22} color={colors.eu.star} />
+          </Pressable>
+          <Pressable
+            style={[styles.actionBtn, styles.actionBtnConnect]}
+            onPress={handleManualConnect}
+          >
+            <LinearGradient
+              colors={[...colors.gradient.primary]}
+              style={styles.connectGradient}
+            >
+              <Ionicons name="heart" size={26} color="#FFF" />
+            </LinearGradient>
+          </Pressable>
         </View>
       ) : null}
 
@@ -420,14 +440,43 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.h3.fontSize,
     color: colors.text.primary,
   },
-  // Bottom hint
-  bottomHint: {
-    paddingBottom: spacing.lg,
+  // Action bar
+  actionBar: {
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
+    gap: spacing.lg,
+    paddingBottom: spacing.lg + 4,
+    paddingTop: spacing.sm,
   },
-  hintText: {
-    fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
-    color: colors.text.secondary,
+  actionBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+  actionBtnPass: {
+    backgroundColor: "rgba(244, 67, 54, 0.12)",
+    borderColor: "rgba(244, 67, 54, 0.3)",
+  },
+  actionBtnInfo: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 215, 0, 0.1)",
+    borderColor: "rgba(255, 215, 0, 0.25)",
+  },
+  actionBtnConnect: {
+    borderColor: "transparent",
+    overflow: "hidden",
+  },
+  connectGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

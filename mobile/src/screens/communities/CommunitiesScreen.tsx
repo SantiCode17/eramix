@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   cardMembers: {
     fontFamily: typography.families.body,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.text.secondary,
   },
   joinedBadge: {
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   },
   joinedText: {
     fontFamily: typography.families.bodyMedium,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.status.success,
   },
   joinBadge: {
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   },
   joinText: {
     fontFamily: typography.families.bodyMedium,
-    ...typography.sizes.small,
+    ...typography.sizes.bodySmall,
     color: colors.eu.star,
   },
   empty: {

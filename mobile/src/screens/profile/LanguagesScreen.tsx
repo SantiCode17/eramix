@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   langCode: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
   },
   checkBadge: {
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   levelEmoji: { fontSize: 14 },
   levelText: {
     fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
   },
   levelTextActive: {

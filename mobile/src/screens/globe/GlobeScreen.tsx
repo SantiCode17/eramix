@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   },
   hintText: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: "rgba(255, 255, 255, 0.35)",
   },
 
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
   },
   uniCity: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.small.fontSize,
+    fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
     marginTop: spacing.xxs,
   },
