@@ -35,7 +35,7 @@
       "@react-native-community/datetimepicker"
     ],
     "extra": {
-      "apiUrl": "http://172.20.10.4:8080"
+      "apiUrl": "http://192.168.8.106:8080"
     }
   }
 }

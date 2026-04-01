@@ -12,7 +12,7 @@ import { parseApiError, logError } from "@/utils/errorHandler";
 
 // ── Configuración base ──────────────────────────────
 const API_BASE_URL =
-  Constants.expoConfig?.extra?.apiUrl ?? "http://172.20.10.4:8080";
+  Constants.expoConfig?.extra?.apiUrl ?? "http://192.168.8.106:8080";
 
 const __DEV_MODE__ = __DEV__;
 
