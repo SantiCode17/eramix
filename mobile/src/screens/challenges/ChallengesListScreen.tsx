@@ -9,6 +9,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { Challenge, ChallengesStackParamList } from "@/types/challenges";
 import * as challengeApi from "@/api/challenges";
@@ -47,9 +48,9 @@ export default function ChallengesListScreen() {
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.desc} numberOfLines={2}>{item.description}</Text>
             <View style={styles.metaRow}>
-              <Text style={styles.meta}>📸 {item.submissionCount} fotos</Text>
+              <Text style={styles.meta}><Ionicons name="camera-outline" size={12} color={colors.text.secondary} /> {item.submissionCount} fotos</Text>
               <Text style={styles.meta}>
-                ⏰ {new Date(item.endDate).toLocaleDateString()}
+                <Ionicons name="time-outline" size={12} color={colors.text.secondary} /> {new Date(item.endDate).toLocaleDateString()}
               </Text>
             </View>
           </View>
@@ -61,7 +62,7 @@ export default function ChallengesListScreen() {
   return (
     <LinearGradient colors={[colors.background.start, colors.background.end]} style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>📸 Retos Fotográficos</Text>
+        <Text style={styles.headerTitle}>Retos Fotográficos</Text>
       </View>
 
       {loading ? (
@@ -75,7 +76,7 @@ export default function ChallengesListScreen() {
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + 80 }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={{ fontSize: 64 }}>📷</Text>
+              <Ionicons name="camera-outline" size={64} color={colors.text.secondary} />
               <Text style={styles.emptyTitle}>No hay retos activos</Text>
             </View>
           }

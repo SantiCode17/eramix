@@ -15,6 +15,7 @@ import {
   GlassCard,
   Header,
 } from "@/design-system/components";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing } from "@/design-system/tokens";
 import { accountApi } from "@/api";
 import { useAuthStore } from "@/store";
@@ -33,7 +34,7 @@ export default function DeleteAccountScreen(): React.JSX.Element {
     }
 
     Alert.alert(
-      "⚠️ Eliminar cuenta",
+      "Eliminar cuenta",
       "Esta acción es IRREVERSIBLE. Se eliminarán todos tus datos, fotos, amigos y mensajes. ¿Estás absolutamente seguro?",
       [
         { text: "Cancelar", style: "cancel" },
@@ -72,7 +73,7 @@ export default function DeleteAccountScreen(): React.JSX.Element {
         <View style={styles.content}>
           {/* Warning card */}
           <GlassCard variant="prominent" style={styles.warningCard}>
-            <Text style={styles.warningEmoji}>⚠️</Text>
+            <Ionicons name="warning-outline" size={40} color="#FF4B4B" />
             <Text style={styles.warningTitle}>Zona peligrosa</Text>
             <Text style={styles.warningText}>
               Al eliminar tu cuenta se borrarán permanentemente:

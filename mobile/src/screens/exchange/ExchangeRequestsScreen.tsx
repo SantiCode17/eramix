@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { ExchangeRequest } from "@/types/exchange";
 import * as exchangeApi from "@/api/exchange";
@@ -109,7 +110,7 @@ export default function ExchangeRequestsScreen() {
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + 40 }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={{ fontSize: 48 }}>📭</Text>
+              <Ionicons name="file-tray-outline" size={48} color={colors.text.secondary} />
               <Text style={styles.emptyTitle}>Sin solicitudes</Text>
             </View>
           }

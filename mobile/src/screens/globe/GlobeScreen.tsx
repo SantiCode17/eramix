@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import InteractiveGlobe, {
   COUNTRY_FLAGS,
 } from "@/components/InteractiveGlobe";
@@ -95,7 +96,7 @@ export default function GlobeScreen(): React.JSX.Element {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <Text style={styles.headerTitle}>🌍 Explorar</Text>
+        <Text style={styles.headerTitle}>Explorar</Text>
         <Text style={styles.headerSubtitle}>
           {countryPins.length > 0
             ? `${countryPins.length} países · ${countryPins.reduce(
@@ -125,7 +126,7 @@ export default function GlobeScreen(): React.JSX.Element {
       {/* Error message */}
       {error && (
         <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>⚠️ {error}</Text>
+          <Text style={styles.errorText}><Ionicons name="alert-circle-outline" size={14} color={colors.status.error} /> {error}</Text>
           <Pressable onPress={fetchStats}>
             <Text style={styles.retryText}>Reintentar</Text>
           </Pressable>

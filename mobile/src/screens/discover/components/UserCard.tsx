@@ -8,6 +8,7 @@ import {
   Pressable,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii, shadows } from "@/design-system/tokens";
 import type { User } from "@/types";
 
@@ -75,7 +76,7 @@ export default function UserCard({
           </Text>
           {destination ? (
             <Text style={styles.destination} numberOfLines={1}>
-              📍 {destination}
+              <Ionicons name="location-outline" size={12} color={colors.eu.star} /> {destination}
             </Text>
           ) : null}
         </View>
@@ -86,7 +87,7 @@ export default function UserCard({
         {/* University */}
         {universityName ? (
           <View style={styles.infoRow}>
-            <Text style={styles.infoEmoji}>🎓</Text>
+            <Ionicons name="school-outline" size={16} color={colors.eu.star} />
             <Text style={styles.infoText} numberOfLines={1}>
               {universityName}
             </Text>
@@ -118,7 +119,7 @@ export default function UserCard({
             {user.interests!.slice(0, 4).map((interest) => (
               <View key={interest.id} style={styles.chip}>
                 <Text style={styles.chipText}>
-                  {interest.icon ?? "✨"} {interest.name}
+                  <Ionicons name="sparkles-outline" size={12} color={colors.text.secondary} /> {interest.name}
                 </Text>
               </View>
             ))}
@@ -156,14 +157,14 @@ export default function UserCard({
             onPress={onViewProfile}
             style={[styles.actionBtn, styles.profileBtn]}
           >
-            <Text style={styles.actionEmoji}>👤</Text>
+            <Ionicons name="person-outline" size={22} color={colors.text.primary} />
           </Pressable>
 
           <Pressable
             onPress={onSendRequest}
             style={[styles.actionBtn, styles.connectBtn]}
           >
-            <Text style={styles.actionEmoji}>⭐</Text>
+            <Ionicons name="star-outline" size={22} color={colors.eu.star} />
           </Pressable>
         </View>
       </View>

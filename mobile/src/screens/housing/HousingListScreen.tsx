@@ -9,6 +9,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { HousingPost, HousingStackParamList } from "@/types/housing";
 import * as housingApi from "@/api/housing";
@@ -43,13 +44,13 @@ export default function HousingListScreen() {
           }}
         >
           <View style={styles.typeBadge}>
-            <Text style={styles.typeText}>{item.postType === "OFFER" ? "🏠 Oferta" : "🔍 Busca"}</Text>
+            <Text style={styles.typeText}>{item.postType === "OFFER" ? "Oferta" : "Busca"}</Text>
           </View>
           <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.city}>📍 {item.city}</Text>
+          <Text style={styles.city}><Ionicons name="location-outline" size={12} color={colors.eu.star} /> {item.city}</Text>
           <View style={styles.priceRow}>
             <Text style={styles.price}>{item.monthlyRent}€/mes</Text>
-            <Text style={styles.rooms}>🛏️ {item.roomsAvailable} hab.</Text>
+            <Text style={styles.rooms}><Ionicons name="bed-outline" size={12} color={colors.text.secondary} /> {item.roomsAvailable} hab.</Text>
           </View>
           <Text style={styles.date}>Disponible: {item.availableFrom}</Text>
           <Text style={styles.author}>
@@ -63,7 +64,7 @@ export default function HousingListScreen() {
   return (
     <LinearGradient colors={[colors.background.start, colors.background.end]} style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>🏠 Alojamiento</Text>
+        <Text style={styles.headerTitle}>Alojamiento</Text>
       </View>
 
       {loading ? (
@@ -77,7 +78,7 @@ export default function HousingListScreen() {
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + 80 }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={{ fontSize: 64 }}>🏘️</Text>
+              <Ionicons name="home-outline" size={48} color={colors.text.secondary} />
               <Text style={styles.emptyTitle}>No hay anuncios</Text>
               <Text style={styles.emptySubtitle}>Publica tu oferta o búsqueda de piso</Text>
             </View>

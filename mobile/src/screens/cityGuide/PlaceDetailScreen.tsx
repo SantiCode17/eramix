@@ -10,25 +10,29 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { RouteProp, useRoute } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { getPlace, getReviews, addReview } from "@/api/cityGuide";
 import { handleError } from "@/utils/errorHandler";
 import type { Place, PlaceReview, CityGuideStackParamList } from "@/types/cityGuide";
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-  RESTAURANT: "🍽️",
-  BAR: "🍺",
-  CAFE: "☕",
-  MUSEUM: "🏛️",
-  PARK: "🌳",
-  NIGHTCLUB: "🎶",
-  LIBRARY: "📚",
-  GYM: "💪",
-  SUPERMARKET: "🛒",
-  TRANSPORT: "🚌",
-  UNIVERSITY: "🎓",
-  HOSPITAL: "🏥",
-  OTHER: "📍",
+type IoniconsName = ComponentProps<typeof Ionicons>["name"];
+
+const CATEGORY_ICONS: Record<string, IoniconsName> = {
+  RESTAURANT: "restaurant",
+  BAR: "beer",
+  CAFE: "cafe",
+  MUSEUM: "business",
+  PARK: "leaf",
+  NIGHTCLUB: "musical-notes",
+  LIBRARY: "book",
+  GYM: "barbell",
+  SUPERMARKET: "cart",
+  TRANSPORT: "bus",
+  UNIVERSITY: "school",
+  HOSPITAL: "medkit",
+  OTHER: "location",
 };
 
 export default function PlaceDetailScreen() {
@@ -79,15 +83,18 @@ export default function PlaceDetailScreen() {
     <LinearGradient colors={[colors.background.start, colors.background.end]} style={styles.root}>
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.header}>
-          <Text style={styles.emojiLarge}>{CATEGORY_EMOJIS[place.category] ?? "📍"}</Text>
+          <Ionicons name={CATEGORY_ICONS[place.category] ?? "location"} size={48} color={colors.eu.star} />
           <Text style={styles.title}>{place.name}</Text>
-          <Text style={styles.cityLabel}>📍 {place.city}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+            <Ionicons name="location-outline" size={14} color={colors.text.secondary} />
+            <Text style={styles.cityLabel}>{place.city}</Text>
+          </View>
         </View>
 
         <View style={styles.card}>
           <Row label="Categoría" value={place.category} />
           {place.address && <Row label="Dirección" value={place.address} />}
-          <Row label="Rating" value={`⭐ ${place.averageRating?.toFixed(1)} (${place.reviewCount})`} />
+          <Row label="Rating" value={`${place.averageRating?.toFixed(1)} (${place.reviewCount})`} icon="star" />
         </View>
 
         {place.description ? (
@@ -134,11 +141,14 @@ export default function PlaceDetailScreen() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, icon }: { label: string; value: string; icon?: IoniconsName }) {
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+        {icon && <Ionicons name={icon} size={14} color={colors.eu.star} />}
+        <Text style={styles.rowValue}>{value}</Text>
+      </View>
     </View>
   );
 }

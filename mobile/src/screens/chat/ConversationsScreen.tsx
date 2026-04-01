@@ -16,6 +16,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import * as Haptics from "expo-haptics";
 import { useChatStore } from "@/store/useChatStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { ChatStackParamList, ConversationData } from "@/types/chat";
 
@@ -166,7 +167,7 @@ function ConversationRow({
 function EmptyState() {
   return (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyEmoji}>💬</Text>
+      <Ionicons name="chatbubbles-outline" size={48} color={colors.text.secondary} />
       <Text style={styles.emptyTitle}>Sin conversaciones</Text>
       <Text style={styles.emptySubtitle}>
         Descubre estudiantes Erasmus y empieza a chatear

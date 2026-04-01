@@ -7,6 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { LeaderboardEntry } from "@/types/gamification";
 import * as gamificationApi from "@/api/gamification";
@@ -27,18 +28,22 @@ export default function LeaderboardScreen() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const medalEmoji = (rank: number) => {
-    if (rank === 1) return "🥇";
-    if (rank === 2) return "🥈";
-    if (rank === 3) return "🥉";
-    return `#${rank}`;
+  const medalIcon = (rank: number): { name: string; color: string } | null => {
+    if (rank === 1) return { name: "medal", color: "#FFD700" };
+    if (rank === 2) return { name: "medal", color: "#C0C0C0" };
+    if (rank === 3) return { name: "medal", color: "#CD7F32" };
+    return null;
   };
 
   const renderItem = useCallback(
     ({ item, index }: { item: LeaderboardEntry; index: number }) => (
       <Animated.View entering={FadeInDown.delay(index * 40).duration(400)}>
         <View style={[styles.card, item.rank <= 3 && styles.cardTop]}>
-          <Text style={styles.rank}>{medalEmoji(item.rank)}</Text>
+          <Text style={styles.rank}>
+            {medalIcon(item.rank) ? (
+              <Ionicons name="medal-outline" size={20} color={medalIcon(item.rank)!.color} />
+            ) : `#${item.rank}`}
+          </Text>
           {item.profilePhotoUrl ? (
             <Image source={{ uri: item.profilePhotoUrl }} style={styles.avatar} />
           ) : (
@@ -74,7 +79,7 @@ export default function LeaderboardScreen() {
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + 40 }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={{ fontSize: 48 }}>🏆</Text>
+              <Ionicons name="trophy-outline" size={48} color={colors.text.secondary} />
               <Text style={styles.emptyTitle}>Aún no hay clasificación</Text>
             </View>
           }

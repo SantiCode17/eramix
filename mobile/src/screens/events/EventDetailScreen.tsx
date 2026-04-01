@@ -18,6 +18,7 @@ import * as Haptics from "expo-haptics";
 import * as eventsApi from "@/api/events";
 import { handleError } from "@/utils/errorHandler";
 import { useAuthStore } from "@/store/useAuthStore";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { EventData, EventParticipant, EventsStackParamList } from "@/types/events";
 
@@ -164,7 +165,7 @@ export default function EventDetailScreen(): React.JSX.Element {
             colors={["#1A4DB3", "#003399", "#1A1A2E"]}
             style={StyleSheet.absoluteFill}
           />
-          <Text style={styles.coverEmoji}>🎉</Text>
+          <Ionicons name="calendar-outline" size={56} color="rgba(255,255,255,0.2)" />
           <LinearGradient
             colors={["transparent", "rgba(26,26,46,0.95)"]}
             style={styles.coverFade}
@@ -191,7 +192,7 @@ export default function EventDetailScreen(): React.JSX.Element {
           <Text style={styles.title}>{event.title}</Text>
 
           <View style={styles.metaRow}>
-            <Text style={styles.metaIcon}>📅</Text>
+            <Ionicons name="calendar-outline" size={18} color={colors.eu.star} />
             <Text style={styles.metaText}>
               {dateStr}
               {endStr ? ` – ${endStr}` : ""}
@@ -200,13 +201,13 @@ export default function EventDetailScreen(): React.JSX.Element {
 
           {event.location && (
             <View style={styles.metaRow}>
-              <Text style={styles.metaIcon}>📍</Text>
+              <Ionicons name="location-outline" size={18} color={colors.eu.star} />
               <Text style={styles.metaText}>{event.location}</Text>
             </View>
           )}
 
           <View style={styles.metaRow}>
-            <Text style={styles.metaIcon}>👥</Text>
+            <Ionicons name="people-outline" size={18} color={colors.eu.star} />
             <Text style={styles.metaText}>
               {event.participantCount} participante
               {event.participantCount !== 1 ? "s" : ""}
@@ -216,7 +217,7 @@ export default function EventDetailScreen(): React.JSX.Element {
 
           {/* Creator */}
           <View style={styles.creatorRow}>
-            <Text style={styles.metaIcon}>👤</Text>
+            <Ionicons name="person-outline" size={18} color={colors.eu.star} />
             <Text style={styles.metaText}>
               Creado por {event.creatorFirstName} {event.creatorLastName}
             </Text>

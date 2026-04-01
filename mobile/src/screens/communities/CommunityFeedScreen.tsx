@@ -18,6 +18,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type {
   CommunityData,
@@ -87,7 +88,7 @@ function PostCard({
       <View style={styles.postCard}>
         {post.isPinned && (
           <View style={styles.pinnedBadge}>
-            <Text style={styles.pinnedText}>📌 Fijado</Text>
+            <Text style={styles.pinnedText}><Ionicons name="pin-outline" size={12} color={colors.eu.star} /> Fijado</Text>
           </View>
         )}
 
@@ -134,7 +135,7 @@ function PostCard({
             style={styles.actionBtn}
           >
             <Text style={styles.actionIcon}>
-              {post.likedByCurrentUser ? "❤️" : "🤍"}
+              <Ionicons name={post.likedByCurrentUser ? "heart" : "heart-outline"} size={20} color={post.likedByCurrentUser ? "#FF4B6E" : colors.text.secondary} />
             </Text>
             <Text style={styles.actionCount}>{post.likeCount}</Text>
           </Pressable>
@@ -143,7 +144,9 @@ function PostCard({
             onPress={() => setShowComments(!showComments)}
             style={styles.actionBtn}
           >
-            <Text style={styles.actionIcon}>💬</Text>
+            <Text style={styles.actionIcon}>
+              <Ionicons name="chatbubble-outline" size={18} color={colors.text.secondary} />
+            </Text>
             <Text style={styles.actionCount}>{post.commentCount}</Text>
           </Pressable>
         </View>
@@ -166,7 +169,7 @@ function PostCard({
                 returnKeyType="send"
               />
               <Pressable onPress={handleComment} style={styles.commentSend}>
-                <Text style={{ fontSize: 18 }}>📤</Text>
+                <Ionicons name="send-outline" size={18} color={colors.eu.star} />
               </Pressable>
             </View>
           </View>
@@ -305,7 +308,7 @@ export default function CommunityFeedScreen() {
         )}
         <View style={styles.communityMeta}>
           <Text style={styles.metaText}>
-            👥 {community.memberCount} miembros
+            <Ionicons name="people-outline" size={14} color={colors.text.secondary} /> {community.memberCount} miembros
           </Text>
           <Pressable onPress={handleJoinLeave} style={styles.joinLeaveBtn}>
             <Text style={styles.joinLeaveText}>
@@ -355,7 +358,7 @@ export default function CommunityFeedScreen() {
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={{ fontSize: 48 }}>📝</Text>
+              <Text style={{ fontSize: 48 }}><Ionicons name="document-text-outline" size={48} color={colors.text.secondary} /></Text>
               <Text style={styles.emptyTitle}>Sin publicaciones aún</Text>
               <Text style={styles.emptySubtitle}>
                 Sé el primero en publicar algo
@@ -382,7 +385,7 @@ export default function CommunityFeedScreen() {
             colors={[colors.accent.start, colors.accent.end]}
             style={styles.fabGradient}
           >
-            <Text style={styles.fabText}>✏️</Text>
+            <Ionicons name="create-outline" size={24} color="#FFF" />
           </LinearGradient>
         </Pressable>
       )}

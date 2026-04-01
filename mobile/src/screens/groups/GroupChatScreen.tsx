@@ -18,6 +18,7 @@ import type { RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/useAuthStore";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { GroupMessageData, GroupsStackParamList } from "@/types/groups";
@@ -195,7 +196,7 @@ export default function GroupChatScreen() {
           onPress={() => nav.navigate("GroupSettings", { groupId })}
           style={styles.settingsBtn}
         >
-          <Text style={styles.settingsText}>⚙</Text>
+          <Ionicons name="settings-outline" size={22} color={colors.text.primary} />
         </Pressable>
       </View>
 

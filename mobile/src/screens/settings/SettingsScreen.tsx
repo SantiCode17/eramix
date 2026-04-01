@@ -3,15 +3,17 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
 import { GlassCard, Header } from "@/design-system/components";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { useAuthStore } from "@/store";
 import type { SettingsStackParamList } from "@/types";
 
+type IoniconsName = keyof typeof Ionicons.glyphMap;
 type Nav = StackNavigationProp<SettingsStackParamList, "SettingsMain">;
 
 interface SettingsItem {
-  emoji: string;
+  icon: IoniconsName;
   label: string;
   subtitle?: string;
   onPress: () => void;
@@ -27,19 +29,19 @@ export default function SettingsScreen(): React.JSX.Element {
       title: "Cuenta",
       items: [
         {
-          emoji: "🔒",
+          icon: "lock-closed-outline",
           label: "Privacidad",
           subtitle: "Visibilidad del perfil",
           onPress: () => navigation.navigate("PrivacySettings"),
         },
         {
-          emoji: "🔔",
+          icon: "notifications-outline",
           label: "Notificaciones",
           subtitle: "Preferencias de alertas",
           onPress: () => navigation.navigate("NotificationSettings"),
         },
         {
-          emoji: "🚫",
+          icon: "ban-outline",
           label: "Usuarios bloqueados",
           subtitle: "Gestionar bloqueos",
           onPress: () => navigation.navigate("BlockedUsers"),
@@ -50,7 +52,7 @@ export default function SettingsScreen(): React.JSX.Element {
       title: "Zona peligrosa",
       items: [
         {
-          emoji: "🚪",
+          icon: "log-out-outline",
           label: "Cerrar sesión",
           onPress: async () => {
             await logout();
@@ -58,7 +60,7 @@ export default function SettingsScreen(): React.JSX.Element {
           danger: true,
         },
         {
-          emoji: "🗑️",
+          icon: "trash-outline",
           label: "Eliminar cuenta",
           subtitle: "Esta acción es irreversible",
           onPress: () => navigation.navigate("DeleteAccount"),
@@ -91,7 +93,7 @@ export default function SettingsScreen(): React.JSX.Element {
                   ]}
                   onPress={item.onPress}
                 >
-                  <Text style={styles.rowEmoji}>{item.emoji}</Text>
+                  <Ionicons name={item.icon} size={22} color={item.danger ? "#FF4B4B" : colors.eu.star} />
                   <View style={styles.rowContent}>
                     <Text
                       style={[
@@ -105,7 +107,7 @@ export default function SettingsScreen(): React.JSX.Element {
                       <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
                     )}
                   </View>
-                  <Text style={styles.rowArrow}>›</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.text.secondary} />
                 </Pressable>
               ))}
             </GlassCard>

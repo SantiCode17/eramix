@@ -5,6 +5,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { HousingPost, HousingStackParamList } from "@/types/housing";
 import * as housingApi from "@/api/housing";
@@ -58,12 +59,13 @@ export default function HousingDetailScreen() {
         {post.photoUrl && <Image source={{ uri: post.photoUrl }} style={styles.photo} />}
         <View style={styles.card}>
           <View style={styles.typeBadge}>
-            <Text style={styles.typeText}>{post.postType === "OFFER" ? "🏠 Oferta" : "🔍 Busca"}</Text>
+            <Ionicons name={post.postType === "OFFER" ? "home-outline" : "search-outline"} size={16} color={colors.eu.star} />
+            <Text style={styles.typeText}>{post.postType === "OFFER" ? "Oferta" : "Busca"}</Text>
           </View>
           <Text style={styles.title}>{post.title}</Text>
           <Text style={styles.desc}>{post.description}</Text>
 
-          <View style={styles.infoRow}><Text style={styles.label}>Ciudad</Text><Text style={styles.value}>📍 {post.city}</Text></View>
+          <View style={styles.infoRow}><Text style={styles.label}>Ciudad</Text><View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}><Ionicons name="location-outline" size={14} color={colors.text.secondary} /><Text style={styles.value}>{post.city}</Text></View></View>
           {post.address && <View style={styles.infoRow}><Text style={styles.label}>Dirección</Text><Text style={styles.value}>{post.address}</Text></View>}
           <View style={styles.infoRow}><Text style={styles.label}>Precio</Text><Text style={styles.valueHighlight}>{post.monthlyRent}€/mes</Text></View>
           <View style={styles.infoRow}><Text style={styles.label}>Habitaciones</Text><Text style={styles.value}>{post.roomsAvailable}</Text></View>

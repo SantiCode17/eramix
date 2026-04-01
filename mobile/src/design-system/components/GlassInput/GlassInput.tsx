@@ -150,15 +150,15 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
-    height: 50,
+    minHeight: 52,
+    paddingVertical: 14,
   },
   input: {
     flex: 1,
     color: colors.text.primary,
     fontFamily: typography.families.body,
     fontSize: typography.sizes.body.fontSize,
-    paddingVertical: 0,
-    height: "100%" as any,
+    paddingVertical: 4,
     textAlignVertical: "center",
   },
   leftIcon: {

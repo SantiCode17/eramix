@@ -11,25 +11,28 @@ import { LinearGradient } from "expo-linear-gradient";
 import { FlashList } from "@shopify/flash-list";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { getPlaces } from "@/api/cityGuide";
 import { handleError } from "@/utils/errorHandler";
 import type { Place, CityGuideStackParamList } from "@/types/cityGuide";
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-  RESTAURANT: "🍽️",
-  BAR: "🍺",
-  CAFE: "☕",
-  MUSEUM: "🏛️",
-  PARK: "🌳",
-  NIGHTCLUB: "🎶",
-  LIBRARY: "📚",
-  GYM: "💪",
-  SUPERMARKET: "🛒",
-  TRANSPORT: "🚌",
-  UNIVERSITY: "🎓",
-  HOSPITAL: "🏥",
-  OTHER: "📍",
+type IoniconsName = keyof typeof Ionicons.glyphMap;
+
+const CATEGORY_ICONS: Record<string, IoniconsName> = {
+  RESTAURANT: "restaurant-outline",
+  BAR: "beer-outline",
+  CAFE: "cafe-outline",
+  MUSEUM: "business-outline",
+  PARK: "leaf-outline",
+  NIGHTCLUB: "musical-notes-outline",
+  LIBRARY: "book-outline",
+  GYM: "barbell-outline",
+  SUPERMARKET: "cart-outline",
+  TRANSPORT: "bus-outline",
+  UNIVERSITY: "school-outline",
+  HOSPITAL: "medkit-outline",
+  OTHER: "location-outline",
 };
 
 export default function CityGuideListScreen() {
@@ -66,13 +69,13 @@ export default function CityGuideListScreen() {
       onPress={() => navigation.navigate("PlaceDetail", { placeId: item.id })}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.emoji}>{CATEGORY_EMOJIS[item.category] ?? "📍"}</Text>
+        <Text style={styles.emoji}><Ionicons name={CATEGORY_ICONS[item.category] ?? "location-outline"} size={24} color={colors.eu.star} /></Text>
         <View style={{ flex: 1 }}>
           <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
           <Text style={styles.city}>{item.city}</Text>
         </View>
         <View style={styles.ratingBadge}>
-          <Text style={styles.ratingText}>⭐ {item.averageRating?.toFixed(1) ?? "–"}</Text>
+          <Text style={styles.ratingText}><Ionicons name="star" size={12} color={colors.eu.star} /> {item.averageRating?.toFixed(1) ?? "–"}</Text>
         </View>
       </View>
       {item.description ? (
@@ -89,7 +92,7 @@ export default function CityGuideListScreen() {
 
   return (
     <LinearGradient colors={[colors.background.start, colors.background.end]} style={styles.root}>
-      <Text style={styles.headerTitle}>🗺️ Guía de Ciudad</Text>
+      <Text style={styles.headerTitle}>Guía de Ciudad</Text>
 
       <TextInput
         style={styles.search}

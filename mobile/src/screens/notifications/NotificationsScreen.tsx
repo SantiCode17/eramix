@@ -13,22 +13,25 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import * as notificationsApi from "@/api/notifications";
 import { handleError } from "@/utils/errorHandler";
+import { Ionicons } from "@expo/vector-icons";
 import { Header, EmptyState, GlassButton } from "@/design-system";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { NotificationData, NotificationType } from "@/types/notifications";
+
+type IoniconsName = keyof typeof Ionicons.glyphMap;
 
 // ── Notification config ─────────────────────────────
 
 const NOTIF_CONFIG: Record<
   NotificationType,
-  { emoji: string; accent: string }
+  { icon: IoniconsName; accent: string }
 > = {
-  FRIEND_REQUEST: { emoji: "👤", accent: "#5B8DEF" },
-  FRIEND_ACCEPTED: { emoji: "✅", accent: colors.eu.star },
-  NEW_MESSAGE: { emoji: "💬", accent: "#FFF" },
-  EVENT_INVITE: { emoji: "📅", accent: colors.eu.orange },
-  EVENT_REMINDER: { emoji: "⏰", accent: "#FF8B4F" },
-  SYSTEM: { emoji: "ℹ️", accent: colors.text.secondary },
+  FRIEND_REQUEST: { icon: "person-add-outline", accent: "#5B8DEF" },
+  FRIEND_ACCEPTED: { icon: "checkmark-circle-outline", accent: colors.eu.star },
+  NEW_MESSAGE: { icon: "chatbubble-outline", accent: "#FFF" },
+  EVENT_INVITE: { icon: "calendar-outline", accent: colors.eu.orange },
+  EVENT_REMINDER: { icon: "alarm-outline", accent: "#FF8B4F" },
+  SYSTEM: { icon: "information-circle-outline", accent: colors.text.secondary },
 };
 
 export default function NotificationsScreen(): React.JSX.Element {
@@ -151,7 +154,7 @@ export default function NotificationsScreen(): React.JSX.Element {
               { borderColor: config.accent },
             ]}
           >
-            <Text style={styles.iconEmoji}>{config.emoji}</Text>
+            <Text style={styles.iconEmoji}><Ionicons name={config.icon} size={22} color={config.accent} /></Text>
           </View>
 
           {/* Content */}
@@ -220,7 +223,7 @@ export default function NotificationsScreen(): React.JSX.Element {
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
             <EmptyState
-              icon="🔔"
+              icon="notifications-outline"
               title="Sin notificaciones"
               message="Cuando recibas alertas aparecerán aquí"
             />

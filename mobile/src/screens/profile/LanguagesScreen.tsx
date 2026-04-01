@@ -15,18 +15,22 @@ import {
   Header,
   LoadingSpinner,
 } from "@/design-system/components";
+import { Ionicons } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { useProfileStore } from "@/store";
 import type { Language, UserLanguageRequest } from "@/types";
 import { handleError } from "@/utils/errorHandler";
 
+type IoniconsName = ComponentProps<typeof Ionicons>["name"];
+
 const PROFICIENCY_LEVELS = [
-  { key: "BEGINNER", label: "Principiante", emoji: "🌱" },
-  { key: "ELEMENTARY", label: "Elemental", emoji: "📗" },
-  { key: "INTERMEDIATE", label: "Intermedio", emoji: "📘" },
-  { key: "UPPER_INTERMEDIATE", label: "Intermedio Alto", emoji: "📙" },
-  { key: "ADVANCED", label: "Avanzado", emoji: "📕" },
-  { key: "NATIVE", label: "Nativo", emoji: "🏠" },
+  { key: "BEGINNER", label: "Principiante", icon: "leaf-outline" as IoniconsName },
+  { key: "ELEMENTARY", label: "Elemental", icon: "book-outline" as IoniconsName },
+  { key: "INTERMEDIATE", label: "Intermedio", icon: "library-outline" as IoniconsName },
+  { key: "UPPER_INTERMEDIATE", label: "Intermedio Alto", icon: "school-outline" as IoniconsName },
+  { key: "ADVANCED", label: "Avanzado", icon: "ribbon-outline" as IoniconsName },
+  { key: "NATIVE", label: "Nativo", icon: "home-outline" as IoniconsName },
 ] as const;
 
 interface SelectedLanguage {
@@ -168,7 +172,7 @@ export default function LanguagesScreen(): React.JSX.Element {
                           ]}
                           onPress={() => setLevel(lang.id, pl.key)}
                         >
-                          <Text style={styles.levelEmoji}>{pl.emoji}</Text>
+                          <Ionicons name={pl.icon} size={16} color={level === pl.key ? colors.eu.star : colors.text.secondary} />
                           <Text
                             style={[
                               styles.levelText,

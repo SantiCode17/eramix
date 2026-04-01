@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, ViewStyle, StyleProp } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing } from "../../tokens";
 
 export interface ErrorStateProps {
@@ -17,7 +18,7 @@ export default function ErrorState({
 }: ErrorStateProps): React.JSX.Element {
   return (
     <View style={[styles.container, style]}>
-      <Text style={styles.icon}>⚠️</Text>
+      <Ionicons name="alert-circle-outline" size={48} color={colors.status.error} style={{ marginBottom: spacing.md }} />
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
       {action ? <View style={styles.action}>{action}</View> : null}

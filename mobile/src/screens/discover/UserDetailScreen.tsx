@@ -14,6 +14,7 @@ import type { RouteProp } from "@react-navigation/native";
 import { profileApi } from "@/api";
 import { friendRequestsApi } from "@/api/discoverService";
 import { handleError } from "@/utils/errorHandler";
+import { Ionicons } from "@expo/vector-icons";
 import { Header, GlassCard, GlassButton, LoadingSpinner, Chip } from "@/design-system";
 import { colors, typography, spacing, radii, shadows } from "@/design-system/tokens";
 import type { User, DiscoverStackParamList } from "@/types";
@@ -114,7 +115,7 @@ export default function UserDetailScreen(): React.JSX.Element {
           <View style={styles.heroOverlay}>
             <Text style={styles.heroName}>{fullName}</Text>
             {destination ? (
-              <Text style={styles.heroDestination}>📍 {destination}</Text>
+              <Text style={styles.heroDestination}><Ionicons name="location-outline" size={14} color={colors.eu.star} /> {destination}</Text>
             ) : null}
           </View>
         </View>
@@ -133,7 +134,7 @@ export default function UserDetailScreen(): React.JSX.Element {
             <Text style={styles.sectionTitle}>Universidad</Text>
             {user.homeUniversity ? (
               <View style={styles.uniRow}>
-                <Text style={styles.uniEmoji}>🏠</Text>
+                <Ionicons name="home-outline" size={18} color={colors.eu.star} />
                 <View>
                   <Text style={styles.uniName}>{user.homeUniversity.name}</Text>
                   <Text style={styles.uniLocation}>
@@ -144,7 +145,7 @@ export default function UserDetailScreen(): React.JSX.Element {
             ) : null}
             {user.hostUniversity ? (
               <View style={[styles.uniRow, { marginTop: spacing.sm }]}>
-                <Text style={styles.uniEmoji}>✈️</Text>
+                <Ionicons name="airplane-outline" size={18} color={colors.eu.star} />
                 <View>
                   <Text style={styles.uniName}>{user.hostUniversity.name}</Text>
                   <Text style={styles.uniLocation}>
@@ -164,7 +165,7 @@ export default function UserDetailScreen(): React.JSX.Element {
               {user.interests.map((interest) => (
                 <Chip
                   key={interest.id}
-                  label={`${interest.icon ?? "✨"} ${interest.name}`}
+                  label={`${interest.name}`}
                   selected
                   disabled
                 />
@@ -211,7 +212,7 @@ export default function UserDetailScreen(): React.JSX.Element {
         {/* Connect button */}
         <View style={styles.connectSection}>
           <GlassButton
-            title={requestSent ? "Solicitud enviada ✓" : "Conectar ⭐"}
+            title={requestSent ? "Solicitud enviada ✓" : "Conectar"}
             variant={requestSent ? "secondary" : "primary"}
             size="lg"
             onPress={handleSendRequest}

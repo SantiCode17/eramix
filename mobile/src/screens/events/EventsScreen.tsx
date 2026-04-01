@@ -16,6 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import * as eventsApi from "@/api/events";
 import { handleError } from "@/utils/errorHandler";
 import { colors, typography, spacing, radii, shadows } from "@/design-system/tokens";
@@ -24,16 +25,24 @@ import type { EventData, EventsStackParamList } from "@/types/events";
 type Nav = StackNavigationProp<EventsStackParamList, "EventsList">;
 const { width: SCREEN_W } = Dimensions.get("window");
 
-const CATEGORIES = [
-  { label: "Todos", value: "" },
-  { label: "🎉 Fiesta", value: "fiesta" },
-  { label: "🎓 Académico", value: "academico" },
-  { label: "⚽ Deporte", value: "deporte" },
-  { label: "🍕 Comida", value: "comida" },
-  { label: "🎵 Música", value: "musica" },
-  { label: "✈️ Viaje", value: "viaje" },
-  { label: "🎨 Cultura", value: "cultura" },
+type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
+
+const CATEGORIES: { label: string; value: string; icon: IoniconsName }[] = [
+  { label: "Todos", value: "", icon: "apps-outline" },
+  { label: "Fiesta", value: "fiesta", icon: "musical-notes-outline" },
+  { label: "Académico", value: "academico", icon: "school-outline" },
+  { label: "Deporte", value: "deporte", icon: "football-outline" },
+  { label: "Comida", value: "comida", icon: "restaurant-outline" },
+  { label: "Música", value: "musica", icon: "headset-outline" },
+  { label: "Viaje", value: "viaje", icon: "airplane-outline" },
+  { label: "Cultura", value: "cultura", icon: "color-palette-outline" },
 ];
+
+// ── Category icon helper ────────────────────────────
+const getCategoryIcon = (category?: string): IoniconsName => {
+  const found = CATEGORIES.find((c) => c.value === category);
+  return found?.icon ?? "calendar-outline";
+};
 
 // ── Event Card ──────────────────────────────────────
 
@@ -54,9 +63,6 @@ function EventCard({
     minute: "2-digit",
   });
 
-  const categoryEmoji =
-    CATEGORIES.find((c) => c.value === event.category)?.label.charAt(0) ?? "📅";
-
   return (
     <Animated.View entering={FadeInDown.delay(index * 60).duration(400)}>
       <Pressable
@@ -71,7 +77,11 @@ function EventCard({
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
-          <Text style={styles.cardCoverEmoji}>{categoryEmoji}</Text>
+          <Ionicons
+            name={getCategoryIcon(event.category) ?? "calendar-outline"}
+            size={40}
+            color="rgba(255,255,255,0.2)"
+          />
           <LinearGradient
             colors={["transparent", "rgba(0,0,0,0.7)"]}
             style={styles.cardFade}
@@ -79,6 +89,12 @@ function EventCard({
           {/* Category badge */}
           {event.category && (
             <View style={styles.categoryBadge}>
+              <Ionicons
+                name={getCategoryIcon(event.category)}
+                size={12}
+                color="rgba(255,255,255,0.9)"
+                style={{ marginRight: 4 }}
+              />
               <Text style={styles.categoryBadgeText}>{event.category}</Text>
             </View>
           )}
@@ -89,17 +105,20 @@ function EventCard({
           <Text style={styles.cardTitle} numberOfLines={2}>
             {event.title}
           </Text>
-          <Text style={styles.cardDate}>{dateStr}</Text>
+          <View style={styles.cardDateRow}>
+            <Ionicons name="time-outline" size={13} color={colors.eu.star} />
+            <Text style={styles.cardDate}>{dateStr}</Text>
+          </View>
 
           <View style={styles.cardFooter}>
             <View style={styles.cardLocation}>
-              <Text style={styles.locationIcon}>📍</Text>
+              <Ionicons name="location-outline" size={14} color={colors.text.secondary} />
               <Text style={styles.cardLocationText} numberOfLines={1}>
                 {event.location ?? "Sin ubicación"}
               </Text>
             </View>
             <View style={styles.participantsBadge}>
-              <Text style={styles.participantsIcon}>👥</Text>
+              <Ionicons name="people-outline" size={14} color={colors.text.secondary} />
               <Text style={styles.participantsText}>
                 {event.participantCount}
                 {event.maxParticipants ? `/${event.maxParticipants}` : ""}
@@ -111,8 +130,14 @@ function EventCard({
         {/* Joined status */}
         {event.currentUserStatus && (
           <View style={styles.joinedIndicator}>
+            <Ionicons
+              name={event.currentUserStatus === "GOING" ? "checkmark-circle" : "star"}
+              size={13}
+              color="#FFF"
+              style={{ marginRight: 4 }}
+            />
             <Text style={styles.joinedText}>
-              {event.currentUserStatus === "GOING" ? "✓ Apuntado" : "★ Interesado"}
+              {event.currentUserStatus === "GOING" ? "Apuntado" : "Interesado"}
             </Text>
           </View>
         )}
@@ -191,39 +216,40 @@ export default function EventsScreen(): React.JSX.Element {
           }}
         >
           <LinearGradient
-            colors={[colors.eu.orange, "#FF8B4F"]}
+            colors={[colors.eu.star, "#FFD633"]}
             style={styles.createButtonGrad}
           >
-            <Text style={styles.createButtonText}>＋</Text>
+            <Ionicons name="add" size={22} color="#000" />
           </LinearGradient>
         </Pressable>
       </View>
 
-      {/* Category chips */}
+      {/* Category filter */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chipRow}
       >
-        {CATEGORIES.map((cat) => (
-          <Pressable
-            key={cat.value}
-            onPress={() => handleCategoryPress(cat.value)}
-            style={[
-              styles.chip,
-              selectedCategory === cat.value && styles.chipActive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                selectedCategory === cat.value && styles.chipTextActive,
-              ]}
+        {CATEGORIES.map((cat) => {
+          const active = selectedCategory === cat.value;
+          return (
+            <Pressable
+              key={cat.value}
+              onPress={() => handleCategoryPress(cat.value)}
+              style={[styles.chip, active && styles.chipActive]}
             >
-              {cat.label}
-            </Text>
-          </Pressable>
-        ))}
+              <Ionicons
+                name={cat.icon}
+                size={14}
+                color={active ? colors.eu.star : colors.text.secondary}
+                style={{ marginRight: 5 }}
+              />
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {cat.label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
       {/* Events list */}
@@ -233,7 +259,7 @@ export default function EventsScreen(): React.JSX.Element {
         </View>
       ) : events.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyEmoji}>🎉</Text>
+          <Ionicons name="calendar-outline" size={56} color="rgba(255,255,255,0.15)" />
           <Text style={styles.emptyTitle}>No hay eventos</Text>
           <Text style={styles.emptySubtitle}>
             ¡Crea uno y empieza la fiesta Erasmus!
@@ -284,6 +310,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.families.heading,
     fontSize: 28,
     color: colors.text.primary,
+    letterSpacing: -0.5,
   },
   createButton: { borderRadius: 20, overflow: "hidden" },
   createButtonGrad: {
@@ -293,29 +320,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  createButtonText: {
-    fontSize: 22,
-    color: "#FFF",
-    fontWeight: "700",
-  },
 
-  // Chips
+  // Chips — modern underline style
   chipRow: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.full,
-    backgroundColor: colors.glass.white,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radii.md,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
     borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderColor: "rgba(255, 255, 255, 0.06)",
   },
   chipActive: {
-    backgroundColor: "rgba(255, 204, 0, 0.2)",
-    borderColor: colors.eu.star,
+    backgroundColor: "rgba(255, 204, 0, 0.12)",
+    borderColor: "rgba(255, 204, 0, 0.3)",
   },
   chipText: {
     fontFamily: typography.families.bodyMedium,
@@ -326,24 +350,22 @@ const styles = StyleSheet.create({
     color: colors.eu.star,
   },
 
-  // Card
+  // Card — modern design
   card: {
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
     borderRadius: radii.lg,
-    backgroundColor: colors.glass.white,
-    borderWidth: 1,
-    borderColor: colors.glass.border,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255, 255, 255, 0.08)",
     overflow: "hidden",
-    ...shadows.glass,
   },
-  cardPressed: { opacity: 0.85 },
+  cardPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   cardCover: {
     height: 140,
     justifyContent: "center",
     alignItems: "center",
   },
-  cardCoverEmoji: { fontSize: 48, opacity: 0.4 },
   cardFade: {
     position: "absolute",
     bottom: 0,
@@ -355,25 +377,33 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: spacing.sm,
     right: spacing.sm,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.45)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: radii.sm,
   },
   categoryBadgeText: {
     fontFamily: typography.families.bodyMedium,
     fontSize: 11,
-    color: colors.text.primary,
+    color: "rgba(255,255,255,0.9)",
     textTransform: "capitalize",
   },
   cardInfo: {
     padding: spacing.md,
-    gap: spacing.xxs,
+    gap: 6,
   },
   cardTitle: {
     fontFamily: typography.families.subheading,
     fontSize: 17,
     color: colors.text.primary,
+    letterSpacing: -0.2,
+  },
+  cardDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
   },
   cardDate: {
     fontFamily: typography.families.body,
@@ -392,7 +422,6 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
-  locationIcon: { fontSize: 14 },
   cardLocationText: {
     fontFamily: typography.families.body,
     fontSize: 12,
@@ -404,7 +433,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
-  participantsIcon: { fontSize: 14 },
   participantsText: {
     fontFamily: typography.families.bodyMedium,
     fontSize: 12,
@@ -414,9 +442,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: spacing.sm,
     left: spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "rgba(76, 175, 80, 0.85)",
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: radii.sm,
   },
   joinedText: {
@@ -433,11 +463,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing.sm,
   },
-  emptyEmoji: { fontSize: 64 },
   emptyTitle: {
     fontFamily: typography.families.heading,
     fontSize: 22,
     color: colors.text.primary,
+    marginTop: spacing.sm,
   },
   emptySubtitle: {
     fontFamily: typography.families.body,

@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { ExchangePartner } from "@/types/exchange";
 import * as exchangeApi from "@/api/exchange";
@@ -42,9 +43,9 @@ export default function FindPartnerScreen() {
             )}
             <View style={{ flex: 1, marginLeft: spacing.sm }}>
               <Text style={styles.name}>{item.firstName} {item.lastName}</Text>
-              {item.destinationCity && <Text style={styles.city}>📍 {item.destinationCity}</Text>}
+              {item.destinationCity && <Text style={styles.city}><Ionicons name="location-outline" size={12} color={colors.text.secondary} /> {item.destinationCity}</Text>}
               {item.averageRating != null && (
-                <Text style={styles.rating}>⭐ {item.averageRating} · {item.sessionsCompleted} sesiones</Text>
+                <Text style={styles.rating}><Ionicons name="star" size={12} color={colors.eu.star} /> {item.averageRating} · {item.sessionsCompleted} sesiones</Text>
               )}
             </View>
           </View>
@@ -94,7 +95,7 @@ export default function FindPartnerScreen() {
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + 40 }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={{ fontSize: 48 }}>🤷</Text>
+              <Ionicons name="people-outline" size={48} color={colors.text.secondary} />
               <Text style={styles.emptyTitle}>Sin compañeros disponibles</Text>
             </View>
           }

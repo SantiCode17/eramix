@@ -25,6 +25,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import { useDiscoverStore } from "@/store/useDiscoverStore";
 import { UserCard, CARD_WIDTH, FilterModal } from "./components";
 import { StoriesBar, StoryViewerScreen, CreateStoryScreen } from "@/screens/stories";
+import { Ionicons } from "@expo/vector-icons";
 import { EmptyState, Header, GlassButton } from "@/design-system";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { DiscoverStackParamList, DiscoverFilters } from "@/types";
@@ -217,19 +218,19 @@ export default function DiscoverScreen(): React.JSX.Element {
               onPress={() => navigation.navigate("FriendRequests")}
               style={styles.headerBtn}
             >
-              <Text style={styles.headerBtnText}>📩</Text>
+              <Ionicons name="mail-outline" size={20} color={colors.text.primary} />
             </Pressable>
             <Pressable
               onPress={() => navigation.navigate("NearbyMap")}
               style={styles.headerBtn}
             >
-              <Text style={styles.headerBtnText}>🗺️</Text>
+              <Ionicons name="map-outline" size={20} color={colors.text.primary} />
             </Pressable>
             <Pressable
               onPress={() => setFilterVisible(true)}
               style={styles.headerBtn}
             >
-              <Text style={styles.headerBtnText}>⚡</Text>
+              <Ionicons name="options-outline" size={20} color={colors.text.primary} />
             </Pressable>
           </View>
         }
@@ -249,7 +250,7 @@ export default function DiscoverScreen(): React.JSX.Element {
           <ActivityIndicator size="large" color={colors.eu.star} />
         ) : error ? (
           <EmptyState
-            icon="⚠️"
+            icon="alert-circle-outline"
             title="Error"
             message={error}
             action={
@@ -258,7 +259,7 @@ export default function DiscoverScreen(): React.JSX.Element {
           />
         ) : !currentUser ? (
           <EmptyState
-            icon="🔍"
+            icon="search-outline"
             title="Sin más perfiles"
             message="Has visto todos los perfiles disponibles. Ajusta los filtros o vuelve más tarde."
             action={
@@ -292,7 +293,7 @@ export default function DiscoverScreen(): React.JSX.Element {
               <Animated.View style={[styles.cardWrapper, topCardStyle]}>
                 {/* LIKE overlay */}
                 <Animated.View style={[styles.swipeOverlay, styles.likeOverlay, likeOverlayStyle]}>
-                  <Text style={styles.overlayText}>CONECTAR ⭐</Text>
+                  <Text style={styles.overlayText}>CONECTAR</Text>
                 </Animated.View>
 
                 {/* NOPE overlay */}

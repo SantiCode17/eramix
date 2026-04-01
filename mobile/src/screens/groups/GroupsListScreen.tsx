@@ -15,6 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { GroupData, GroupsStackParamList } from "@/types/groups";
 import * as groupsApi from "@/api/groups";
@@ -93,7 +94,7 @@ function GroupItem({ item, onPress, index }: { item: GroupData; onPress: () => v
               </View>
             )}
           </View>
-          <Text style={styles.memberCount}>👥 {item.memberCount} miembros</Text>
+          <Text style={styles.memberCount}><Ionicons name="people-outline" size={13} color={colors.text.secondary} /> {item.memberCount} miembros</Text>
         </View>
       </Pressable>
     </Animated.View>
@@ -172,7 +173,7 @@ export default function GroupsListScreen() {
 
       {groups.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={{ fontSize: 64 }}>👥</Text>
+          <Ionicons name="people-outline" size={56} color={colors.text.secondary} />
           <Text style={styles.emptyTitle}>No tienes grupos</Text>
           <Text style={styles.emptySubtitle}>
             Crea un grupo para chatear con varios amigos a la vez

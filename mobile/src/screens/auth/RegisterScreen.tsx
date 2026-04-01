@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
 import { GlassInput, GlassButton, GlassCard } from "@/design-system";
 import { colors, typography, spacing } from "@/design-system/tokens";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -213,7 +214,7 @@ export default function RegisterScreen(): React.JSX.Element {
           {/* Error card */}
           {error && (
             <GlassCard variant="elevated" style={styles.errorCard}>
-              <Text style={styles.errorText}>⚠️ {error}</Text>
+              <Text style={styles.errorText}><Ionicons name="alert-circle-outline" size={14} color={colors.eu.orange} /> {error}</Text>
             </GlassCard>
           )}
 
@@ -251,7 +252,7 @@ export default function RegisterScreen(): React.JSX.Element {
                       style={{ padding: 4, minWidth: 36, minHeight: 36, alignItems: "center", justifyContent: "center" }}
                     >
                       <Text style={styles.eyeIcon}>
-                        {showPassword ? "🙈" : "👁️"}
+                        <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.text.secondary} />
                       </Text>
                     </Pressable>
                   }

@@ -115,7 +115,7 @@ export default function SplashScreen(): React.JSX.Element {
         ]}
       >
         <View style={styles.logoCircle}>
-          <Text style={styles.logoEmoji}>🌍</Text>
+          <Text style={styles.logoEmoji}>E</Text>
         </View>
       </Animated.View>
 

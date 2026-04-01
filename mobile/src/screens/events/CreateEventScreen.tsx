@@ -20,7 +20,10 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Haptics from "expo-haptics";
 import * as eventsApi from "@/api/events";
 import { handleError } from "@/utils/errorHandler";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
+
+type IoniconsName = keyof typeof Ionicons.glyphMap;
 
 const CATEGORIES = [
   "fiesta",
@@ -33,15 +36,15 @@ const CATEGORIES = [
   "networking",
 ];
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  fiesta: "🎉",
-  academico: "🎓",
-  deporte: "⚽",
-  comida: "🍕",
-  musica: "🎵",
-  viaje: "✈️",
-  cultura: "🎨",
-  networking: "🤝",
+const CATEGORY_ICON: Record<string, IoniconsName> = {
+  fiesta: "musical-notes-outline",
+  academico: "school-outline",
+  deporte: "football-outline",
+  comida: "restaurant-outline",
+  musica: "headset-outline",
+  viaje: "airplane-outline",
+  cultura: "color-palette-outline",
+  networking: "people-outline",
 };
 
 export default function CreateEventScreen(): React.JSX.Element {
@@ -168,7 +171,7 @@ export default function CreateEventScreen(): React.JSX.Element {
                   ]}
                 >
                   <Text style={styles.catChipText}>
-                    {CATEGORY_EMOJI[cat] ?? ""} {cat}
+                    <Ionicons name={CATEGORY_ICON[cat] ?? "apps-outline"} size={16} color={category === cat ? colors.eu.star : colors.text.secondary} /> {cat}
                   </Text>
                 </Pressable>
               ))}
@@ -177,7 +180,7 @@ export default function CreateEventScreen(): React.JSX.Element {
 
           {/* Location */}
           <View style={styles.field}>
-            <Text style={styles.label}>📍 Ubicación</Text>
+            <Text style={styles.label}>Ubicación</Text>
             <TextInput
               style={styles.input}
               placeholder="¿Dónde será?"
@@ -189,7 +192,7 @@ export default function CreateEventScreen(): React.JSX.Element {
 
           {/* Start date */}
           <View style={styles.field}>
-            <Text style={styles.label}>📅 Inicio *</Text>
+            <Text style={styles.label}>Inicio *</Text>
             <Pressable
               style={styles.dateButton}
               onPress={() => setShowStartPicker(true)}
@@ -212,7 +215,7 @@ export default function CreateEventScreen(): React.JSX.Element {
 
           {/* End date */}
           <View style={styles.field}>
-            <Text style={styles.label}>⏰ Fin (opcional)</Text>
+            <Text style={styles.label}>Fin (opcional)</Text>
             <Pressable
               style={styles.dateButton}
               onPress={() => setShowEndPicker(true)}
@@ -237,7 +240,7 @@ export default function CreateEventScreen(): React.JSX.Element {
 
           {/* Max participants */}
           <View style={styles.field}>
-            <Text style={styles.label}>👥 Máximo participantes (opcional)</Text>
+            <Text style={styles.label}>Máximo participantes (opcional)</Text>
             <TextInput
               style={styles.input}
               placeholder="Sin límite"
@@ -251,7 +254,7 @@ export default function CreateEventScreen(): React.JSX.Element {
           {/* Public toggle */}
           <View style={styles.toggleRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.label}>🌍 Evento público</Text>
+              <Text style={styles.label}>Evento público</Text>
               <Text style={styles.toggleHint}>
                 {isPublic
                   ? "Visible para todos los usuarios"

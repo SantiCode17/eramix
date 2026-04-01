@@ -153,7 +153,7 @@ export default function ComponentGallery(): React.JSX.Element {
         <Text style={styles.sectionTitle}>EmptyState</Text>
         <GlassCard variant="surface">
           <EmptyState
-            icon="🏠"
+            iconName="home-outline"
             title="Sin publicaciones"
             message="Aún no hay publicaciones de vivienda disponibles."
             action={

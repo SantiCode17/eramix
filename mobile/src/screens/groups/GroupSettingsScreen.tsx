@@ -139,7 +139,7 @@ export default function GroupSettingsScreen() {
               <Text style={styles.groupDesc}>{group.description}</Text>
             )}
             <Text style={styles.groupMeta}>
-              👥 {group.memberCount}/{group.maxMembers} miembros
+              {group.memberCount}/{group.maxMembers} miembros
             </Text>
           </View>
         </View>
@@ -165,7 +165,7 @@ export default function GroupSettingsScreen() {
                 {member.userId === currentUserId ? " (tú)" : ""}
               </Text>
               <Text style={styles.memberRole}>
-                {member.role === "ADMIN" ? "👑 Admin" : "Miembro"}
+                {member.role === "ADMIN" ? "Admin" : "Miembro"}
               </Text>
             </View>
             {isAdmin && member.userId !== currentUserId && (

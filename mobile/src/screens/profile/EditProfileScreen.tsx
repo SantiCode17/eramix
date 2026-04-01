@@ -24,6 +24,7 @@ import {
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { useProfileStore } from "@/store";
 import type { ProfileStackParamList, UserUpdateRequest } from "@/types";
+import { Ionicons } from "@expo/vector-icons";
 import { handleError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<ProfileStackParamList, "EditProfile">;
@@ -148,7 +149,7 @@ export default function EditProfileScreen(): React.JSX.Element {
                 </View>
               ) : (
                 <View style={styles.cameraBadge}>
-                  <Text style={styles.cameraIcon}>📷</Text>
+                  <Ionicons name="camera-outline" size={18} color={colors.text.primary} />
                 </View>
               )}
             </Pressable>
@@ -196,25 +197,25 @@ export default function EditProfileScreen(): React.JSX.Element {
               style={styles.linkRow}
               onPress={() => navigation.navigate("Interests")}
             >
-              <Text style={styles.linkEmoji}>✨</Text>
+              <Ionicons name="sparkles-outline" size={20} color={colors.eu.star} />
               <Text style={styles.linkText}>Gestionar intereses</Text>
-              <Text style={styles.linkArrow}>→</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.text.secondary} />
             </Pressable>
             <Pressable
               style={styles.linkRow}
               onPress={() => navigation.navigate("Languages")}
             >
-              <Text style={styles.linkEmoji}>🌍</Text>
+              <Ionicons name="globe-outline" size={20} color={colors.eu.star} />
               <Text style={styles.linkText}>Gestionar idiomas</Text>
-              <Text style={styles.linkArrow}>→</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.text.secondary} />
             </Pressable>
             <Pressable
               style={styles.linkRow}
               onPress={() => navigation.navigate("EditPhotos")}
             >
-              <Text style={styles.linkEmoji}>📸</Text>
+              <Ionicons name="images-outline" size={20} color={colors.eu.star} />
               <Text style={styles.linkText}>Gestionar fotos</Text>
-              <Text style={styles.linkArrow}>→</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.text.secondary} />
             </Pressable>
           </GlassCard>
 

@@ -16,6 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type {
   CommunityData,
@@ -26,18 +27,19 @@ import * as communitiesApi from "@/api/communities";
 import { handleError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<CommunitiesStackParamList, "CommunitiesList">;
+type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
 
-const CATEGORY_EMOJI: Record<CommunityCategory, string> = {
-  UNIVERSITY: "🎓",
-  CITY: "🏙️",
-  INTEREST: "⭐",
-  GENERAL: "🌍",
+const CATEGORY_ICONS: Record<CommunityCategory, IoniconsName> = {
+  UNIVERSITY: "school-outline",
+  CITY: "business-outline",
+  INTEREST: "star-outline",
+  GENERAL: "globe-outline",
 };
 
-const TABS: { label: string; value: "my" | "explore" | "suggested" }[] = [
-  { label: "Mis comunidades", value: "my" },
-  { label: "Explorar", value: "explore" },
-  { label: "Sugeridas", value: "suggested" },
+const TABS: { label: string; value: "my" | "explore" | "suggested"; icon: IoniconsName }[] = [
+  { label: "Mis comunidades", value: "my", icon: "heart-outline" },
+  { label: "Explorar", value: "explore", icon: "compass-outline" },
+  { label: "Sugeridas", value: "suggested", icon: "sparkles-outline" },
 ];
 
 // ── Community Card ──────────────────────────────────
@@ -53,7 +55,10 @@ function CommunityCard({
 }) {
   return (
     <Animated.View entering={FadeInDown.delay(index * 60).duration(400)}>
-      <Pressable style={styles.card} onPress={onPress}>
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+        onPress={onPress}
+      >
         {item.coverImageUrl ? (
           <Image source={{ uri: item.coverImageUrl }} style={styles.cardCover} />
         ) : (
@@ -61,9 +66,11 @@ function CommunityCard({
             colors={[colors.eu.mid, colors.eu.deep]}
             style={styles.cardCover}
           >
-            <Text style={styles.cardEmoji}>
-              {CATEGORY_EMOJI[item.category] || "🌍"}
-            </Text>
+            <Ionicons
+              name={CATEGORY_ICONS[item.category] || "globe-outline"}
+              size={32}
+              color="rgba(255,255,255,0.2)"
+            />
           </LinearGradient>
         )}
         <View style={styles.cardBody}>
@@ -76,17 +83,22 @@ function CommunityCard({
             </Text>
           )}
           <View style={styles.cardFooter}>
-            <Text style={styles.cardMembers}>
-              👥 {item.memberCount} miembros
-            </Text>
+            <View style={styles.cardMembersRow}>
+              <Ionicons name="people-outline" size={14} color={colors.text.secondary} />
+              <Text style={styles.cardMembers}>
+                {item.memberCount} miembros
+              </Text>
+            </View>
             {item.isMember ? (
               <View style={styles.joinedBadge}>
-                <Text style={styles.joinedText}>Unido ✓</Text>
+                <Ionicons name="checkmark-circle" size={13} color={colors.status.success} />
+                <Text style={styles.joinedText}>Unido</Text>
               </View>
             ) : (
-              <View style={styles.joinBadge}>
+              <Pressable style={styles.joinBadge} onPress={onPress}>
+                <Ionicons name="add-circle-outline" size={13} color={colors.eu.star} />
                 <Text style={styles.joinText}>Unirse</Text>
-              </View>
+              </Pressable>
             )}
           </View>
         </View>
@@ -180,6 +192,12 @@ export default function CommunitiesScreen() {
               onPress={() => setTab(t.value)}
               style={[styles.tab, active && styles.tabActive]}
             >
+              <Ionicons
+                name={t.icon}
+                size={14}
+                color={active ? colors.eu.star : colors.text.secondary}
+                style={{ marginRight: 5 }}
+              />
               <Text style={[styles.tabText, active && styles.tabTextActive]}>
                 {t.label}
               </Text>
@@ -194,7 +212,7 @@ export default function CommunitiesScreen() {
         </View>
       ) : communities.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={{ fontSize: 64 }}>🌍</Text>
+          <Ionicons name="people-outline" size={56} color="rgba(255,255,255,0.15)" />
           <Text style={styles.emptyTitle}>
             {tab === "my"
               ? "No estás en ninguna comunidad"
@@ -242,23 +260,26 @@ const styles = StyleSheet.create({
     ...typography.sizes.h2,
     fontFamily: typography.families.heading,
     color: colors.text.primary,
+    letterSpacing: -0.5,
   },
   tabsScroll: { maxHeight: 48 },
   tabsContainer: {
     paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   tab: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.full,
-    backgroundColor: colors.glass.white,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radii.md,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
     borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderColor: "rgba(255, 255, 255, 0.06)",
   },
   tabActive: {
-    backgroundColor: colors.eu.star + "20",
-    borderColor: colors.eu.star,
+    backgroundColor: "rgba(255, 204, 0, 0.12)",
+    borderColor: "rgba(255, 204, 0, 0.3)",
   },
   tabText: {
     fontFamily: typography.families.bodyMedium,
@@ -267,10 +288,10 @@ const styles = StyleSheet.create({
   },
   tabTextActive: { color: colors.eu.star },
   card: {
-    backgroundColor: colors.glass.white,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255, 255, 255, 0.08)",
     marginBottom: spacing.md,
     overflow: "hidden",
   },
@@ -279,12 +300,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  cardEmoji: { fontSize: 40 },
   cardBody: { padding: spacing.md },
   cardName: {
     fontFamily: typography.families.subheading,
     ...typography.sizes.body,
     color: colors.text.primary,
+    letterSpacing: -0.2,
   },
   cardDesc: {
     fontFamily: typography.families.body,
@@ -298,16 +319,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: spacing.sm,
   },
+  cardMembersRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
   cardMembers: {
     fontFamily: typography.families.body,
     ...typography.sizes.small,
     color: colors.text.secondary,
   },
   joinedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: radii.full,
-    backgroundColor: colors.status.success + "20",
+    backgroundColor: "rgba(76, 175, 80, 0.12)",
   },
   joinedText: {
     fontFamily: typography.families.bodyMedium,
@@ -315,15 +344,18 @@ const styles = StyleSheet.create({
     color: colors.status.success,
   },
   joinBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: radii.full,
-    backgroundColor: colors.eu.orange + "20",
+    backgroundColor: "rgba(255, 204, 0, 0.12)",
   },
   joinText: {
     fontFamily: typography.families.bodyMedium,
     ...typography.sizes.small,
-    color: colors.eu.orange,
+    color: colors.eu.star,
   },
   empty: {
     flex: 1,

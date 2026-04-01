@@ -40,7 +40,7 @@ class ErrorBoundary extends React.Component<
       return (
         <View style={styles.loading}>
           <Text style={{ color: "#FF4444", fontSize: 18, marginBottom: 12 }}>
-            ⚠️ Error en la app
+            Error en la app
           </Text>
           <Text
             style={{

@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
 import { GlassInput, GlassButton, GlassCard } from "@/design-system";
 import { colors, typography, spacing } from "@/design-system/tokens";
 import { authApi } from "@/api/authService";
@@ -95,7 +96,7 @@ export default function ForgotPasswordScreen(): React.JSX.Element {
 
           {error && (
             <GlassCard variant="elevated" style={styles.errorCard}>
-              <Text style={styles.errorText}>⚠️ {error}</Text>
+              <Text style={styles.errorText}><Ionicons name="alert-circle-outline" size={14} color={colors.eu.orange} /> {error}</Text>
             </GlassCard>
           )}
 

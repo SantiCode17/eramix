@@ -110,7 +110,7 @@ export default function BlockedUsersScreen(): React.JSX.Element {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <EmptyState
-              icon="🕊️"
+              icon="shield-checkmark-outline"
               title="Sin bloqueos"
               message="No tienes usuarios bloqueados"
             />

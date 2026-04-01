@@ -14,14 +14,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
 import { GlassCard, Chip, LoadingSpinner, Divider } from "@/design-system/components";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { useProfileStore } from "@/store";
 import type { ProfileStackParamList } from "@/types";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const HEADER_MAX_HEIGHT = 320;
-const HEADER_MIN_HEIGHT = 120;
+const HEADER_MAX_HEIGHT = 300;
+const HEADER_MIN_HEIGHT = 110;
 const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 
 type Nav = StackNavigationProp<ProfileStackParamList, "ProfileMain">;
@@ -127,7 +128,10 @@ export default function ProfileScreen(): React.JSX.Element {
         >
           <Text style={styles.displayName}>{displayName}</Text>
           {location ? (
-            <Text style={styles.locationText}>📍 {location}</Text>
+            <View style={styles.locationRow}>
+              <Ionicons name="location-outline" size={14} color={colors.text.secondary} />
+              <Text style={styles.locationText}>{location}</Text>
+            </View>
           ) : null}
         </Animated.View>
 
@@ -136,7 +140,8 @@ export default function ProfileScreen(): React.JSX.Element {
           style={[styles.editButton, { top: insets.top + spacing.sm }]}
           onPress={() => navigation.navigate("EditProfile")}
         >
-          <Text style={styles.editButtonText}>✏️ Editar</Text>
+          <Ionicons name="create-outline" size={16} color={colors.text.primary} />
+          <Text style={styles.editButtonText}>Editar</Text>
         </Pressable>
       </Animated.View>
 
@@ -162,10 +167,10 @@ export default function ProfileScreen(): React.JSX.Element {
       >
         {/* Stats row */}
         <View style={styles.statsRow}>
-          <StatCard emoji="👥" value={profile?.friendCount ?? 0} label="Amigos" />
-          <StatCard emoji="🎉" value={profile?.eventCount ?? 0} label="Eventos" />
+          <StatCard icon="people-outline" value={profile?.friendCount ?? 0} label="Amigos" />
+          <StatCard icon="calendar-outline" value={profile?.eventCount ?? 0} label="Eventos" />
           <StatCard
-            emoji="📸"
+            icon="camera-outline"
             value={photos.length}
             label="Fotos"
             onPress={() => navigation.navigate("EditPhotos")}
@@ -183,7 +188,12 @@ export default function ProfileScreen(): React.JSX.Element {
         {/* University info */}
         {(profile?.homeUniversity || profile?.hostUniversity) && (
           <GlassCard variant="surface" style={styles.section}>
-            <Text style={styles.sectionTitle}>🎓 Universidad</Text>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Ionicons name="school-outline" size={16} color={colors.eu.star} />
+                <Text style={styles.sectionTitle}>Universidad</Text>
+              </View>
+            </View>
             {profile?.homeUniversity && (
               <View style={styles.uniRow}>
                 <Text style={styles.uniLabel}>Origen</Text>
@@ -213,7 +223,7 @@ export default function ProfileScreen(): React.JSX.Element {
               <>
                 <Divider style={styles.divider} />
                 <Text style={styles.mobilityDates}>
-                  📅 {profile.mobilityStartDate} → {profile.mobilityEndDate}
+                  {profile.mobilityStartDate} → {profile.mobilityEndDate}
                 </Text>
               </>
             )}
@@ -223,7 +233,10 @@ export default function ProfileScreen(): React.JSX.Element {
         {/* Interests */}
         <GlassCard variant="surface" style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>✨ Intereses</Text>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="sparkles-outline" size={16} color={colors.eu.star} />
+              <Text style={styles.sectionTitle}>Intereses</Text>
+            </View>
             <Pressable onPress={() => navigation.navigate("Interests")}>
               <Text style={styles.editLink}>Editar</Text>
             </Pressable>
@@ -250,7 +263,10 @@ export default function ProfileScreen(): React.JSX.Element {
         {/* Languages */}
         <GlassCard variant="surface" style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🌍 Idiomas</Text>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="globe-outline" size={16} color={colors.eu.star} />
+              <Text style={styles.sectionTitle}>Idiomas</Text>
+            </View>
             <Pressable onPress={() => navigation.navigate("Languages")}>
               <Text style={styles.editLink}>Editar</Text>
             </Pressable>
@@ -279,7 +295,10 @@ export default function ProfileScreen(): React.JSX.Element {
         {photos.length > 0 && (
           <GlassCard variant="surface" style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>📸 Fotos</Text>
+              <View style={styles.sectionTitleRow}>
+                <Ionicons name="images-outline" size={16} color={colors.eu.star} />
+                <Text style={styles.sectionTitle}>Fotos</Text>
+              </View>
               <Pressable onPress={() => navigation.navigate("EditPhotos")}>
                 <Text style={styles.editLink}>Ver todas</Text>
               </Pressable>
@@ -308,13 +327,15 @@ export default function ProfileScreen(): React.JSX.Element {
 
 // ── StatCard component ──────────────────────────────
 
+type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
+
 function StatCard({
-  emoji,
+  icon,
   value,
   label,
   onPress,
 }: {
-  emoji: string;
+  icon: IoniconsName;
   value: number;
   label: string;
   onPress?: () => void;
@@ -322,7 +343,7 @@ function StatCard({
   return (
     <Pressable onPress={onPress} style={styles.statCard}>
       <GlassCard variant="elevated" padding="sm" style={styles.statInner}>
-        <Text style={styles.statEmoji}>{emoji}</Text>
+        <Ionicons name={icon} size={22} color={colors.eu.star} style={{ marginBottom: spacing.xxs }} />
         <Text style={styles.statValue}>{value}</Text>
         <Text style={styles.statLabel}>{label}</Text>
       </GlassCard>
@@ -353,26 +374,26 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   avatarImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 3,
-    borderColor: colors.eu.star,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 2.5,
+    borderColor: "rgba(255, 204, 0, 0.5)",
   },
   avatarFallback: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.eu.deep,
-    borderWidth: 3,
-    borderColor: colors.eu.star,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "rgba(255, 204, 0, 0.1)",
+    borderWidth: 2.5,
+    borderColor: "rgba(255, 204, 0, 0.3)",
     alignItems: "center",
     justifyContent: "center",
   },
   avatarInitials: {
     fontFamily: typography.families.heading,
-    fontSize: 36,
-    color: colors.text.primary,
+    fontSize: 34,
+    color: colors.eu.star,
   },
   headerInfo: {
     alignItems: "center",
@@ -382,6 +403,12 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.h2.fontSize,
     color: colors.text.primary,
     marginBottom: spacing.xxs,
+    letterSpacing: -0.5,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   locationText: {
     fontFamily: typography.families.body,
@@ -391,12 +418,15 @@ const styles = StyleSheet.create({
   editButton: {
     position: "absolute",
     right: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: radii.full,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.15)",
   },
   editButtonText: {
     fontFamily: typography.families.bodyMedium,
@@ -406,7 +436,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing.md,
   },
-  // Stats
+  // Stats — modern design
   statsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -415,16 +445,17 @@ const styles = StyleSheet.create({
   },
   statCard: { flex: 1 },
   statInner: { alignItems: "center" },
-  statEmoji: { fontSize: 24, marginBottom: spacing.xxs },
   statValue: {
     fontFamily: typography.families.heading,
     fontSize: typography.sizes.h3.fontSize,
     color: colors.text.primary,
+    letterSpacing: -0.5,
   },
   statLabel: {
     fontFamily: typography.families.body,
     fontSize: typography.sizes.small.fontSize,
     color: colors.text.secondary,
+    marginTop: 2,
   },
   // Sections
   section: { marginBottom: spacing.md },
@@ -433,6 +464,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: spacing.sm,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   sectionTitle: {
     fontFamily: typography.families.subheading,
@@ -504,12 +540,12 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   langBadge: {
-    backgroundColor: "rgba(255,204,0,0.15)",
+    backgroundColor: "rgba(255,204,0,0.12)",
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
     borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: "rgba(255,204,0,0.3)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,204,0,0.25)",
   },
   langLevel: {
     fontFamily: typography.families.bodyMedium,

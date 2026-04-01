@@ -9,6 +9,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { ExchangeSession, ExchangeStackParamList } from "@/types/exchange";
 import * as exchangeApi from "@/api/exchange";
@@ -82,11 +83,11 @@ export default function ExchangeHomeScreen() {
       {/* Actions */}
       <View style={styles.actions}>
         <Pressable style={styles.actionBtn} onPress={() => nav.navigate("FindPartner")}>
-          <Text style={styles.actionEmoji}>🔍</Text>
+          <Ionicons name="search-outline" size={28} color={colors.eu.star} />
           <Text style={styles.actionLabel}>Buscar</Text>
         </Pressable>
         <Pressable style={styles.actionBtn} onPress={() => nav.navigate("ExchangeRequests")}>
-          <Text style={styles.actionEmoji}>📩</Text>
+          <Ionicons name="mail-outline" size={28} color={colors.eu.star} />
           <Text style={styles.actionLabel}>Solicitudes</Text>
         </Pressable>
       </View>
@@ -95,7 +96,7 @@ export default function ExchangeHomeScreen() {
         <View style={styles.center}><ActivityIndicator size="large" color={colors.eu.star} /></View>
       ) : error ? (
         <View style={styles.empty}>
-          <Text style={{ fontSize: 48 }}>⚠️</Text>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.status.error} />
           <Text style={styles.emptyTitle}>Error al cargar sesiones</Text>
           <Text style={styles.emptySubtitle}>{error}</Text>
           <Pressable style={styles.actionBtn} onPress={() => { setLoading(true); fetch(); }}>
@@ -104,7 +105,7 @@ export default function ExchangeHomeScreen() {
         </View>
       ) : sessions.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={{ fontSize: 64 }}>🗣️</Text>
+          <Ionicons name="chatbubbles-outline" size={64} color={colors.text.secondary} />
           <Text style={styles.emptyTitle}>Sin sesiones aún</Text>
           <Text style={styles.emptySubtitle}>Busca un compañero y empieza a practicar idiomas</Text>
         </View>

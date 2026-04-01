@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
 import { GlassButton } from "@/design-system";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { AuthStackParamList } from "@/types";
@@ -24,7 +25,7 @@ type Nav = StackNavigationProp<AuthStackParamList, "Onboarding">;
 
 interface Slide {
   id: string;
-  emoji: string;
+  icon: keyof typeof Ionicons.glyphMap;
   title: string;
   subtitle: string;
   gradient: readonly [string, string];
@@ -33,7 +34,7 @@ interface Slide {
 const slides: Slide[] = [
   {
     id: "1",
-    emoji: "🤝",
+    icon: "people-outline",
     title: "Amigos reales",
     subtitle:
       "Haz amigos de verdad en tu ciudad Erasmus. Sin citas, sin rollos. Solo gente con ganas de conocerse.",
@@ -41,7 +42,7 @@ const slides: Slide[] = [
   },
   {
     id: "2",
-    emoji: "🎯",
+    icon: "compass-outline",
     title: "Tus intereses",
     subtitle:
       "Conecta con personas que comparten tus hobbies: música, deporte, arte, idiomas, viajes y mucho más.",
@@ -49,7 +50,7 @@ const slides: Slide[] = [
   },
   {
     id: "3",
-    emoji: "🎉",
+    icon: "calendar-outline",
     title: "Eventos y planes",
     subtitle:
       "Descubre y crea eventos: quedadas, fiestas, viajes, intercambios de idiomas. Tu agenda Erasmus en un solo lugar.",
@@ -57,7 +58,7 @@ const slides: Slide[] = [
   },
   {
     id: "4",
-    emoji: "🌍",
+    icon: "globe-outline",
     title: "Tu comunidad",
     subtitle:
       "Miles de Erasmus te esperan. Únete a EraMix y empieza a vivir tu experiencia al máximo.",
@@ -130,17 +131,16 @@ export default function OnboardingScreen(): React.JSX.Element {
 
         {/* Illustration area */}
         <View style={styles.illustrationArea}>
-          <Animated.Text
+          <Animated.View
             style={[
-              styles.emoji,
               {
                 opacity: emojiOpacity,
                 transform: [{ scale: emojiScale }],
               },
             ]}
           >
-            {item.emoji}
-          </Animated.Text>
+            <Ionicons name={item.icon} size={80} color={colors.eu.star} />
+          </Animated.View>
         </View>
 
         {/* Text area */}

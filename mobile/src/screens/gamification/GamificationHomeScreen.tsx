@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { UserProgress, GamificationStackParamList } from "@/types/gamification";
 import * as gamificationApi from "@/api/gamification";
@@ -32,7 +33,7 @@ export default function GamificationHomeScreen() {
   return (
     <LinearGradient colors={[colors.background.start, colors.background.end]} style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>🏆 Gamificación</Text>
+        <Text style={styles.headerTitle}>Gamificación</Text>
       </View>
 
       {loading || !progress ? (
@@ -41,7 +42,7 @@ export default function GamificationHomeScreen() {
         <Animated.View entering={FadeInDown.duration(500)} style={styles.content}>
           {/* Level card */}
           <View style={styles.levelCard}>
-            <Text style={styles.levelEmoji}>⭐</Text>
+            <Ionicons name="star" size={48} color={colors.eu.star} />
             <Text style={styles.levelNumber}>Nivel {progress.level}</Text>
             <View style={styles.xpBarOuter}>
               <View style={[styles.xpBarInner, { width: `${Math.min(progress.progressPercent, 100)}%` }]} />
@@ -55,12 +56,12 @@ export default function GamificationHomeScreen() {
           {/* Stats */}
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Text style={styles.statEmoji}>🏅</Text>
+              <Ionicons name="ribbon-outline" size={28} color={colors.eu.star} />
               <Text style={styles.statValue}>{progress.achievementsUnlocked}</Text>
               <Text style={styles.statLabel}>Logros</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statEmoji}>📊</Text>
+              <Ionicons name="stats-chart-outline" size={28} color={colors.eu.star} />
               <Text style={styles.statValue}>{progress.totalAchievements}</Text>
               <Text style={styles.statLabel}>Total</Text>
             </View>
@@ -69,11 +70,11 @@ export default function GamificationHomeScreen() {
           {/* Action buttons */}
           <View style={styles.actions}>
             <Pressable style={styles.actionBtn} onPress={() => nav.navigate("Achievements")}>
-              <Text style={styles.actionEmoji}>🏅</Text>
+              <Ionicons name="ribbon-outline" size={28} color={colors.eu.star} />
               <Text style={styles.actionLabel}>Ver Logros</Text>
             </Pressable>
             <Pressable style={styles.actionBtn} onPress={() => nav.navigate("Leaderboard")}>
-              <Text style={styles.actionEmoji}>🏆</Text>
+              <Ionicons name="trophy-outline" size={28} color={colors.eu.star} />
               <Text style={styles.actionLabel}>Clasificación</Text>
             </Pressable>
           </View>

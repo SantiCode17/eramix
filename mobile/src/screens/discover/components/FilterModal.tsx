@@ -169,7 +169,7 @@ export default function FilterModal({
               {interests.map((interest) => (
                 <Chip
                   key={interest.id}
-                  label={`${interest.emoji ?? "✨"} ${interest.name}`}
+                  label={`${interest.name}`}
                   selected={localFilters.interestIds.includes(interest.id)}
                   onPress={() => toggleInterest(interest.id)}
                 />

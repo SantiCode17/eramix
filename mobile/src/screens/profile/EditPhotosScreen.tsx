@@ -119,7 +119,7 @@ export default function EditPhotosScreen(): React.JSX.Element {
             columnWrapperStyle={styles.gridRow}
             ListEmptyComponent={
               <EmptyState
-                icon="📸"
+                iconName="camera-outline"
                 title="Sin fotos"
                 message="Añade fotos para que otros te conozcan"
               />
@@ -134,7 +134,7 @@ export default function EditPhotosScreen(): React.JSX.Element {
           {photos.length < MAX_PHOTOS && (
             <View style={styles.addContainer}>
               <GlassButton
-                title={isAdding ? "Subiendo..." : "➕ Añadir foto"}
+                title={isAdding ? "Subiendo..." : "Añadir foto"}
                 onPress={handleAdd}
                 loading={isAdding}
                 disabled={isAdding}

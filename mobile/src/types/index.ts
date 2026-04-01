@@ -123,12 +123,9 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   Discover: undefined;
-  Globe: undefined;
   Events: undefined;
   Chat: undefined;
-  Groups: undefined;
   Communities: undefined;
-  Notifications: undefined;
   Profile: undefined;
 };
 
@@ -151,6 +148,9 @@ export type SettingsStackParamList = {
 
 export type DrawerParamList = {
   HomeTabs: undefined;
+  Globe: undefined;
+  Groups: undefined;
+  Notifications: undefined;
   Exchange: undefined;
   Gamification: undefined;
   Challenges: undefined;

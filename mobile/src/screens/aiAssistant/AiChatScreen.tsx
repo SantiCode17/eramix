@@ -13,6 +13,7 @@ import { FlashList } from "@shopify/flash-list";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { sendAiChat } from "@/api/aiAssistant";
 import { handleError } from "@/utils/errorHandler";
@@ -69,7 +70,7 @@ export default function AiChatScreen() {
         entering={FadeInDown.duration(200)}
         style={[styles.msgRow, isUser ? styles.msgRowUser : styles.msgRowAi]}
       >
-        {!isUser && <Text style={styles.avatar}>🤖</Text>}
+        {!isUser && <View style={styles.avatar}><Ionicons name="chatbox-ellipses-outline" size={20} color={colors.eu.star} /></View>}
         <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAi]}>
           <Text style={[styles.bubbleText, isUser && styles.bubbleTextUser]}>{item.content}</Text>
         </View>
@@ -80,7 +81,7 @@ export default function AiChatScreen() {
   return (
     <LinearGradient colors={[colors.background.start, colors.background.end]} style={styles.root}>
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Text style={styles.headerTitle}>🤖 Asistente Erasmus</Text>
+        <Text style={styles.headerTitle}>Asistente Erasmus</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -97,7 +98,7 @@ export default function AiChatScreen() {
           onContentSizeChange={() => listRef.current?.scrollToEnd?.({ animated: true })}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={{ fontSize: 64 }}>🤖</Text>
+              <Ionicons name="chatbox-ellipses-outline" size={64} color={colors.text.secondary} />
               <Text style={styles.emptyTitle}>¡Hola! Soy tu asistente</Text>
               <Text style={styles.emptySubtitle}>
                 Pregúntame sobre alojamiento, idiomas, documentos, ciudades o cualquier duda Erasmus.

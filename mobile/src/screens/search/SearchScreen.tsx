@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as searchApi from "@/api/search";
 import { handleError } from "@/utils/errorHandler";
+import { Ionicons } from "@expo/vector-icons";
 import { Header } from "@/design-system";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 
@@ -118,7 +119,7 @@ export default function SearchScreen(): React.JSX.Element {
           </Text>
           {(item.destinationCity || item.destinationCountry) && (
             <Text style={styles.resultLocation} numberOfLines={1}>
-              📍{" "}
+              <Ionicons name="location-outline" size={12} color={colors.eu.star} />{" "}
               {[item.destinationCity, item.destinationCountry]
                 .filter(Boolean)
                 .join(", ")}
@@ -145,7 +146,7 @@ export default function SearchScreen(): React.JSX.Element {
 
       {/* Search bar */}
       <View style={styles.searchBar}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Ionicons name="search-outline" size={20} color={colors.text.secondary} />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar ciudad, país..."
@@ -195,7 +196,7 @@ export default function SearchScreen(): React.JSX.Element {
         </View>
       ) : searched && results.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.emptyEmoji}>🔍</Text>
+          <Ionicons name="search-outline" size={48} color={colors.text.secondary} />
           <Text style={styles.emptyText}>No se encontraron resultados</Text>
         </View>
       ) : (

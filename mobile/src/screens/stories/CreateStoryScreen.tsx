@@ -15,6 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import * as storiesApi from "@/api/stories";
 import { handleError } from "@/utils/errorHandler";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 
 interface Props {
@@ -93,7 +94,7 @@ export default function CreateStoryScreen({
           <Image source={{ uri: imageUri }} style={styles.preview} />
         ) : (
           <View style={styles.placeholderArea}>
-            <Text style={styles.placeholderEmoji}>📷</Text>
+            <Ionicons name="camera-outline" size={48} color={colors.text.secondary} />
             <Text style={styles.placeholderText}>
               Toca para seleccionar una foto
             </Text>

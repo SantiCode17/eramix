@@ -15,6 +15,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import { searchApi } from "@/api";
 import { handleError } from "@/utils/errorHandler";
 import { useLocationStore } from "@/store/useLocationStore";
+import { Ionicons } from "@expo/vector-icons";
 import { Header, GlassButton } from "@/design-system";
 import { colors, typography, spacing, radii, shadows } from "@/design-system/tokens";
 import type { NearbyUserResponse, DiscoverStackParamList } from "@/types";
@@ -108,7 +109,7 @@ export default function NearbyMapScreen(): React.JSX.Element {
             <ActivityIndicator size="large" color={colors.eu.star} />
           ) : (
             <>
-              <Text style={styles.permIcon}>📍</Text>
+              <Ionicons name="location-outline" size={40} color={colors.eu.star} />
               <Text style={styles.permTitle}>Ubicación necesaria</Text>
               <Text style={styles.permText}>
                 Activa la ubicación para ver estudiantes Erasmus cerca de ti
@@ -243,7 +244,7 @@ export default function NearbyMapScreen(): React.JSX.Element {
                 {selectedUser.firstName} {selectedUser.lastName}
               </Text>
               <Text style={styles.selectedDistance}>
-                📍 {selectedUser.distanceKm.toFixed(1)} km •{" "}
+                <Ionicons name="location-outline" size={13} color={colors.eu.star} /> {selectedUser.distanceKm.toFixed(1)} km •{" "}
                 {[selectedUser.destinationCity, selectedUser.destinationCountry]
                   .filter(Boolean)
                   .join(", ")}

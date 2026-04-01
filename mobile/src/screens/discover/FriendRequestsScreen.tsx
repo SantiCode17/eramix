@@ -237,7 +237,7 @@ export default function FriendRequestsScreen(): React.JSX.Element {
           }
           ListEmptyComponent={
             <EmptyState
-              icon={activeTab === "received" ? "📩" : "📤"}
+              iconName={activeTab === "received" ? "mail-outline" : "send-outline"}
               title={
                 activeTab === "received"
                   ? "Sin solicitudes recibidas"

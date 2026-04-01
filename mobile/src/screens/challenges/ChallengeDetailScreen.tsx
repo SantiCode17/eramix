@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { ChallengeSubmission, ChallengesStackParamList } from "@/types/challenges";
 import * as challengeApi from "@/api/challenges";
@@ -61,7 +62,7 @@ export default function ChallengeDetailScreen() {
                 style={[styles.voteBtn, item.votedByMe && styles.voteBtnActive]}
                 onPress={() => !item.votedByMe && handleVote(item.id)}
               >
-                <Text style={styles.voteEmoji}>❤️</Text>
+                <Text style={styles.voteEmoji}><Ionicons name={item.votedByMe ? "heart" : "heart-outline"} size={20} color={item.votedByMe ? colors.status.error : colors.text.secondary} /></Text>
                 <Text style={[styles.voteCount, item.votedByMe && styles.voteCountActive]}>
                   {item.voteCount}
                 </Text>
@@ -91,7 +92,7 @@ export default function ChallengeDetailScreen() {
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + 40 }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={{ fontSize: 48 }}>📷</Text>
+              <Ionicons name="camera-outline" size={48} color={colors.text.secondary} />
               <Text style={styles.emptyTitle}>Sin participaciones aún</Text>
             </View>
           }
