@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  TextInput,
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import * as Haptics from "expo-haptics";
+import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import { useChatStore } from "@/store/useChatStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Ionicons } from "@expo/vector-icons";
@@ -164,14 +166,18 @@ function ConversationRow({
 
 // ── Empty State ─────────────────────────────────────
 
-function EmptyState() {
+function ChatEmptyState() {
   return (
     <View style={styles.emptyContainer}>
-      <Ionicons name="chatbubbles-outline" size={48} color={colors.text.secondary} />
-      <Text style={styles.emptyTitle}>Sin conversaciones</Text>
-      <Text style={styles.emptySubtitle}>
+      <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.emptyIconCircle}>
+        <Ionicons name="chatbubbles-outline" size={40} color={colors.eu.star} />
+      </Animated.View>
+      <Animated.Text entering={FadeInDown.delay(400).springify()} style={styles.emptyTitle}>
+        Sin conversaciones
+      </Animated.Text>
+      <Animated.Text entering={FadeInDown.delay(600).springify()} style={styles.emptySubtitle}>
         Descubre estudiantes Erasmus y empieza a chatear
-      </Text>
+      </Animated.Text>
     </View>
   );
 }
@@ -241,14 +247,22 @@ export default function ConversationsScreen(): React.JSX.Element {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <Text style={styles.headerTitle}>Mensajes</Text>
-        <View style={styles.connectionDot}>
-          <View
-            style={[
-              styles.connDot,
-              { backgroundColor: isWsConnected ? "#4CAF50" : "#F44336" },
-            ]}
-          />
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Mensajes</Text>
+          <View style={styles.headerActions}>
+            <View style={[
+              styles.connectionDot,
+              { backgroundColor: isWsConnected ? "rgba(76,175,80,0.15)" : "rgba(244,67,54,0.15)" },
+            ]}>
+              <View style={[styles.connDot, { backgroundColor: isWsConnected ? "#4CAF50" : "#F44336" }]} />
+              <Text style={styles.connText}>{isWsConnected ? "Online" : "Offline"}</Text>
+            </View>
+          </View>
+        </View>
+        {/* Search bar */}
+        <View style={styles.searchBar}>
+          <Ionicons name="search-outline" size={16} color={colors.text.disabled} />
+          <Text style={styles.searchPlaceholder}>Buscar conversaciones...</Text>
         </View>
       </View>
 
@@ -262,7 +276,7 @@ export default function ConversationsScreen(): React.JSX.Element {
           data={conversations}
           renderItem={renderItem}
           keyExtractor={(item) => String(item.id)}
-          ListEmptyComponent={EmptyState}
+          ListEmptyComponent={ChatEmptyState}
           refreshControl={
             <RefreshControl
               refreshing={isLoadingConversations}
@@ -287,29 +301,58 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   headerTitle: {
     fontFamily: typography.families.heading,
     fontSize: 28,
     color: colors.text.primary,
+    letterSpacing: -0.5,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   connectionDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.glass.white,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.full,
   },
   connDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  connText: {
+    fontFamily: typography.families.bodyMedium,
+    fontSize: typography.sizes.tiny.fontSize,
+    color: colors.text.secondary,
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+  },
+  searchPlaceholder: {
+    fontFamily: typography.families.body,
+    fontSize: typography.sizes.bodySmall.fontSize,
+    color: colors.text.disabled,
   },
   loadingContainer: {
     flex: 1,
@@ -427,8 +470,15 @@ const styles = StyleSheet.create({
     paddingTop: 120,
     gap: spacing.sm,
   },
-  emptyEmoji: {
-    fontSize: 64,
+  emptyIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(255, 215, 0, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 215, 0, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: spacing.md,
   },
   emptyTitle: {
