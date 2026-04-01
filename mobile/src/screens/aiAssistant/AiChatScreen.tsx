@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { sendAiChat } from "@/api/aiAssistant";
+import { handleError } from "@/utils/errorHandler";
 import type { AiMessageData } from "@/types/aiAssistant";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import type { AiAssistantStackParamList } from "@/types/aiAssistant";
@@ -47,11 +48,12 @@ export default function AiChatScreen() {
       const res = (await sendAiChat({ conversationId: convId, message: msg })) as any;
       setConvId(res.id);
       setMessages(res.messages);
-    } catch {
+    } catch (e) {
+      const msg = handleError(e, "AiChat.send");
       const errorMsg: AiMessageData = {
         id: Date.now() + 1,
         role: "ASSISTANT",
-        content: "Lo siento, hubo un error. Intenta de nuevo.",
+        content: msg,
         createdAt: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMsg]);

@@ -10,16 +10,18 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { LeaderboardEntry } from "@/types/gamification";
 import * as gamificationApi from "@/api/gamification";
+import { handleError } from "@/utils/errorHandler";
 
 export default function LeaderboardScreen() {
   const nav = useNavigation();
   const insets = useSafeAreaInsets();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
-    try { setEntries(await gamificationApi.getLeaderboard()); }
-    catch (e) { console.error(e); }
+    try { setError(null); setEntries(await gamificationApi.getLeaderboard()); }
+    catch (e) { setError(handleError(e, "Leaderboard.getLeaderboard")); }
     finally { setLoading(false); }
   }, []);
 

@@ -16,7 +16,7 @@ import { GlassInput, GlassButton, GlassCard } from "@/design-system";
 import { colors, typography, spacing } from "@/design-system/tokens";
 import { authApi } from "@/api/authService";
 import type { AuthStackParamList } from "@/types";
-import { AxiosError } from "axios";
+import { parseApiError, logError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<AuthStackParamList, "ResetPassword">;
 type Route = RouteProp<AuthStackParamList, "ResetPassword">;
@@ -67,11 +67,17 @@ export default function ResetPasswordScreen(): React.JSX.Element {
       await authApi.resetPassword({ token: token.trim(), newPassword });
       setSuccess(true);
     } catch (err) {
-      if (err instanceof AxiosError) {
-        const msg = err.response?.data?.message || err.response?.data?.error;
-        setError(msg || "Error al restablecer la contraseña");
+      const parsed = parseApiError(err, "Restablecer contraseña");
+      logError(parsed);
+
+      if (parsed.code === "NETWORK_ERROR") {
+        setError("No se pudo conectar al servidor. Verifica tu conexión.");
+      } else if (parsed.code === "TIMEOUT") {
+        setError("El servidor tardó demasiado. Intenta de nuevo.");
+      } else if (parsed.code === "UNAUTHORIZED") {
+        setError("Token inválido o expirado. Solicita un nuevo enlace.");
       } else {
-        setError("Error de conexión");
+        setError(parsed.serverMessage || parsed.message);
       }
     } finally {
       setLoading(false);

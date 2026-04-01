@@ -16,7 +16,7 @@ import { GlassInput, GlassButton, GlassCard } from "@/design-system";
 import { colors, typography, spacing } from "@/design-system/tokens";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { AuthStackParamList, RegisterRequest } from "@/types";
-import { AxiosError } from "axios";
+import { parseApiError, logError } from "@/utils/errorHandler";
 
 const { width } = Dimensions.get("window");
 type Nav = StackNavigationProp<AuthStackParamList, "Register">;
@@ -148,16 +148,33 @@ export default function RegisterScreen(): React.JSX.Element {
     try {
       await register(data);
     } catch (err) {
-      if (err instanceof AxiosError) {
-        const msg = err.response?.data?.message || err.response?.data?.error;
-        if (err.response?.status === 409) {
-          setError("Ya existe una cuenta con ese email");
+      const parsed = parseApiError(err, "Registro");
+      logError(parsed);
+
+      switch (parsed.code) {
+        case "CONFLICT":
+          setError("Ya existe una cuenta con ese email. ¿Quieres iniciar sesión?");
           setStep(1);
-        } else {
-          setError(msg || "Error al registrarse. Intenta de nuevo.");
-        }
-      } else {
-        setError("Error de conexión. Comprueba tu red.");
+          break;
+        case "VALIDATION_ERROR":
+        case "BAD_REQUEST":
+          setError(parsed.serverMessage || "Datos de registro inválidos. Revisa los campos.");
+          break;
+        case "NETWORK_ERROR":
+          setError(
+            "No se pudo conectar al servidor.\n\n" +
+            "• Verifica tu conexión a Internet\n" +
+            "• Asegúrate de que el backend está ejecutándose"
+          );
+          break;
+        case "TIMEOUT":
+          setError("El servidor tardó demasiado. Intenta de nuevo.");
+          break;
+        case "SERVER_ERROR":
+          setError(`Error interno del servidor (${parsed.status}). Intenta más tarde.`);
+          break;
+        default:
+          setError(parsed.serverMessage || parsed.message);
       }
     }
   };

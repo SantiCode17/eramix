@@ -12,6 +12,7 @@ import * as Haptics from "expo-haptics";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { HousingPost, HousingStackParamList } from "@/types/housing";
 import * as housingApi from "@/api/housing";
+import { handleError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<HousingStackParamList, "HousingList">;
 
@@ -21,10 +22,11 @@ export default function HousingListScreen() {
   const [posts, setPosts] = useState<HousingPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
-    try { setPosts(await housingApi.getAllPosts()); }
-    catch (e) { console.error(e); }
+    try { setError(null); setPosts(await housingApi.getAllPosts()); }
+    catch (e) { setError(handleError(e, "Housing.getAllPosts")); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 

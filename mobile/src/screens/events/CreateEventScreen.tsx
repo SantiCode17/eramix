@@ -19,6 +19,7 @@ import { useNavigation } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Haptics from "expo-haptics";
 import * as eventsApi from "@/api/events";
+import { handleError } from "@/utils/errorHandler";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 
 const CATEGORIES = [
@@ -81,8 +82,7 @@ export default function CreateEventScreen(): React.JSX.Element {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.goBack();
     } catch (e) {
-      console.error(e);
-      Alert.alert("Error", "No se pudo crear el evento");
+      Alert.alert("Error", handleError(e, "CreateEvent.submit"));
     } finally {
       setSubmitting(false);
     }

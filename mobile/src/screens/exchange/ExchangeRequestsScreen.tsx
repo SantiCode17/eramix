@@ -11,6 +11,7 @@ import * as Haptics from "expo-haptics";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { ExchangeRequest } from "@/types/exchange";
 import * as exchangeApi from "@/api/exchange";
+import { handleError } from "@/utils/errorHandler";
 
 export default function ExchangeRequestsScreen() {
   const nav = useNavigation();
@@ -18,15 +19,17 @@ export default function ExchangeRequestsScreen() {
   const [tab, setTab] = useState<"received" | "sent">("received");
   const [requests, setRequests] = useState<ExchangeRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
+      setError(null);
       const data = tab === "received"
         ? await exchangeApi.getPendingReceived()
         : await exchangeApi.getSentRequests();
       setRequests(data);
-    } catch (e) { console.error("Error:", e); }
+    } catch (e) { setError(handleError(e, "ExchangeRequests.fetch")); }
     finally { setLoading(false); }
   }, [tab]);
 
@@ -37,14 +40,14 @@ export default function ExchangeRequestsScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await exchangeApi.acceptRequest(id);
       fetch();
-    } catch (e) { Alert.alert("Error", "No se pudo aceptar"); }
+    } catch (e) { Alert.alert("Error al aceptar", handleError(e, "ExchangeRequests.accept")); }
   };
 
   const handleReject = async (id: number) => {
     try {
       await exchangeApi.rejectRequest(id);
       fetch();
-    } catch (e) { Alert.alert("Error", "No se pudo rechazar"); }
+    } catch (e) { Alert.alert("Error al rechazar", handleError(e, "ExchangeRequests.reject")); }
   };
 
   const renderItem = useCallback(

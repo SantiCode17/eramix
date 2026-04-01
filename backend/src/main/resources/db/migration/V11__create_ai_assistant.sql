@@ -5,7 +5,7 @@ CREATE TABLE ai_conversation (
     title      VARCHAR(200) NOT NULL DEFAULT 'Nueva conversación',
     created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE ai_message (
@@ -14,6 +14,7 @@ CREATE TABLE ai_message (
     role                VARCHAR(20)  NOT NULL,  -- USER / ASSISTANT
     content             TEXT         NOT NULL,
     created_at          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (ai_conversation_id) REFERENCES ai_conversation(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

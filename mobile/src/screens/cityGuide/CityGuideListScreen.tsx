@@ -13,6 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { getPlaces } from "@/api/cityGuide";
+import { handleError } from "@/utils/errorHandler";
 import type { Place, CityGuideStackParamList } from "@/types/cityGuide";
 
 const CATEGORY_EMOJIS: Record<string, string> = {
@@ -36,12 +37,16 @@ export default function CityGuideListScreen() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
+      setError(null);
       const res = await getPlaces(search || undefined);
       setPlaces(res as any);
-    } catch {}
+    } catch (e) {
+      setError(handleError(e, "CityGuide.getPlaces"));
+    }
   }, [search]);
 
   useEffect(() => {

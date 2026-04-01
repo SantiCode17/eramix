@@ -23,6 +23,7 @@ import type {
   CommunitiesStackParamList,
 } from "@/types/communities";
 import * as communitiesApi from "@/api/communities";
+import { handleError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<CommunitiesStackParamList, "CommunitiesList">;
 
@@ -120,7 +121,7 @@ export default function CommunitiesScreen() {
       }
       setCommunities(data);
     } catch (e) {
-      console.error("Error fetching communities:", e);
+      handleError(e, "Communities.fetch");
     } finally {
       setLoading(false);
       setRefreshing(false);

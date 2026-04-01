@@ -12,6 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import * as notificationsApi from "@/api/notifications";
+import { handleError } from "@/utils/errorHandler";
 import { Header, EmptyState, GlassButton } from "@/design-system";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { NotificationData, NotificationType } from "@/types/notifications";
@@ -54,7 +55,7 @@ export default function NotificationsScreen(): React.JSX.Element {
         );
         setPage(pageNum);
       } catch (e) {
-        console.warn("Notifications fetch error", e);
+        handleError(e, "Notifications.fetch");
       }
     },
     [],
@@ -64,7 +65,9 @@ export default function NotificationsScreen(): React.JSX.Element {
     try {
       const count = await notificationsApi.getUnreadCount();
       setUnreadCount(count);
-    } catch (_) {}
+    } catch (e) {
+      handleError(e, "Notifications.getUnreadCount");
+    }
   }, []);
 
   useEffect(() => {
@@ -92,7 +95,9 @@ export default function NotificationsScreen(): React.JSX.Element {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
-    } catch (_) {}
+    } catch (e) {
+      handleError(e, "Notifications.markAllRead");
+    }
   }, []);
 
   const handleMarkRead = useCallback(async (id: number) => {
@@ -102,7 +107,9 @@ export default function NotificationsScreen(): React.JSX.Element {
         prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
       );
       setUnreadCount((c) => Math.max(0, c - 1));
-    } catch (_) {}
+    } catch (e) {
+      handleError(e, "Notifications.markRead");
+    }
   }, []);
 
   const handleDelete = useCallback(async (id: number) => {
@@ -110,7 +117,9 @@ export default function NotificationsScreen(): React.JSX.Element {
       await notificationsApi.deleteNotification(id);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
-    } catch (_) {}
+    } catch (e) {
+      handleError(e, "Notifications.delete");
+    }
   }, []);
 
   const timeAgo = (iso: string): string => {

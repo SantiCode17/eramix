@@ -12,6 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { getPlace, getReviews, addReview } from "@/api/cityGuide";
+import { handleError } from "@/utils/errorHandler";
 import type { Place, PlaceReview, CityGuideStackParamList } from "@/types/cityGuide";
 
 const CATEGORY_EMOJIS: Record<string, string> = {
@@ -46,7 +47,9 @@ export default function PlaceDetailScreen() {
         ]);
         setPlace(p as any);
         setReviews(r as any);
-      } catch {}
+      } catch (e) {
+        handleError(e, "PlaceDetail.load");
+      }
     })();
   }, [params.placeId]);
 
@@ -59,8 +62,8 @@ export default function PlaceDetailScreen() {
       setReviews(r as any);
       const p = await getPlace(params.placeId);
       setPlace(p as any);
-    } catch {
-      Alert.alert("Error", "No se pudo enviar la reseña");
+    } catch (e) {
+      Alert.alert("Error", handleError(e, "PlaceDetail.addReview"));
     }
   };
 

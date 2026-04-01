@@ -19,7 +19,7 @@ CREATE TABLE housing_post (
     is_active       BOOLEAN       NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_hp_user FOREIGN KEY (user_id) REFERENCES users(id)
+    CONSTRAINT fk_hp_user FOREIGN KEY (user_id) REFERENCES user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE roommate_preference (
@@ -34,5 +34,5 @@ CREATE TABLE roommate_preference (
     bio             VARCHAR(500),
     created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_rp_user FOREIGN KEY (user_id) REFERENCES users(id)
+    CONSTRAINT fk_rp_user FOREIGN KEY (user_id) REFERENCES user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

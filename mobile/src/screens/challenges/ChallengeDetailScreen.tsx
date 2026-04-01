@@ -11,6 +11,7 @@ import * as Haptics from "expo-haptics";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { ChallengeSubmission, ChallengesStackParamList } from "@/types/challenges";
 import * as challengeApi from "@/api/challenges";
+import { handleError } from "@/utils/errorHandler";
 
 type Route = RouteProp<ChallengesStackParamList, "ChallengeDetail">;
 
@@ -24,7 +25,7 @@ export default function ChallengeDetailScreen() {
 
   const fetch = useCallback(async () => {
     try { setSubmissions(await challengeApi.getSubmissions(challengeId)); }
-    catch (e) { console.error(e); }
+    catch (e) { Alert.alert("Error al cargar", handleError(e, "ChallengeDetail.getSubmissions")); }
     finally { setLoading(false); }
   }, [challengeId]);
 
@@ -35,7 +36,7 @@ export default function ChallengeDetailScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await challengeApi.voteSubmission(subId);
       fetch();
-    } catch (e) { Alert.alert("Error", "Ya has votado"); }
+    } catch (e) { Alert.alert("Error al votar", handleError(e, "ChallengeDetail.vote")); }
   };
 
   const renderItem = useCallback(

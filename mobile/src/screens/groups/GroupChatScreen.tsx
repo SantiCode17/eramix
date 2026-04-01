@@ -22,6 +22,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { GroupMessageData, GroupsStackParamList } from "@/types/groups";
 import * as groupsApi from "@/api/groups";
+import { handleError } from "@/utils/errorHandler";
 
 type Route = RouteProp<GroupsStackParamList, "GroupChat">;
 type Nav = StackNavigationProp<GroupsStackParamList, "GroupChat">;
@@ -116,7 +117,7 @@ export default function GroupChatScreen() {
       setMessages(page.content.reverse());
       await groupsApi.markGroupAsRead(groupId);
     } catch (e) {
-      console.error("Error fetching group messages:", e);
+      handleError(e, "GroupChat.getMessages");
     } finally {
       setLoading(false);
     }

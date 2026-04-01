@@ -19,6 +19,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { GroupData, GroupMember, GroupsStackParamList } from "@/types/groups";
 import * as groupsApi from "@/api/groups";
+import { handleError } from "@/utils/errorHandler";
 
 type Route = RouteProp<GroupsStackParamList, "GroupSettings">;
 type Nav = StackNavigationProp<GroupsStackParamList, "GroupSettings">;
@@ -39,7 +40,7 @@ export default function GroupSettingsScreen() {
         const data = await groupsApi.getGroup(groupId);
         setGroup(data);
       } catch (e) {
-        console.error("Error fetching group:", e);
+        handleError(e, "GroupSettings.getGroup");
       } finally {
         setLoading(false);
       }
@@ -62,7 +63,7 @@ export default function GroupSettingsScreen() {
             await groupsApi.leaveGroup(groupId);
             nav.popToTop();
           } catch (e) {
-            Alert.alert("Error", "No se pudo salir del grupo");
+            Alert.alert("Error", handleError(e, "GroupSettings.leave"));
           }
         },
       },
@@ -89,7 +90,7 @@ export default function GroupSettingsScreen() {
                   : prev,
               );
             } catch (e) {
-              Alert.alert("Error", "No se pudo eliminar al miembro");
+              Alert.alert("Error", handleError(e, "GroupSettings.removeMember"));
             }
           },
         },

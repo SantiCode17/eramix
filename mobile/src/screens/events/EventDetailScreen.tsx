@@ -16,6 +16,7 @@ import type { RouteProp } from "@react-navigation/native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import * as eventsApi from "@/api/events";
+import { handleError } from "@/utils/errorHandler";
 import { useAuthStore } from "@/store/useAuthStore";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { EventData, EventParticipant, EventsStackParamList } from "@/types/events";
@@ -68,7 +69,7 @@ export default function EventDetailScreen(): React.JSX.Element {
       setEvent(ev);
       setParticipants(parts);
     } catch (e) {
-      console.error("[EventDetail]", e);
+      handleError(e, "EventDetail.fetchData");
     } finally {
       setLoading(false);
     }
@@ -85,7 +86,7 @@ export default function EventDetailScreen(): React.JSX.Element {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       fetchData();
     } catch (e) {
-      console.error(e);
+      Alert.alert("Error", handleError(e, "EventDetail.join"));
     } finally {
       setActionLoading(false);
     }
@@ -98,7 +99,7 @@ export default function EventDetailScreen(): React.JSX.Element {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       fetchData();
     } catch (e) {
-      console.error(e);
+      Alert.alert("Error", handleError(e, "EventDetail.leave"));
     } finally {
       setActionLoading(false);
     }
@@ -115,7 +116,7 @@ export default function EventDetailScreen(): React.JSX.Element {
             await eventsApi.deleteEvent(eventId);
             navigation.goBack();
           } catch (e) {
-            console.error(e);
+            Alert.alert("Error", handleError(e, "EventDetail.delete"));
           }
         },
       },

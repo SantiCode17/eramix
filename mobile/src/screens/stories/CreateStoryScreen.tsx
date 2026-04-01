@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import * as storiesApi from "@/api/stories";
+import { handleError } from "@/utils/errorHandler";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 
 interface Props {
@@ -51,8 +52,7 @@ export default function CreateStoryScreen({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onClose();
     } catch (e) {
-      console.error(e);
-      Alert.alert("Error", "No se pudo publicar la historia");
+      Alert.alert("Error", handleError(e, "CreateStory.submit"));
     } finally {
       setSubmitting(false);
     }

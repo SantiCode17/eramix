@@ -12,6 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import * as storiesApi from "@/api/stories";
+import { handleError } from "@/utils/errorHandler";
 import { useAuthStore } from "@/store/useAuthStore";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { StoryData, UserStories } from "@/types/stories";
@@ -55,7 +56,7 @@ export default function StoriesBar({
       }
       setGroups(Array.from(map.values()));
     } catch (e) {
-      console.warn("StoriesBar fetch error", e);
+      handleError(e, "StoriesBar.getStoryFeed");
     } finally {
       setLoading(false);
     }

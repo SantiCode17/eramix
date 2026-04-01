@@ -17,6 +17,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import * as eventsApi from "@/api/events";
+import { handleError } from "@/utils/errorHandler";
 import { colors, typography, spacing, radii, shadows } from "@/design-system/tokens";
 import type { EventData, EventsStackParamList } from "@/types/events";
 
@@ -141,7 +142,7 @@ export default function EventsScreen(): React.JSX.Element {
         );
         setEvents(result.content);
       } catch (e) {
-        console.error("[Events] Error:", e);
+        handleError(e, "Events.getUpcoming");
       } finally {
         setLoading(false);
         setRefreshing(false);

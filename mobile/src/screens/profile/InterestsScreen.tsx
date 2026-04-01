@@ -18,6 +18,7 @@ import {
 import { colors, typography, spacing } from "@/design-system/tokens";
 import { useProfileStore } from "@/store";
 import type { Interest } from "@/types";
+import { handleError } from "@/utils/errorHandler";
 
 export default function InterestsScreen(): React.JSX.Element {
   const navigation = useNavigation();
@@ -71,9 +72,7 @@ export default function InterestsScreen(): React.JSX.Element {
       await updateProfile({ interestIds: Array.from(selectedIds) });
       navigation.goBack();
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Error al guardar";
-      Alert.alert("Error", message);
+      Alert.alert("Error al guardar intereses", handleError(error, "Interests.save"));
     } finally {
       setIsSaving(false);
     }

@@ -10,16 +10,18 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { Achievement } from "@/types/gamification";
 import * as gamificationApi from "@/api/gamification";
+import { handleError } from "@/utils/errorHandler";
 
 export default function AchievementsScreen() {
   const nav = useNavigation();
   const insets = useSafeAreaInsets();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
-    try { setAchievements(await gamificationApi.getAchievements()); }
-    catch (e) { console.error(e); }
+    try { setError(null); setAchievements(await gamificationApi.getAchievements()); }
+    catch (e) { setError(handleError(e, "Achievements.getAchievements")); }
     finally { setLoading(false); }
   }, []);
 

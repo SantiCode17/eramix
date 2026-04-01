@@ -13,7 +13,7 @@ CREATE TABLE erasmus_challenge (
     created_by   BIGINT       NOT NULL,
     created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_challenge_creator FOREIGN KEY (created_by) REFERENCES users(id)
+    CONSTRAINT fk_challenge_creator FOREIGN KEY (created_by) REFERENCES user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE challenge_submission (
@@ -27,7 +27,7 @@ CREATE TABLE challenge_submission (
     updated_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_challenge_user (challenge_id, user_id),
     CONSTRAINT fk_sub_challenge FOREIGN KEY (challenge_id) REFERENCES erasmus_challenge(id),
-    CONSTRAINT fk_sub_user      FOREIGN KEY (user_id)      REFERENCES users(id)
+    CONSTRAINT fk_sub_user      FOREIGN KEY (user_id)      REFERENCES user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE challenge_vote (
@@ -38,5 +38,5 @@ CREATE TABLE challenge_vote (
     updated_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_vote_user (submission_id, user_id),
     CONSTRAINT fk_vote_submission FOREIGN KEY (submission_id) REFERENCES challenge_submission(id),
-    CONSTRAINT fk_vote_user       FOREIGN KEY (user_id)       REFERENCES users(id)
+    CONSTRAINT fk_vote_user       FOREIGN KEY (user_id)       REFERENCES user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

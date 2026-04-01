@@ -19,6 +19,7 @@ import {
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { useProfileStore } from "@/store";
 import type { BlockedUser } from "@/types";
+import { handleError } from "@/utils/errorHandler";
 
 export default function BlockedUsersScreen(): React.JSX.Element {
   const navigation = useNavigation();
@@ -42,11 +43,7 @@ export default function BlockedUsersScreen(): React.JSX.Element {
               try {
                 await unblockUser(user.receiverId);
               } catch (error: unknown) {
-                const message =
-                  error instanceof Error
-                    ? error.message
-                    : "Error al desbloquear";
-                Alert.alert("Error", message);
+                Alert.alert("Error al desbloquear", handleError(error, "BlockedUsers.unblock"));
               }
             },
           },

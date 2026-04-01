@@ -19,6 +19,7 @@ import * as Haptics from "expo-haptics";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { CommunitiesStackParamList } from "@/types/communities";
 import * as communitiesApi from "@/api/communities";
+import { handleError } from "@/utils/errorHandler";
 
 type ScreenRoute = RouteProp<CommunitiesStackParamList, "CreateCommunityPost">;
 type Nav = StackNavigationProp<CommunitiesStackParamList, "CreateCommunityPost">;
@@ -46,10 +47,7 @@ export default function CreateCommunityPostScreen() {
       });
       nav.goBack();
     } catch (e: any) {
-      Alert.alert(
-        "Error",
-        e?.response?.data?.message || "No se pudo crear la publicación",
-      );
+      Alert.alert("Error", handleError(e, "CreateCommunityPost.submit"));
     } finally {
       setSubmitting(false);
     }

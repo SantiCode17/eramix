@@ -22,7 +22,7 @@ CREATE TABLE user_achievement (
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_user_achievement (user_id, achievement_id),
-    CONSTRAINT fk_ua_user       FOREIGN KEY (user_id)        REFERENCES users(id),
+    CONSTRAINT fk_ua_user       FOREIGN KEY (user_id)        REFERENCES user(id),
     CONSTRAINT fk_ua_achievement FOREIGN KEY (achievement_id) REFERENCES achievement(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -34,7 +34,7 @@ CREATE TABLE user_level (
     total_xp   INT    NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_ul_user FOREIGN KEY (user_id) REFERENCES users(id)
+    CONSTRAINT fk_ulevel_user FOREIGN KEY (user_id) REFERENCES user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE xp_transaction (
@@ -45,7 +45,7 @@ CREATE TABLE xp_transaction (
     source_type VARCHAR(40)  NOT NULL DEFAULT 'SYSTEM',
     created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_xp_user FOREIGN KEY (user_id) REFERENCES users(id)
+    CONSTRAINT fk_xp_user FOREIGN KEY (user_id) REFERENCES user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Seed default achievements

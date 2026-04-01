@@ -18,6 +18,7 @@ import {
 import { colors, typography, spacing } from "@/design-system/tokens";
 import { accountApi } from "@/api";
 import { useAuthStore } from "@/store";
+import { handleError } from "@/utils/errorHandler";
 
 export default function DeleteAccountScreen(): React.JSX.Element {
   const navigation = useNavigation();
@@ -45,11 +46,7 @@ export default function DeleteAccountScreen(): React.JSX.Element {
               await accountApi.deleteAccount(password);
               clearSession();
             } catch (error: unknown) {
-              const message =
-                error instanceof Error
-                  ? error.message
-                  : "Error al eliminar cuenta";
-              Alert.alert("Error", message);
+              Alert.alert("Error al eliminar cuenta", handleError(error, "DeleteAccount.delete"));
             } finally {
               setIsDeleting(false);
             }

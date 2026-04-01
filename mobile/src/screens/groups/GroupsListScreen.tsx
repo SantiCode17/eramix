@@ -18,6 +18,7 @@ import * as Haptics from "expo-haptics";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { GroupData, GroupsStackParamList } from "@/types/groups";
 import * as groupsApi from "@/api/groups";
+import { handleError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<GroupsStackParamList, "GroupsList">;
 
@@ -113,7 +114,7 @@ export default function GroupsListScreen() {
       const data = await groupsApi.getMyGroups();
       setGroups(data);
     } catch (e) {
-      console.error("Error fetching groups:", e);
+      handleError(e, "Groups.getMyGroups");
     } finally {
       setLoading(false);
       setRefreshing(false);

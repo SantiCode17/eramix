@@ -26,6 +26,7 @@ import type {
   CommunitiesStackParamList,
 } from "@/types/communities";
 import * as communitiesApi from "@/api/communities";
+import { handleError } from "@/utils/errorHandler";
 
 type ScreenRoute = RouteProp<CommunitiesStackParamList, "CommunityFeed">;
 type Nav = StackNavigationProp<CommunitiesStackParamList, "CommunityFeed">;
@@ -195,7 +196,7 @@ export default function CommunityFeedScreen() {
       const data = await communitiesApi.getCommunity(communityId);
       setCommunity(data);
     } catch (e) {
-      console.error("Error fetching community:", e);
+      handleError(e, "CommunityFeed.getCommunity");
     }
   }, [communityId]);
 
@@ -211,7 +212,7 @@ export default function CommunityFeedScreen() {
         setHasMore(!data.last);
         setPage(p);
       } catch (e) {
-        console.error("Error fetching posts:", e);
+        handleError(e, "CommunityFeed.getPosts");
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -248,7 +249,7 @@ export default function CommunityFeedScreen() {
           prev.map((p) => (p.id === postId ? updated : p)),
         );
       } catch (e) {
-        console.error("Error toggling like:", e);
+        handleError(e, "CommunityFeed.toggleLike");
       }
     },
     [communityId],
@@ -261,7 +262,7 @@ export default function CommunityFeedScreen() {
         // Refresh the post to get updated comment count
         fetchPosts(0, true);
       } catch (e) {
-        console.error("Error adding comment:", e);
+        handleError(e, "CommunityFeed.createComment");
       }
     },
     [communityId, fetchPosts],
@@ -277,7 +278,7 @@ export default function CommunityFeedScreen() {
       }
       fetchCommunity();
     } catch (e) {
-      console.error("Error join/leave:", e);
+      handleError(e, "CommunityFeed.joinLeave");
     }
   }, [community, communityId, fetchCommunity]);
 

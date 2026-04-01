@@ -24,6 +24,7 @@ import {
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { useProfileStore } from "@/store";
 import type { ProfileStackParamList, UserUpdateRequest } from "@/types";
+import { handleError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<ProfileStackParamList, "EditProfile">;
 
@@ -69,9 +70,8 @@ export default function EditProfileScreen(): React.JSX.Element {
       await updateProfile(data);
       navigation.goBack();
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Error al guardar";
-      Alert.alert("Error", message);
+      const message = handleError(error, "EditProfile.save");
+      Alert.alert("Error al guardar perfil", message);
     } finally {
       setIsSaving(false);
     }
@@ -99,9 +99,8 @@ export default function EditProfileScreen(): React.JSX.Element {
       try {
         await updateProfilePhoto(result.assets[0].uri);
       } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Error al subir foto";
-        Alert.alert("Error", message);
+        const message = handleError(error, "EditProfile.uploadPhoto");
+        Alert.alert("Error al subir foto", message);
       } finally {
         setIsUploadingPhoto(false);
       }

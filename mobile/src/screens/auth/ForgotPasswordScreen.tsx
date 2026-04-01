@@ -15,7 +15,7 @@ import { GlassInput, GlassButton, GlassCard } from "@/design-system";
 import { colors, typography, spacing } from "@/design-system/tokens";
 import { authApi } from "@/api/authService";
 import type { AuthStackParamList } from "@/types";
-import { AxiosError } from "axios";
+import { parseApiError, logError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<AuthStackParamList, "ForgotPassword">;
 
@@ -58,10 +58,15 @@ export default function ForgotPasswordScreen(): React.JSX.Element {
       }
       setSuccess("Si el email existe, recibirás un enlace para restablecer tu contraseña.");
     } catch (err) {
-      if (err instanceof AxiosError) {
-        setError(err.response?.data?.message || "Error al enviar el enlace");
+      const parsed = parseApiError(err, "Recuperar contraseña");
+      logError(parsed);
+
+      if (parsed.code === "NETWORK_ERROR") {
+        setError("No se pudo conectar al servidor. Verifica tu conexión.");
+      } else if (parsed.code === "TIMEOUT") {
+        setError("El servidor tardó demasiado. Intenta de nuevo.");
       } else {
-        setError("Error de conexión");
+        setError(parsed.serverMessage || parsed.message);
       }
     } finally {
       setLoading(false);

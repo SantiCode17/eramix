@@ -18,6 +18,7 @@ import {
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { useProfileStore } from "@/store";
 import type { Language, UserLanguageRequest } from "@/types";
+import { handleError } from "@/utils/errorHandler";
 
 const PROFICIENCY_LEVELS = [
   { key: "BEGINNER", label: "Principiante", emoji: "🌱" },
@@ -104,9 +105,7 @@ export default function LanguagesScreen(): React.JSX.Element {
       await updateProfile({ languages });
       navigation.goBack();
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Error al guardar";
-      Alert.alert("Error", message);
+      Alert.alert("Error al guardar idiomas", handleError(error, "Languages.save"));
     } finally {
       setIsSaving(false);
     }

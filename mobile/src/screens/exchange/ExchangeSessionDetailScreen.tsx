@@ -9,6 +9,7 @@ import * as Haptics from "expo-haptics";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { ExchangeSession, ExchangeStackParamList } from "@/types/exchange";
 import * as exchangeApi from "@/api/exchange";
+import { handleError } from "@/utils/errorHandler";
 
 type Route = RouteProp<ExchangeStackParamList, "ExchangeSessionDetail">;
 
@@ -24,7 +25,7 @@ export default function ExchangeSessionDetailScreen() {
     try {
       const all = await exchangeApi.getMySessions();
       setSession(all.find((s) => s.id === sessionId) || null);
-    } catch (e) { console.error(e); }
+    } catch (e) { Alert.alert("Error", handleError(e, "SessionDetail.fetch")); }
     finally { setLoading(false); }
   }, [sessionId]);
 
@@ -35,14 +36,14 @@ export default function ExchangeSessionDetailScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await exchangeApi.completeSession(sessionId);
       fetch();
-    } catch (e) { Alert.alert("Error", "No se pudo completar"); }
+    } catch (e) { Alert.alert("Error al completar", handleError(e, "SessionDetail.complete")); }
   };
 
   const handleCancel = async () => {
     try {
       await exchangeApi.cancelSession(sessionId);
       fetch();
-    } catch (e) { Alert.alert("Error", "No se pudo cancelar"); }
+    } catch (e) { Alert.alert("Error al cancelar", handleError(e, "SessionDetail.cancel")); }
   };
 
   if (loading) {

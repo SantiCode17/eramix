@@ -16,6 +16,7 @@ import { GlassButton, Header, LoadingSpinner, EmptyState } from "@/design-system
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import { useProfileStore } from "@/store";
 import type { UserPhotoResponse } from "@/types";
+import { handleError } from "@/utils/errorHandler";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PHOTO_SIZE = (SCREEN_WIDTH - spacing.md * 2 - spacing.sm * 2) / 3;
@@ -48,9 +49,7 @@ export default function EditPhotosScreen(): React.JSX.Element {
       try {
         await addPhoto(result.assets[0].uri, photos.length);
       } catch (error: unknown) {
-        const message =
-          error instanceof Error ? error.message : "Error al subir foto";
-        Alert.alert("Error", message);
+        Alert.alert("Error al subir foto", handleError(error, "EditPhotos.addPhoto"));
       } finally {
         setIsAdding(false);
       }
@@ -71,11 +70,7 @@ export default function EditPhotosScreen(): React.JSX.Element {
               try {
                 await deletePhoto(photo.id);
               } catch (error: unknown) {
-                const message =
-                  error instanceof Error
-                    ? error.message
-                    : "Error al eliminar foto";
-                Alert.alert("Error", message);
+                Alert.alert("Error al eliminar", handleError(error, "EditPhotos.deletePhoto"));
               }
             },
           },

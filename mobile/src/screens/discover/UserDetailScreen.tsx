@@ -13,6 +13,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RouteProp } from "@react-navigation/native";
 import { profileApi } from "@/api";
 import { friendRequestsApi } from "@/api/discoverService";
+import { handleError } from "@/utils/errorHandler";
 import { Header, GlassCard, GlassButton, LoadingSpinner, Chip } from "@/design-system";
 import { colors, typography, spacing, radii, shadows } from "@/design-system/tokens";
 import type { User, DiscoverStackParamList } from "@/types";
@@ -41,8 +42,8 @@ export default function UserDetailScreen(): React.JSX.Element {
     try {
       const data = await profileApi.getProfile(userId);
       setUser(data);
-    } catch {
-      // silent
+    } catch (e) {
+      handleError(e, "UserDetail.getProfile");
     } finally {
       setLoading(false);
     }
@@ -53,8 +54,8 @@ export default function UserDetailScreen(): React.JSX.Element {
     try {
       await friendRequestsApi.send(userId);
       setRequestSent(true);
-    } catch {
-      // silent
+    } catch (e) {
+      handleError(e, "UserDetail.sendFriendRequest");
     } finally {
       setSending(false);
     }

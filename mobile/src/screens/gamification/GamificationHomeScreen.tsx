@@ -10,6 +10,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { UserProgress, GamificationStackParamList } from "@/types/gamification";
 import * as gamificationApi from "@/api/gamification";
+import { handleError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<GamificationStackParamList, "GamificationHome">;
 
@@ -18,10 +19,11 @@ export default function GamificationHomeScreen() {
   const insets = useSafeAreaInsets();
   const [progress, setProgress] = useState<UserProgress | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
-    try { setProgress(await gamificationApi.getProgress()); }
-    catch (e) { console.error(e); }
+    try { setError(null); setProgress(await gamificationApi.getProgress()); }
+    catch (e) { setError(handleError(e, "Gamification.getProgress")); }
     finally { setLoading(false); }
   }, []);
 

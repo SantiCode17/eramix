@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  View, Text, StyleSheet, Pressable, ActivityIndicator, ScrollView, Image,
+  View, Text, StyleSheet, Pressable, ActivityIndicator, ScrollView, Image, Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,6 +8,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { HousingPost, HousingStackParamList } from "@/types/housing";
 import * as housingApi from "@/api/housing";
+import { handleError } from "@/utils/errorHandler";
 
 type Route = RouteProp<HousingStackParamList, "HousingDetail">;
 
@@ -23,7 +24,7 @@ export default function HousingDetailScreen() {
     try {
       const all = await housingApi.getAllPosts();
       setPost(all.find((p) => p.id === postId) || null);
-    } catch (e) { console.error(e); }
+    } catch (e) { Alert.alert("Error al cargar", handleError(e, "HousingDetail.fetch")); }
     finally { setLoading(false); }
   }, [postId]);
 

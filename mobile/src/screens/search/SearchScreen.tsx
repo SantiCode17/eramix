@@ -12,6 +12,7 @@ import { FlashList } from "@shopify/flash-list";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as searchApi from "@/api/search";
+import { handleError } from "@/utils/errorHandler";
 import { Header } from "@/design-system";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 
@@ -63,7 +64,7 @@ export default function SearchScreen(): React.JSX.Element {
         });
         setResults(res.content);
       } catch (e) {
-        console.warn("Search error", e);
+        handleError(e, "Search.searchUsers");
       } finally {
         setLoading(false);
       }
@@ -88,7 +89,7 @@ export default function SearchScreen(): React.JSX.Element {
         }
         setResults(data);
       } catch (e) {
-        console.warn("Quick filter error", e);
+        handleError(e, "Search.quickFilter");
       } finally {
         setLoading(false);
       }

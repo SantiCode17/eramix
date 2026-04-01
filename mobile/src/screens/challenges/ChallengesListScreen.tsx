@@ -12,6 +12,7 @@ import * as Haptics from "expo-haptics";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { Challenge, ChallengesStackParamList } from "@/types/challenges";
 import * as challengeApi from "@/api/challenges";
+import { handleError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<ChallengesStackParamList, "ChallengesList">;
 
@@ -21,10 +22,11 @@ export default function ChallengesListScreen() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
-    try { setChallenges(await challengeApi.getActiveChallenges()); }
-    catch (e) { console.error(e); }
+    try { setError(null); setChallenges(await challengeApi.getActiveChallenges()); }
+    catch (e) { setError(handleError(e, "Challenges.getActive")); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 

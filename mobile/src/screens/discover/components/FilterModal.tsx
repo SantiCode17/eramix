@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { GlassModal, GlassButton, Chip } from "@/design-system";
 import { catalogApi } from "@/api";
+import { handleError } from "@/utils/errorHandler";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { DiscoverFilters, Interest, Language } from "@/types";
 
@@ -49,8 +50,8 @@ export default function FilterModal({
       ]);
       setInterests(interestsData);
       setLanguages(languagesData);
-    } catch {
-      // Silently fail — catalogs are optional enhancement
+    } catch (e) {
+      handleError(e, "FilterModal.loadCatalogs");
     } finally {
       setLoadingCatalogs(false);
     }

@@ -19,6 +19,7 @@ import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { GroupsStackParamList } from "@/types/groups";
 import type { NearbyUserResponse } from "@/types/discover";
 import * as groupsApi from "@/api/groups";
+import { handleError } from "@/utils/errorHandler";
 import { apiClient } from "@/api/client";
 
 type Nav = StackNavigationProp<GroupsStackParamList, "CreateGroup">;
@@ -49,7 +50,7 @@ export default function CreateGroupScreen() {
         );
         setFriends(data.data);
       } catch (e) {
-        console.error("Error fetching friends:", e);
+        handleError(e, "CreateGroup.fetchFriends");
       } finally {
         setLoading(false);
       }
@@ -79,7 +80,7 @@ export default function CreateGroupScreen() {
       });
       nav.goBack();
     } catch (e) {
-      Alert.alert("Error", "No se pudo crear el grupo");
+      Alert.alert("Error", handleError(e, "CreateGroup.create"));
     } finally {
       setCreating(false);
     }

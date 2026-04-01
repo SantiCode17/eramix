@@ -12,6 +12,7 @@ import * as Haptics from "expo-haptics";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { ExchangeSession, ExchangeStackParamList } from "@/types/exchange";
 import * as exchangeApi from "@/api/exchange";
+import { handleError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<ExchangeStackParamList, "ExchangeHome">;
 
@@ -21,10 +22,11 @@ export default function ExchangeHomeScreen() {
   const [sessions, setSessions] = useState<ExchangeSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
-    try { setSessions(await exchangeApi.getMySessions()); }
-    catch (e) { console.error("Error fetching sessions:", e); }
+    try { setError(null); setSessions(await exchangeApi.getMySessions()); }
+    catch (e) { setError(handleError(e, "ExchangeHome.getMySessions")); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
@@ -91,6 +93,15 @@ export default function ExchangeHomeScreen() {
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator size="large" color={colors.eu.star} /></View>
+      ) : error ? (
+        <View style={styles.empty}>
+          <Text style={{ fontSize: 48 }}>⚠️</Text>
+          <Text style={styles.emptyTitle}>Error al cargar sesiones</Text>
+          <Text style={styles.emptySubtitle}>{error}</Text>
+          <Pressable style={styles.actionBtn} onPress={() => { setLoading(true); fetch(); }}>
+            <Text style={styles.actionLabel}>Reintentar</Text>
+          </Pressable>
+        </View>
       ) : sessions.length === 0 ? (
         <View style={styles.empty}>
           <Text style={{ fontSize: 64 }}>🗣️</Text>

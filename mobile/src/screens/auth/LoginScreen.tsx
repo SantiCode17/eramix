@@ -16,7 +16,7 @@ import { colors, typography, spacing } from "@/design-system/tokens";
 import { useAuthStore } from "@/store/useAuthStore";
 import Globe3D from "@/components/Globe3D";
 import type { AuthStackParamList } from "@/types";
-import { AxiosError } from "axios";
+import { parseApiError, logError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<AuthStackParamList, "Login">;
 
@@ -71,18 +71,31 @@ export default function LoginScreen(): React.JSX.Element {
     try {
       await login({ email: email.trim().toLowerCase(), password });
     } catch (err) {
-      if (err instanceof AxiosError) {
-        const status = err.response?.status;
-        const msg = err.response?.data?.message || err.response?.data?.error;
-        if (status === 401) {
-          setError("Email o contraseña incorrectos");
-        } else if (status === 404) {
-          setError("No existe una cuenta con ese email");
-        } else {
-          setError(msg || "Error al iniciar sesión. Intenta de nuevo.");
-        }
-      } else {
-        setError("Error de conexión. Comprueba tu red.");
+      const parsed = parseApiError(err, "Login");
+      logError(parsed);
+
+      switch (parsed.code) {
+        case "UNAUTHORIZED":
+          setError("Email o contraseña incorrectos. Verifica tus credenciales.");
+          break;
+        case "NOT_FOUND":
+          setError("No existe una cuenta con ese email. ¿Quieres registrarte?");
+          break;
+        case "NETWORK_ERROR":
+          setError(
+            "No se pudo conectar al servidor.\n\n" +
+            "• Verifica tu conexión a Internet\n" +
+            "• Asegúrate de que el backend está ejecutándose"
+          );
+          break;
+        case "TIMEOUT":
+          setError("El servidor tardó demasiado en responder. Intenta de nuevo.");
+          break;
+        case "SERVER_ERROR":
+          setError(`Error interno del servidor (${parsed.status}). Intenta más tarde.`);
+          break;
+        default:
+          setError(parsed.serverMessage || parsed.message);
       }
     }
   };

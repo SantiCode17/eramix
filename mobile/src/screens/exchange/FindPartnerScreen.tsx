@@ -11,16 +11,18 @@ import * as Haptics from "expo-haptics";
 import { colors, typography, spacing, radii } from "@/design-system/tokens";
 import type { ExchangePartner } from "@/types/exchange";
 import * as exchangeApi from "@/api/exchange";
+import { handleError } from "@/utils/errorHandler";
 
 export default function FindPartnerScreen() {
   const nav = useNavigation();
   const insets = useSafeAreaInsets();
   const [partners, setPartners] = useState<ExchangePartner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
-    try { setPartners(await exchangeApi.findPartners()); }
-    catch (e) { console.error("Error:", e); }
+    try { setError(null); setPartners(await exchangeApi.findPartners()); }
+    catch (e) { setError(handleError(e, "FindPartner.findPartners")); }
     finally { setLoading(false); }
   }, []);
 

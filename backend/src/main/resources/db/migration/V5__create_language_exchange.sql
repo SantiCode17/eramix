@@ -13,10 +13,10 @@ CREATE TABLE language_exchange_request (
     status          VARCHAR(20)   NOT NULL DEFAULT 'PENDING',
     created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (requester_id)      REFERENCES users(id),
-    FOREIGN KEY (target_id)         REFERENCES users(id),
-    FOREIGN KEY (offer_language_id) REFERENCES languages(id),
-    FOREIGN KEY (want_language_id)  REFERENCES languages(id),
+    FOREIGN KEY (requester_id)      REFERENCES user(id),
+    FOREIGN KEY (target_id)         REFERENCES user(id),
+    FOREIGN KEY (offer_language_id) REFERENCES language(id),
+    FOREIGN KEY (want_language_id)  REFERENCES language(id),
     UNIQUE KEY uq_exchange_request (requester_id, target_id, offer_language_id, want_language_id)
 );
 
@@ -33,8 +33,8 @@ CREATE TABLE exchange_session (
     created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (request_id) REFERENCES language_exchange_request(id),
-    FOREIGN KEY (user_a_id)  REFERENCES users(id),
-    FOREIGN KEY (user_b_id)  REFERENCES users(id)
+    FOREIGN KEY (user_a_id)  REFERENCES user(id),
+    FOREIGN KEY (user_b_id)  REFERENCES user(id)
 );
 
 -- ── Reseñas de sesiones ─────────────────────────────
@@ -48,7 +48,7 @@ CREATE TABLE exchange_review (
     created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (session_id)  REFERENCES exchange_session(id),
-    FOREIGN KEY (reviewer_id) REFERENCES users(id),
-    FOREIGN KEY (reviewee_id) REFERENCES users(id),
+    FOREIGN KEY (reviewer_id) REFERENCES user(id),
+    FOREIGN KEY (reviewee_id) REFERENCES user(id),
     UNIQUE KEY uq_review (session_id, reviewer_id)
 );

@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { searchApi } from "@/api";
+import { handleError } from "@/utils/errorHandler";
 import { useLocationStore } from "@/store/useLocationStore";
 import { Header, GlassButton } from "@/design-system";
 import { colors, typography, spacing, radii, shadows } from "@/design-system/tokens";
@@ -86,8 +87,8 @@ export default function NearbyMapScreen(): React.JSX.Element {
     try {
       const users = await searchApi.findNearby(latitude, longitude, radiusKm);
       setNearbyUsers(users);
-    } catch {
-      // silent
+    } catch (e) {
+      handleError(e, "NearbyMap.findNearby");
     } finally {
       setLoadingUsers(false);
     }
