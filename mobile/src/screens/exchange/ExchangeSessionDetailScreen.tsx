@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
 import type { ExchangeSession, ExchangeStackParamList } from "@/types/exchange";
 import * as exchangeApi from "@/api/exchange";
 import { handleError } from "@/utils/errorHandler";
@@ -48,7 +48,7 @@ export default function ExchangeSessionDetailScreen() {
 
   if (loading) {
     return (
-      <LinearGradient colors={[colors.background.start, colors.background.end]} style={[styles.container, { paddingTop: insets.top }]}>
+      <LinearGradient colors={[DS.background, "#0E1A35", "#0F1535"]} style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.center}><ActivityIndicator size="large" color={colors.eu.star} /></View>
       </LinearGradient>
     );
@@ -56,14 +56,14 @@ export default function ExchangeSessionDetailScreen() {
 
   if (!session) {
     return (
-      <LinearGradient colors={[colors.background.start, colors.background.end]} style={[styles.container, { paddingTop: insets.top }]}>
+      <LinearGradient colors={[DS.background, "#0E1A35", "#0F1535"]} style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.center}><Text style={styles.emptyTitle}>Sesión no encontrada</Text></View>
       </LinearGradient>
     );
   }
 
   return (
-    <LinearGradient colors={[colors.background.start, colors.background.end]} style={[styles.container, { paddingTop: insets.top }]}>
+    <LinearGradient colors={[DS.background, "#0E1A35", "#0F1535"]} style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.headerBar}>
         <Pressable onPress={() => nav.goBack()} style={styles.backBtn}><Text style={{ fontSize: 22 }}>←</Text></Pressable>
         <Text style={styles.headerTitle}>Detalle de Sesión</Text>
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
   headerTitle: { flex: 1, textAlign: "center", fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary },
   content: { padding: spacing.lg },
-  card: { backgroundColor: colors.glass.white, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.glass.border, padding: spacing.lg },
+  card: { backgroundColor: "rgba(255,255,255,0.04)", borderRadius: radii.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255,255,255,0.08)", padding: spacing.lg },
   langRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginBottom: spacing.lg },
   langBadge: { backgroundColor: colors.eu.star + "20", paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radii.full },
   langText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.caption, color: colors.eu.star },
@@ -143,9 +143,9 @@ const styles = StyleSheet.create({
   label: { fontFamily: typography.families.bodyMedium, ...typography.sizes.bodySmall, color: colors.text.secondary },
   value: { fontFamily: typography.families.body, ...typography.sizes.body, color: colors.text.primary, marginTop: spacing.xxs },
   btnRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.lg },
-  completeBtn: { flex: 1, backgroundColor: colors.status.success + "20", borderRadius: radii.full, paddingVertical: spacing.md, alignItems: "center", borderWidth: 1, borderColor: colors.status.success },
+  completeBtn: { flex: 1, backgroundColor: colors.status.success + "20", borderRadius: radii.full, paddingVertical: spacing.md, alignItems: "center", borderWidth: StyleSheet.hairlineWidth, borderColor: colors.status.success },
   completeBtnText: { fontFamily: typography.families.bodyBold, ...typography.sizes.button, color: colors.status.success },
-  cancelBtn: { flex: 1, backgroundColor: colors.status.error + "20", borderRadius: radii.full, paddingVertical: spacing.md, alignItems: "center", borderWidth: 1, borderColor: colors.status.error },
+  cancelBtn: { flex: 1, backgroundColor: colors.status.error + "20", borderRadius: radii.full, paddingVertical: spacing.md, alignItems: "center", borderWidth: StyleSheet.hairlineWidth, borderColor: colors.status.error },
   cancelBtnText: { fontFamily: typography.families.bodyBold, ...typography.sizes.button, color: colors.status.error },
   emptyTitle: { fontFamily: typography.families.heading, ...typography.sizes.h3, color: colors.text.primary },
 });

@@ -2,14 +2,11 @@ package com.eramix.service;
 
 import com.eramix.dto.auth.*;
 import com.eramix.dto.user.UserProfileResponse;
-import com.eramix.entity.RefreshToken;
-import com.eramix.entity.University;
-import com.eramix.entity.User;
+import com.eramix.entity.*;
+import com.eramix.entity.enums.ProficiencyLevel;
 import com.eramix.event.UserRegisteredEvent;
 import com.eramix.exception.*;
-import com.eramix.repository.RefreshTokenRepository;
-import com.eramix.repository.UniversityRepository;
-import com.eramix.repository.UserRepository;
+import com.eramix.repository.*;
 import com.eramix.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,6 +28,9 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UniversityRepository universityRepository;
+    private final LanguageRepository languageRepository;
+    private final InterestRepository interestRepository;
+    private final UserLanguageRepository userLanguageRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
@@ -60,6 +60,14 @@ public class AuthService {
                 .destinationCountry(request.getDestinationCountry())
                 .mobilityStart(request.getMobilityStartDate())
                 .mobilityEnd(request.getMobilityEndDate())
+                .authProvider(request.getAuthProvider() != null ? request.getAuthProvider() : "LOCAL")
+                .providerId(request.getProviderId())
+                .degree(request.getDegree())
+                .gender(request.getGender())
+                .lookingForGender(request.getLookingForGender())
+                .showGenderOnProfile(request.getShowGenderOnProfile() != null ? request.getShowGenderOnProfile() : true)
+                .notificationsEnabled(request.getNotificationsEnabled() != null ? request.getNotificationsEnabled() : false)
+                .intentions(request.getIntentions() != null ? request.getIntentions() : new java.util.HashSet<>())
                 .isVerified(false)
                 .isActive(true)
                 .build();
@@ -77,17 +85,44 @@ public class AuthService {
             user.setHostUniversity(host);
         }
 
-        user = userRepository.save(user);
+        final User savedUser = userRepository.save(user);
+
+        // ── Save languages ─────────────────────────────────
+        if (request.getLanguages() != null && !request.getLanguages().isEmpty()) {
+            for (var langReq : request.getLanguages()) {
+                languageRepository.findById(langReq.getLanguageId()).ifPresent(lang -> {
+                    ProficiencyLevel level;
+                    try {
+                        level = ProficiencyLevel.valueOf(langReq.getProficiencyLevel().toUpperCase());
+                    } catch (Exception e) {
+                        level = ProficiencyLevel.BASIC;
+                    }
+                    UserLanguage ul = UserLanguage.builder()
+                            .user(savedUser)
+                            .language(lang)
+                            .proficiencyLevel(level)
+                            .build();
+                    userLanguageRepository.save(ul);
+                });
+            }
+        }
+
+        // ── Save interests ─────────────────────────────────
+        if (request.getInterestIds() != null && !request.getInterestIds().isEmpty()) {
+            var interests = interestRepository.findAllById(request.getInterestIds());
+            savedUser.getInterests().addAll(interests);
+            userRepository.save(savedUser);
+        }
 
         // Publish event for auto-community creation
-        String universityName = user.getHostUniversity() != null
-                ? user.getHostUniversity().getName() : null;
+        String universityName = savedUser.getHostUniversity() != null
+                ? savedUser.getHostUniversity().getName() : null;
         eventPublisher.publishEvent(new UserRegisteredEvent(
-                this, user.getId(), universityName,
-                user.getDestinationCity(), user.getDestinationCountry()
+                this, savedUser.getId(), universityName,
+                savedUser.getDestinationCity(), savedUser.getDestinationCountry()
         ));
 
-        return buildAuthResponse(user);
+        return buildAuthResponse(savedUser);
     }
 
     // ── Login ──────────────────────────────────────────────

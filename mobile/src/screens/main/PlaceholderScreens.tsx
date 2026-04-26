@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import type { ComponentProps } from "react";
-import { colors, typography, spacing } from "@/design-system/tokens";
+import { colors, typography, spacing, DS } from "@/design-system/tokens";
 
 type IoniconsName = ComponentProps<typeof Ionicons>["name"];
 
@@ -16,7 +16,7 @@ export default function PlaceholderScreen({ title, icon }: Props): React.JSX.Ele
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
+        colors={[DS.background, "#0E1A35", "#0F1535"]}
         style={StyleSheet.absoluteFill}
       />
       <Ionicons name={icon} size={64} color={colors.text.secondary} style={{ marginBottom: spacing.md }} />

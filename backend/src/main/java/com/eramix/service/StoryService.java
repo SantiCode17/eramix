@@ -1,11 +1,15 @@
 package com.eramix.service;
 
+import com.eramix.dto.story.StoryReactionResponse;
 import com.eramix.dto.story.StoryResponse;
 import com.eramix.entity.Story;
+import com.eramix.entity.StoryReaction;
 import com.eramix.entity.StoryView;
 import com.eramix.entity.User;
 import com.eramix.exception.UserNotFoundException;
 import com.eramix.repository.*;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,9 +28,11 @@ public class StoryService {
 
     private final StoryRepository storyRepository;
     private final StoryViewRepository storyViewRepository;
+    private final StoryReactionRepository storyReactionRepository;
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
     private final FileStorageService fileStorageService;
+    private final Counter storyReactionsCounter;
 
     // ── 1. POST / ── Crear story con upload ───────────────
 
@@ -118,6 +124,40 @@ public class StoryService {
         return storyRepository.findActiveByUserId(targetUserId, now).stream()
                 .map(s -> mapToResponse(s, currentUserId))
                 .toList();
+    }
+
+    // ── 6. POST /{id}/react ── Reaccionar a story ──────────
+
+    @Transactional
+    public StoryReactionResponse reactToStory(Long storyId, Long userId, String emoji) {
+        Story story = storyRepository.findById(storyId)
+                .orElseThrow(() -> new IllegalArgumentException("Story no encontrada"));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+        // Upsert: actualizar emoji si ya existe, crear si no
+        StoryReaction reaction = storyReactionRepository.findByStoryIdAndUserId(storyId, userId)
+                .map(existing -> {
+                    existing.setEmoji(emoji);
+                    return existing;
+                })
+                .orElseGet(() -> StoryReaction.builder()
+                        .story(story)
+                        .user(user)
+                        .emoji(emoji)
+                        .build());
+
+        storyReactionRepository.save(reaction);
+        storyReactionsCounter.increment();
+        long total = storyReactionRepository.countByStoryId(storyId);
+
+        return StoryReactionResponse.builder()
+                .storyId(storyId)
+                .userId(userId)
+                .emoji(emoji)
+                .totalReactions(total)
+                .build();
     }
 
     // ── Mapper ────────────────────────────────────────────

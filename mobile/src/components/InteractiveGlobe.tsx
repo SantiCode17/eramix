@@ -11,7 +11,6 @@ import * as THREE from "three";
 import {
   Gesture,
   GestureDetector,
-  GestureHandlerRootView,
 } from "react-native-gesture-handler";
 import type { CountryPin } from "@/types/globe";
 
@@ -268,12 +267,13 @@ export default function InteractiveGlobe({
   // ── Create country pins ───────────────────────────
   const createPins = useCallback(
     (scene: THREE.Scene, pinData: CountryPin[]): THREE.Mesh[] => {
-      // Remove old pins
+      // Remove old pins (they may be children of globe or scene)
       pinMeshesRef.current.forEach((m) => {
-        scene.remove(m);
+        if (m.parent) m.parent.remove(m);
         m.geometry.dispose();
         if (m.material instanceof THREE.Material) m.material.dispose();
       });
+      pinMeshesRef.current = [];
 
       const meshes: THREE.Mesh[] = [];
       const maxStudents = Math.max(
@@ -315,7 +315,7 @@ export default function InteractiveGlobe({
         scene.add(mesh);
         meshes.push(mesh);
 
-        // Add a subtle "beam" from surface
+        // Add a subtle "beam" from surface — tracked so it rotates with globe
         const beamGeo = new THREE.CylinderGeometry(
           size * 0.3,
           size * 0.3,
@@ -328,12 +328,12 @@ export default function InteractiveGlobe({
           opacity: 0.25 + ratio * 0.3,
         });
         const beam = new THREE.Mesh(beamGeo, beamMat);
-
-        // Orient beam to point outward from globe center
+        // No pinIndex userData — tap won't trigger selection on beams
         beam.position.copy(pos);
         beam.lookAt(0, 0, 0);
         beam.rotateX(Math.PI / 2);
         scene.add(beam);
+        meshes.push(beam); // track for cleanup + globe parenting
       });
 
       return meshes;
@@ -352,20 +352,26 @@ export default function InteractiveGlobe({
         canvas: {
           width: w,
           height: h,
-          style: {},
+          style: { touchAction: "none" },
           addEventListener: () => {},
           removeEventListener: () => {},
+          clientWidth: w,
           clientHeight: h,
           getContext: () => gl,
           toDataURL: () => "",
           toBlob: () => {},
           captureStream: () => {},
+          ownerDocument: { createElementNS: () => ({}) },
         } as any,
         context: gl,
+        antialias: false,
+        alpha: false,
+        powerPreference: "default",
       });
       renderer.setSize(w, h);
       renderer.setPixelRatio(1);
       renderer.setClearColor(0x030510, 1);
+      renderer.autoClear = true;
       rendererRef.current = renderer;
 
       // Scene
@@ -447,7 +453,13 @@ export default function InteractiveGlobe({
 
       // ── Country pins ──────────────────────────────
       if (pinDataRef.current.length > 0) {
-        pinMeshesRef.current = createPins(scene, pinDataRef.current);
+        const initialMeshes = createPins(scene, pinDataRef.current);
+        // Re-parent pins to globe so they rotate with it
+        initialMeshes.forEach((m) => {
+          scene.remove(m);
+          globe.add(m);
+        });
+        pinMeshesRef.current = initialMeshes;
       }
 
       // ── Animation loop ────────────────────────────
@@ -526,18 +538,13 @@ export default function InteractiveGlobe({
   // ── Update pins when data changes ─────────────────
   useEffect(() => {
     pinDataRef.current = pins;
-    if (sceneRef.current && pins.length > 0) {
-      // Re-parent pins to globe so they rotate together
+    if (sceneRef.current && globeRef.current && pins.length > 0) {
       const newMeshes = createPins(sceneRef.current, pins);
-
-      // Parent each pin mesh to the globe
-      if (globeRef.current) {
-        newMeshes.forEach((m) => {
-          sceneRef.current!.remove(m);
-          globeRef.current!.add(m);
-        });
-      }
-
+      // Re-parent to globe so they rotate with it
+      newMeshes.forEach((m) => {
+        sceneRef.current!.remove(m);
+        globeRef.current!.add(m);
+      });
       pinMeshesRef.current = newMeshes;
     }
   }, [pins, createPins]);
@@ -557,6 +564,7 @@ export default function InteractiveGlobe({
   const prevScaleRef = useRef(1);
 
   const panGesture = Gesture.Pan()
+    .runOnJS(true)
     .onBegin(() => {
       isDraggingRef.current = true;
       autoRotateRef.current = false;
@@ -592,6 +600,7 @@ export default function InteractiveGlobe({
     });
 
   const pinchGesture = Gesture.Pinch()
+    .runOnJS(true)
     .onBegin(() => {
       prevScaleRef.current = 1;
     })
@@ -604,7 +613,7 @@ export default function InteractiveGlobe({
       );
     });
 
-  const tapGesture = Gesture.Tap().onEnd((e) => {
+  const tapGesture = Gesture.Tap().runOnJS(true).onEnd((e) => {
     // Raycasting: find which pin was tapped
     if (
       !cameraRef.current ||
@@ -649,7 +658,7 @@ export default function InteractiveGlobe({
   }, []);
 
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <View style={styles.root}>
       <View style={styles.container} onLayout={onLayout}>
         {/* Atmosphere glow halo */}
         <View
@@ -673,7 +682,7 @@ export default function InteractiveGlobe({
           </View>
         </GestureDetector>
       </View>
-    </GestureHandlerRootView>
+    </View>
   );
 }
 

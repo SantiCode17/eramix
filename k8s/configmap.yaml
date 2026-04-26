@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: eramix
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/part-of: eramix
+data:
+  SPRING_PROFILES_ACTIVE: "production"
+  SERVER_PORT: "8080"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
+  SPRING_FLYWAY_ENABLED: "true"
+  SPRING_CACHE_TYPE: "redis"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,prometheus"
+  MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "when_authorized"
+  SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_BATCH_SIZE: "25"
+  SPRING_JPA_PROPERTIES_HIBERNATE_ORDER_INSERTS: "true"
+  SPRING_JPA_PROPERTIES_HIBERNATE_ORDER_UPDATES: "true"

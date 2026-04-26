@@ -13,6 +13,7 @@ import com.eramix.repository.EventRepository;
 import com.eramix.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -53,6 +54,7 @@ public class EventService {
                 .endDatetime(request.getEndDatetime())
                 .maxParticipants(request.getMaxParticipants())
                 .isPublic(request.getIsPublic())
+                .coverImageUrl(request.getCoverImageUrl())
                 .build();
 
         event = eventRepository.save(event);
@@ -99,6 +101,7 @@ public class EventService {
         if (request.getEndDatetime() != null) event.setEndDatetime(request.getEndDatetime());
         if (request.getMaxParticipants() != null) event.setMaxParticipants(request.getMaxParticipants());
         if (request.getIsPublic() != null) event.setIsPublic(request.getIsPublic());
+        if (request.getCoverImageUrl() != null) event.setCoverImageUrl(request.getCoverImageUrl());
 
         return mapToResponse(eventRepository.save(event));
     }
@@ -186,6 +189,7 @@ public class EventService {
     // ── 8. GET /upcoming ── Eventos públicos próximos ─────
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "upcomingEvents", key = "T(String).valueOf(#category ?: 'ALL') + '-' + #page + '-' + #size")
     public PageResponse<EventResponse> getUpcomingEvents(String category, int page, int size) {
         Page<Event> pageResult;
         if (category != null && !category.isBlank()) {
@@ -225,6 +229,25 @@ public class EventService {
                 .toList();
     }
 
+    // ── 11. Search events by text ─────────────────────────
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "eventSearch", key = "#query + '-' + #page + '-' + #size")
+    public PageResponse<EventResponse> searchEvents(String query, int page, int size) {
+        Page<Event> pageResult = eventRepository.searchByText(
+                Instant.now(), query, PageRequest.of(page, size));
+
+        return PageResponse.<EventResponse>builder()
+                .content(pageResult.getContent().stream().map(this::mapToResponse).toList())
+                .page(pageResult.getNumber())
+                .size(pageResult.getSize())
+                .totalElements(pageResult.getTotalElements())
+                .totalPages(pageResult.getTotalPages())
+                .first(pageResult.isFirst())
+                .last(pageResult.isLast())
+                .build();
+    }
+
     // ── Mappers ───────────────────────────────────────────
 
     private EventResponse mapToResponse(Event e) {
@@ -247,6 +270,7 @@ public class EventService {
                 .participantCount(participantCount)
                 .isPublic(e.getIsPublic())
                 .createdAt(e.getCreatedAt())
+                .coverImageUrl(e.getCoverImageUrl())
                 .build();
     }
 

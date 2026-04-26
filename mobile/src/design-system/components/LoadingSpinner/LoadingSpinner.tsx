@@ -1,5 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { View, Animated, Easing, StyleSheet, ViewStyle, StyleProp } from "react-native";
+import React, { useEffect } from "react";
+import { View, StyleSheet, ViewStyle, StyleProp } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  Easing,
+  interpolate,
+} from "react-native-reanimated";
 import { colors, spacing } from "../../tokens";
 
 export interface LoadingSpinnerProps {
@@ -13,25 +22,33 @@ export default function LoadingSpinner({
   color = colors.eu.star,
   style,
 }: LoadingSpinnerProps): React.JSX.Element {
-  const [rotation] = useState(() => new Animated.Value(0));
+  const rotation = useSharedValue(0);
+  const glow = useSharedValue(0);
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.timing(rotation, {
-        toValue: 1,
-        duration: 1000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
+    rotation.value = withRepeat(
+      withTiming(1, { duration: 900, easing: Easing.linear }),
+      -1,
+      false,
     );
-    loop.start();
-    return () => loop.stop();
-  }, [rotation]);
+    glow.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    );
+  }, []);
 
-  const spin = rotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
+  const spinStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${interpolate(rotation.value, [0, 1], [0, 360])}deg` }],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    shadowOpacity: interpolate(glow.value, [0, 1], [0.15, 0.6]),
+    shadowRadius: interpolate(glow.value, [0, 1], [4, 14]),
+  }));
 
   return (
     <View style={[styles.container, style]}>
@@ -42,10 +59,14 @@ export default function LoadingSpinner({
             height: size,
             borderRadius: size / 2,
             borderWidth: 3,
-            borderColor: `rgba(255, 255, 255, 0.15)`,
+            borderColor: "rgba(255, 255, 255, 0.10)",
             borderTopColor: color,
-            transform: [{ rotate: spin }],
+            borderRightColor: `${color}40`,
+            shadowColor: color,
+            shadowOffset: { width: 0, height: 0 },
           },
+          spinStyle,
+          glowStyle,
         ]}
       />
     </View>

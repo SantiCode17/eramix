@@ -4,10 +4,13 @@ import com.eramix.dto.ApiResponse;
 import com.eramix.dto.messaging.ConversationResponse;
 import com.eramix.dto.messaging.MessageResponse;
 import com.eramix.service.ChatService;
+import com.eramix.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -17,6 +20,7 @@ import java.util.List;
 public class ConversationController {
 
     private final ChatService chatService;
+    private final FileStorageService fileStorageService;
 
     // ── 1. GET / ── Listar conversaciones ─────────────────
 
@@ -53,6 +57,17 @@ public class ConversationController {
         int count = chatService.markAsRead(id, currentUserId());
         return ResponseEntity.ok(
                 ApiResponse.ok(count + " mensajes marcados como leídos", count));
+    }
+
+    // ── 5. POST /{id}/messages/image ── Enviar imagen ────
+
+    @PostMapping(value = "/{id}/messages/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<MessageResponse>> sendImageMessage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        String mediaUrl = fileStorageService.storePhoto(file);
+        MessageResponse msg = chatService.saveImageMessage(id, currentUserId(), mediaUrl);
+        return ResponseEntity.ok(ApiResponse.ok("Imagen enviada", msg));
     }
 
     // ── Helper ────────────────────────────────────────────

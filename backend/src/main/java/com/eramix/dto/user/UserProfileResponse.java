@@ -47,6 +47,18 @@ public class UserProfileResponse {
     private Long friendCount;
     private Long eventCount;
 
+    private String whyAmIHere;
+    private String favoriteSong;
+    private String favoriteFood;
+    private String specialHobby;
+    private String customPrompts;
+    private String socialInstagram;
+    private String socialTiktok;
+
+    private Integer height;
+    private String zodiac;
+    private String profession;
+
     @Data
     @Builder
     @NoArgsConstructor

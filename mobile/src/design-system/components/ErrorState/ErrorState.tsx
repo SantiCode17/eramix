@@ -1,14 +1,17 @@
 import React from "react";
-import { View, Text, StyleSheet, ViewStyle, StyleProp } from "react-native";
+import { View, Text, Image, StyleSheet, ViewStyle, StyleProp } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import GlassButton from "../GlassButton/GlassButton";
 import { colors, typography, spacing } from "../../tokens";
+
+const errorImage = require("../../../../assets/images/error_state_generic.png");
 
 export interface ErrorStateProps {
   title?: string;
   message?: string;
   onRetry?: () => void;
   retryLabel?: string;
+  showImage?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -17,13 +20,18 @@ export default function ErrorState({
   message = "Ha ocurrido un error inesperado. Intenta de nuevo.",
   onRetry,
   retryLabel = "Reintentar",
+  showImage = true,
   style,
 }: ErrorStateProps): React.JSX.Element {
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.iconCircle}>
-        <Ionicons name="warning-outline" size={32} color={colors.status.error} />
-      </View>
+      {showImage ? (
+        <Image source={errorImage} style={styles.image} resizeMode="contain" />
+      ) : (
+        <View style={styles.iconCircle}>
+          <Ionicons name="warning-outline" size={32} color={colors.status.error} />
+        </View>
+      )}
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
       {onRetry ? (
@@ -68,4 +76,9 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   button: { marginTop: spacing.md },
+  image: {
+    width: 120,
+    height: 120,
+    marginBottom: spacing.md,
+  },
 });

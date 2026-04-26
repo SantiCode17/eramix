@@ -63,5 +63,6 @@ export interface CreateCommentRequest {
 export type CommunitiesStackParamList = {
   CommunitiesList: undefined;
   CommunityFeed: { communityId: number; communityName: string };
+  CreateCommunity: undefined;
   CreateCommunityPost: { communityId: number };
 };

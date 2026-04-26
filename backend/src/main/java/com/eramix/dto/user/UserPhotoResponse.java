@@ -17,4 +17,5 @@ public class UserPhotoResponse {
     private String photoUrl;
     private Integer displayOrder;
     private Instant createdAt;
+    private String caption;
 }

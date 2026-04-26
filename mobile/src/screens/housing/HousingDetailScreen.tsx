@@ -1,15 +1,33 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  View, Text, StyleSheet, Pressable, ActivityIndicator, ScrollView, Image, Alert,
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+  ScrollView,
+  Image,
+  Alert,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { RouteProp } from "@react-navigation/native";
+import {
+  colors,
+  typography,
+  spacing,
+  radii,
+  shadows,
+  DS,
+  layout,
+} from "@/design-system/tokens";
+import { ScreenBackground } from "@/design-system/components";
 import type { HousingPost, HousingStackParamList } from "@/types/housing";
 import * as housingApi from "@/api/housing";
 import { handleError } from "@/utils/errorHandler";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
 
 type Route = RouteProp<HousingStackParamList, "HousingDetail">;
 
@@ -21,86 +39,295 @@ export default function HousingDetailScreen() {
   const [post, setPost] = useState<HousingPost | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetch = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
       const all = await housingApi.getAllPosts();
       setPost(all.find((p) => p.id === postId) || null);
-    } catch (e) { Alert.alert("Error al cargar", handleError(e, "HousingDetail.fetch")); }
-    finally { setLoading(false); }
+    } catch (e) {
+      Alert.alert("Error", handleError(e, "HousingDetail.fetch"));
+    } finally {
+      setLoading(false);
+    }
   }, [postId]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
+  /* ─── loading ─── */
   if (loading) {
     return (
-      <LinearGradient colors={[colors.background.start, colors.background.end]} style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.center}><ActivityIndicator size="large" color={colors.eu.star} /></View>
-      </LinearGradient>
+      <ScreenBackground>
+        <View style={st.center}>
+          <ActivityIndicator size="large" color={DS.primary} />
+        </View>
+      </ScreenBackground>
     );
   }
 
+  /* ─── not found ─── */
   if (!post) {
     return (
-      <LinearGradient colors={[colors.background.start, colors.background.end]} style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.center}><Text style={styles.emptyTitle}>Anuncio no encontrado</Text></View>
-      </LinearGradient>
+      <ScreenBackground>
+        <View style={st.center}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.text.tertiary} />
+          <Text style={st.emptyTitle}>Anuncio no encontrado</Text>
+        </View>
+      </ScreenBackground>
     );
   }
 
+  /* ─── detail ─── */
   return (
-    <LinearGradient colors={[colors.background.start, colors.background.end]} style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.headerBar}>
-        <Pressable onPress={() => nav.goBack()} style={styles.backBtn}><Text style={{ fontSize: 22 }}>←</Text></Pressable>
-        <Text style={styles.headerTitle}>Detalle</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        {post.photoUrl && <Image source={{ uri: post.photoUrl }} style={styles.photo} />}
-        <View style={styles.card}>
-          <View style={styles.typeBadge}>
-            <Ionicons name={post.postType === "OFFER" ? "home-outline" : "search-outline"} size={16} color={colors.eu.star} />
-            <Text style={styles.typeText}>{post.postType === "OFFER" ? "Oferta" : "Busca"}</Text>
-          </View>
-          <Text style={styles.title}>{post.title}</Text>
-          <Text style={styles.desc}>{post.description}</Text>
-
-          <View style={styles.infoRow}><Text style={styles.label}>Ciudad</Text><View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}><Ionicons name="location-outline" size={14} color={colors.text.secondary} /><Text style={styles.value}>{post.city}</Text></View></View>
-          {post.address && <View style={styles.infoRow}><Text style={styles.label}>Dirección</Text><Text style={styles.value}>{post.address}</Text></View>}
-          <View style={styles.infoRow}><Text style={styles.label}>Precio</Text><Text style={styles.valueHighlight}>{post.monthlyRent}€/mes</Text></View>
-          <View style={styles.infoRow}><Text style={styles.label}>Habitaciones</Text><Text style={styles.value}>{post.roomsAvailable}</Text></View>
-          <View style={styles.infoRow}><Text style={styles.label}>Disponible desde</Text><Text style={styles.value}>{post.availableFrom}</Text></View>
-          {post.availableUntil && <View style={styles.infoRow}><Text style={styles.label}>Hasta</Text><Text style={styles.value}>{post.availableUntil}</Text></View>}
-
-          <View style={styles.authorRow}>
-            <Text style={styles.authorLabel}>Publicado por</Text>
-            <Text style={styles.authorName}>{post.userFirstName} {post.userLastName}</Text>
-          </View>
+    <ScreenBackground>
+      <Animated.View entering={FadeIn.duration(400)} style={{ flex: 1 }}>
+        {/* header */}
+        <View style={[st.headerBar, { paddingTop: insets.top + spacing.xs }]}>
+          <Pressable onPress={() => nav.goBack()} style={st.backBtn}>
+            <Ionicons name="chevron-back" size={22} color={colors.text.primary} />
+          </Pressable>
+          <Text style={st.headerTitle}>Detalle</Text>
+          <View style={{ width: 40 }} />
         </View>
-      </ScrollView>
-    </LinearGradient>
+
+        <ScrollView
+          contentContainerStyle={st.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* photo */}
+          {post.photoUrl && (
+            <Animated.View entering={FadeInDown.duration(500)}>
+              <Image
+                source={{ uri: resolveMediaUrl(post.photoUrl) }}
+                style={st.photo}
+              />
+            </Animated.View>
+          )}
+
+          {/* card */}
+          <Animated.View entering={FadeInDown.delay(100).duration(500)} style={st.card}>
+            {/* type badge */}
+            <View
+              style={[
+                st.typeBadge,
+                {
+                  backgroundColor:
+                    post.postType === "OFFER"
+                      ? colors.status.successBg
+                      : colors.eu.star + "20",
+                },
+              ]}
+            >
+              <Ionicons
+                name={post.postType === "OFFER" ? "home-outline" : "search-outline"}
+                size={16}
+                color={
+                  post.postType === "OFFER"
+                    ? colors.status.success
+                    : colors.eu.star
+                }
+              />
+              <Text
+                style={[
+                  st.typeText,
+                  {
+                    color:
+                      post.postType === "OFFER"
+                        ? colors.status.success
+                        : colors.eu.star,
+                  },
+                ]}
+              >
+                {post.postType === "OFFER" ? "Oferta" : "Busca"}
+              </Text>
+            </View>
+
+            <Text style={st.title}>{post.title}</Text>
+            <Text style={st.desc}>{post.description}</Text>
+
+            {/* info rows */}
+            <InfoRow label="Ciudad" icon="location-outline" value={post.city} />
+            {post.address && (
+              <InfoRow label="Dirección" icon="map-outline" value={post.address} />
+            )}
+            <InfoRow
+              label="Precio"
+              icon="cash-outline"
+              value={`${post.monthlyRent}€/mes`}
+              highlight
+            />
+            <InfoRow
+              label="Habitaciones"
+              icon="bed-outline"
+              value={String(post.roomsAvailable)}
+            />
+            <InfoRow
+              label="Disponible desde"
+              icon="calendar-outline"
+              value={post.availableFrom}
+            />
+            {post.availableUntil && (
+              <InfoRow label="Hasta" icon="time-outline" value={post.availableUntil} />
+            )}
+
+            {/* author */}
+            <View style={st.authorRow}>
+              <Text style={st.authorLabel}>Publicado por</Text>
+              <Text style={st.authorName}>
+                {post.userFirstName} {post.userLastName}
+              </Text>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </Animated.View>
+    </ScreenBackground>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  headerBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  backBtn: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
-  headerTitle: { flex: 1, textAlign: "center", fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary },
-  content: { padding: spacing.lg },
-  photo: { width: "100%", height: 220, borderRadius: radii.lg, marginBottom: spacing.md },
-  card: { backgroundColor: colors.glass.white, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.glass.border, padding: spacing.lg },
-  typeBadge: { alignSelf: "flex-start", backgroundColor: colors.eu.star + "20", borderRadius: radii.full, paddingHorizontal: spacing.sm, paddingVertical: spacing.xxs },
-  typeText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.bodySmall, color: colors.eu.star },
-  title: { fontFamily: typography.families.heading, ...typography.sizes.h3, color: colors.text.primary, marginTop: spacing.sm },
-  desc: { fontFamily: typography.families.body, ...typography.sizes.body, color: colors.text.secondary, marginTop: spacing.sm },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", marginTop: spacing.md },
-  label: { fontFamily: typography.families.bodyMedium, ...typography.sizes.caption, color: colors.text.secondary },
-  value: { fontFamily: typography.families.body, ...typography.sizes.body, color: colors.text.primary },
-  valueHighlight: { fontFamily: typography.families.heading, ...typography.sizes.body, color: colors.eu.star },
-  authorRow: { marginTop: spacing.lg, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.glass.border },
-  authorLabel: { fontFamily: typography.families.body, ...typography.sizes.bodySmall, color: colors.text.secondary },
-  authorName: { fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary, marginTop: spacing.xs },
-  emptyTitle: { fontFamily: typography.families.heading, ...typography.sizes.h3, color: colors.text.primary },
+/* ─── InfoRow helper ─── */
+function InfoRow({
+  label,
+  icon,
+  value,
+  highlight,
+}: {
+  label: string;
+  icon: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <View style={st.infoRow}>
+      <View style={st.infoLeft}>
+        <Ionicons
+          name={icon as any}
+          size={14}
+          color={colors.text.tertiary}
+        />
+        <Text style={st.label}>{label}</Text>
+      </View>
+      <Text style={highlight ? st.valueHighlight : st.value}>{value}</Text>
+    </View>
+  );
+}
+
+/* ─── styles ─────────────────────────── */
+const st = StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: spacing.md },
+  headerBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.sm,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    backgroundColor: colors.glass.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.glass.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontFamily: typography.families.subheading,
+    ...typography.sizes.body,
+    color: colors.text.primary,
+  },
+  content: {
+    padding: layout.screenPadding,
+    paddingBottom: 100,
+  },
+  photo: {
+    width: "100%",
+    height: 220,
+    borderRadius: radii.lg,
+    marginBottom: spacing.md,
+  },
+  card: {
+    backgroundColor: colors.background.card,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.glass.border,
+    padding: spacing.lg,
+    ...shadows.glassSmall,
+  },
+  typeBadge: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xxs,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+  },
+  typeText: {
+    fontFamily: typography.families.bodyMedium,
+    ...typography.sizes.bodySmall,
+  },
+  title: {
+    fontFamily: typography.families.heading,
+    ...typography.sizes.h3,
+    color: colors.text.primary,
+    marginTop: spacing.sm,
+  },
+  desc: {
+    fontFamily: typography.families.body,
+    ...typography.sizes.body,
+    color: colors.text.secondary,
+    marginTop: spacing.sm,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.glass.border,
+  },
+  infoLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  label: {
+    fontFamily: typography.families.bodyMedium,
+    ...typography.sizes.caption,
+    color: colors.text.secondary,
+  },
+  value: {
+    fontFamily: typography.families.body,
+    ...typography.sizes.body,
+    color: colors.text.primary,
+  },
+  valueHighlight: {
+    fontFamily: typography.families.heading,
+    ...typography.sizes.body,
+    color: DS.primary,
+  },
+  authorRow: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.glass.border,
+  },
+  authorLabel: {
+    fontFamily: typography.families.body,
+    ...typography.sizes.bodySmall,
+    color: colors.text.secondary,
+  },
+  authorName: {
+    fontFamily: typography.families.subheading,
+    ...typography.sizes.body,
+    color: colors.text.primary,
+    marginTop: spacing.xs,
+  },
+  emptyTitle: {
+    fontFamily: typography.families.heading,
+    ...typography.sizes.h3,
+    color: colors.text.primary,
+  },
 });

@@ -4,14 +4,18 @@ import com.eramix.dto.ApiResponse;
 import com.eramix.dto.community.*;
 import com.eramix.entity.enums.CommunityCategory;
 import com.eramix.service.CommunityService;
+import com.eramix.service.FileStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/communities")
@@ -19,6 +23,7 @@ import java.util.List;
 public class CommunityController {
 
     private final CommunityService communityService;
+    private final FileStorageService fileStorageService;
 
     // ── 1. GET / ── Listar comunidades (con filtros) ──────
 
@@ -52,6 +57,16 @@ public class CommunityController {
     public ResponseEntity<ApiResponse<CommunityResponse>> getCommunity(@PathVariable Long id) {
         return ResponseEntity.ok(
                 ApiResponse.ok(communityService.getCommunityById(id, currentUserId())));
+    }
+
+    // ── 4b. POST / ── Crear comunidad ─────────────────────
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<CommunityResponse>> createCommunity(
+            @Valid @RequestBody CreateCommunityRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok("Comunidad creada con éxito",
+                        communityService.createCommunity(currentUserId(), request)));
     }
 
     // ── 5. POST /{id}/join ── Unirse a comunidad ──────────
@@ -113,6 +128,16 @@ public class CommunityController {
         return ResponseEntity.ok(
                 ApiResponse.ok("Comentario agregado",
                         communityService.createComment(id, postId, currentUserId(), request)));
+    }
+
+    // ── 11. POST /{id}/posts/upload-image ── Upload imagen de post
+
+    @PostMapping(value = "/{id}/posts/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<Map<String, String>>> uploadPostImage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        String url = fileStorageService.storePhoto(file);
+        return ResponseEntity.ok(ApiResponse.ok("Imagen subida", Map.of("url", url)));
     }
 
     // ── Helper ────────────────────────────────────────────

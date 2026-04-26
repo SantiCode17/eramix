@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
+import { shallow } from "zustand/shallow";
 import {
   View,
   Text,
@@ -26,9 +27,12 @@ import Animated, {
   withSequence,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
 import { useChatStore } from "@/store/useChatStore";
 import { useAuthStore } from "@/store/useAuthStore";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { colors, typography, spacing, radii, DS, TAB_BAR_HEIGHT } from "@/design-system/tokens";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
 import type { ChatStackParamList, MessageData } from "@/types/chat";
 
 type ChatRoute = RouteProp<ChatStackParamList, "ChatRoom">;
@@ -98,7 +102,7 @@ const MessageBubble = React.memo(function MessageBubble({
     >
       {isOwn ? (
         <LinearGradient
-          colors={[colors.eu.orange, "#FF8B4F"]}
+          colors={["rgba(255,215,0,0.25)", "rgba(255,107,43,0.20)"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[
@@ -108,7 +112,12 @@ const MessageBubble = React.memo(function MessageBubble({
           ]}
         >
           {message.type === "IMAGE" && message.mediaUrl ? (
-            <Image source={{ uri: message.mediaUrl }} style={styles.mediaImage} resizeMode="cover" />
+            <>
+              <Image source={{ uri: resolveMediaUrl(message.mediaUrl) }} style={styles.mediaImage} resizeMode="cover" />
+              {message.content ? (
+                <Text style={styles.captionText}>{message.content}</Text>
+              ) : null}
+            </>
           ) : message.type === "AUDIO" ? (
             <Text style={styles.bubbleTextOwn}>Mensaje de voz</Text>
           ) : message.type === "VIDEO" && message.mediaUrl ? (
@@ -120,8 +129,12 @@ const MessageBubble = React.memo(function MessageBubble({
           )}
           <View style={styles.bubbleMeta}>
             <Text style={styles.bubbleTimeOwn}>{time}</Text>
-            {message.isRead && (
+            {message.id < 0 ? (
+              <Ionicons name="time-outline" size={11} color="rgba(255,255,255,0.4)" style={{ marginLeft: 3 }} />
+            ) : message.isRead ? (
               <Text style={styles.readCheck}>✓✓</Text>
+            ) : (
+              <Text style={styles.readCheck}>✓</Text>
             )}
           </View>
         </LinearGradient>
@@ -134,7 +147,12 @@ const MessageBubble = React.memo(function MessageBubble({
           ]}
         >
           {message.type === "IMAGE" && message.mediaUrl ? (
-            <Image source={{ uri: message.mediaUrl }} style={styles.mediaImage} resizeMode="cover" />
+            <>
+              <Image source={{ uri: resolveMediaUrl(message.mediaUrl) }} style={styles.mediaImage} resizeMode="cover" />
+              {message.content ? (
+                <Text style={styles.captionTextOther}>{message.content}</Text>
+              ) : null}
+            </>
           ) : message.type === "AUDIO" ? (
             <Text style={styles.bubbleTextOther}>Mensaje de voz</Text>
           ) : message.type === "VIDEO" && message.mediaUrl ? (
@@ -155,12 +173,20 @@ const MessageBubble = React.memo(function MessageBubble({
 
 function ChatInput({
   onSend,
+  onSendImage,
+  onSendImageWithCaption,
   onTyping,
+  onVoice,
 }: {
   onSend: (text: string) => void;
+  onSendImage: (uri: string) => void;
+  onSendImageWithCaption?: (uri: string, caption: string) => void;
   onTyping: (typing: boolean) => void;
+  onVoice?: () => void;
 }) {
   const [text, setText] = useState("");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
   const insets = useSafeAreaInsets();
@@ -189,6 +215,25 @@ function ChatInput({
 
   const handleSend = useCallback(() => {
     const trimmed = text.trim();
+    
+    // If there's an image + text, send as image with caption
+    if (imagePreview && trimmed && onSendImageWithCaption) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onSendImageWithCaption(imagePreview, trimmed);
+      setImagePreview(null);
+      setText("");
+      return;
+    }
+    
+    // If there's an image without text, send image only
+    if (imagePreview) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onSendImage(imagePreview);
+      setImagePreview(null);
+      setText("");
+      return;
+    }
+    
     if (!trimmed) return;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -203,31 +248,100 @@ function ChatInput({
     onTyping(false);
   }, [text, onSend, onTyping]);
 
+  const handlePickImage = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+      allowsEditing: true,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setImagePreview(result.assets[0].uri);
+    }
+  }, []);
+
+  const handleSendImage = useCallback(() => {
+    if (!imagePreview) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onSendImage(imagePreview);
+    setImagePreview(null);
+  }, [imagePreview, onSendImage]);
+
+  const handleCancelImage = useCallback(() => {
+    setImagePreview(null);
+  }, []);
+
   return (
     <View
       style={[styles.inputContainer, { paddingBottom: insets.bottom + spacing.xs }]}
     >
+      {/* Image Preview — shown above input row as thumbnail */}
+      {imagePreview && (
+        <View style={styles.imagePreviewRow}>
+          <Image source={{ uri: imagePreview }} style={styles.imagePreviewThumb} />
+          <Pressable onPress={handleCancelImage} style={styles.imagePreviewCancel}>
+            <Ionicons name="close-circle" size={24} color="rgba(255,100,100,0.9)" />
+          </Pressable>
+        </View>
+      )}
+
       <View style={styles.inputRow}>
+        {/* Image Picker Button */}
+        <Pressable
+          onPress={handlePickImage}
+          style={({ pressed }) => [
+            styles.attachButton,
+            pressed && { opacity: 0.6 },
+          ]}
+        >
+          <Ionicons name="image-outline" size={20} color="#FF6B2B" />
+        </Pressable>
+
+        {/* Voice Message Button */}
+        {onVoice && (
+          <Pressable
+            onPress={onVoice}
+            style={({ pressed }) => [
+              styles.attachButton,
+              pressed && { opacity: 0.6 },
+            ]}
+          >
+            <Ionicons name="mic-outline" size={20} color="#FF6B2B" />
+          </Pressable>
+        )}
+
         <TextInput
-          style={styles.textInput}
+          style={[styles.textInput, isFocused && styles.textInputFocused]}
           placeholder="Escribe un mensaje..."
-          placeholderTextColor={colors.text.disabled}
+          placeholderTextColor="rgba(255,255,255,0.40)"
           value={text}
           onChangeText={handleChange}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           multiline
           maxLength={2000}
           returnKeyType="default"
         />
         <Pressable
           onPress={handleSend}
-          disabled={!text.trim()}
+          disabled={!text.trim() && !imagePreview}
           style={({ pressed }) => [
             styles.sendButton,
-            !text.trim() && styles.sendButtonDisabled,
+            (!text.trim() && !imagePreview) && styles.sendButtonDisabled,
             pressed && styles.sendButtonPressed,
           ]}
         >
-          <Text style={styles.sendIcon}>➤</Text>
+          <LinearGradient
+            colors={(text.trim() || imagePreview) ? ["#FFD700", "#FF6B2B"] : ["rgba(255,255,255,0.08)", "rgba(255,255,255,0.04)"]}
+            style={styles.sendGrad}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Ionicons name="send" size={18} color={(text.trim() || imagePreview) ? "#06081A" : "rgba(255,255,255,0.3)"} />
+          </LinearGradient>
         </Pressable>
       </View>
     </View>
@@ -241,11 +355,13 @@ function ChatHeader({
   photo,
   online,
   onBack,
+  onProfilePress,
 }: {
   name: string;
   photo: string | null;
   online: boolean;
   onBack: () => void;
+  onProfilePress?: () => void;
 }) {
   const insets = useSafeAreaInsets();
   const initials = name
@@ -258,37 +374,43 @@ function ChatHeader({
   return (
     <View style={[styles.chatHeader, { paddingTop: insets.top + spacing.xs }]}>
       <Pressable onPress={onBack} hitSlop={12} style={styles.backButton}>
-        <Text style={styles.backArrow}>←</Text>
+        <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
       </Pressable>
 
-      <View style={styles.headerProfile}>
-        {photo ? (
-          <Image source={{ uri: photo }} style={styles.headerAvatar} />
-        ) : (
-          <View style={styles.headerAvatarFallback}>
-            <Text style={styles.headerAvatarInitials}>{initials}</Text>
-          </View>
-        )}
-        {online && (
-          <View style={styles.headerOnline}>
-            <View style={styles.headerOnlineDot} />
-          </View>
-        )}
-      </View>
+      <Pressable onPress={onProfilePress} style={styles.headerProfileRow} disabled={!onProfilePress}>
+        <View style={styles.headerProfile}>
+          {photo ? (
+            <Image source={{ uri: photo }} style={styles.headerAvatar} />
+          ) : (
+            <View style={styles.headerAvatarFallback}>
+              <Text style={styles.headerAvatarInitials}>{initials}</Text>
+            </View>
+          )}
+          {online && (
+            <View style={styles.headerOnline}>
+              <View style={styles.headerOnlineDot} />
+            </View>
+          )}
+        </View>
 
-      <View style={styles.headerInfo}>
-        <Text style={styles.headerName} numberOfLines={1}>
-          {name}
-        </Text>
-        <Text style={styles.headerStatus}>
-          {online ? "En línea" : "Desconectado"}
-        </Text>
-      </View>
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerName} numberOfLines={1}>
+            {name}
+          </Text>
+          <Text style={styles.headerStatus}>
+            {online ? "En línea" : "Desconectado"}
+          </Text>
+        </View>
+      </Pressable>
     </View>
   );
 }
 
 // ── Main Chat Screen ────────────────────────────────
+
+// Stable empty arrays to prevent infinite re-render loops
+const EMPTY_MESSAGES: MessageData[] = [];
+const EMPTY_TYPING: number[] = [];
 
 export default function ChatScreen(): React.JSX.Element {
   const route = useRoute<ChatRoute>();
@@ -296,9 +418,23 @@ export default function ChatScreen(): React.JSX.Element {
   const { conversationId, otherUserId, otherUserName, otherUserPhoto } =
     route.params;
 
+  // Hide parent tab bar while in ChatRoom
+  useLayoutEffect(() => {
+    const parent = navigation.getParent?.();
+    parent?.setOptions({ tabBarStyle: { display: "none" } });
+    return () => {
+      parent?.setOptions({
+        tabBarStyle: undefined, // restores default tab bar
+      });
+    };
+  }, [navigation]);
+
+  // Guard: if route params are not ready, render nothing
+  if (!conversationId) return <View style={styles.container} />;
+
   const user = useAuthStore((s) => s.user);
   const messages = useChatStore(
-    (s) => s.messages[conversationId] ?? [],
+    (s) => s.messages[conversationId] ?? EMPTY_MESSAGES,
   );
   const isLoading = useChatStore(
     (s) => s.isLoadingMessages[conversationId] ?? false,
@@ -307,7 +443,7 @@ export default function ChatScreen(): React.JSX.Element {
     (s) => s.hasMoreMessages[conversationId] ?? true,
   );
   const typingUserIds = useChatStore(
-    (s) => s.typingUsers[conversationId] ?? [],
+    (s) => s.typingUsers[conversationId] ?? EMPTY_TYPING,
   );
   const conversations = useChatStore((s) => s.conversations);
 
@@ -315,6 +451,7 @@ export default function ChatScreen(): React.JSX.Element {
     fetchMessages,
     fetchOlderMessages,
     sendMessage,
+    sendImageMessage,
     markAsRead,
     sendTypingIndicator,
   } = useChatStore();
@@ -336,23 +473,30 @@ export default function ChatScreen(): React.JSX.Element {
   useEffect(() => {
     fetchMessages(conversationId);
     markAsRead(conversationId);
-  }, [conversationId]);
+  }, [conversationId, fetchMessages, markAsRead]);
 
-  // Mark as read when new messages arrive
+  // Mark as read when new messages arrive from the other user
+  const lastMessageId = messages.length > 0 ? messages[messages.length - 1]?.id : null;
   useEffect(() => {
-    if (messages.length > 0) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg.senderId !== user?.id && !lastMsg.isRead) {
-        markAsRead(conversationId);
-      }
+    if (messages.length === 0) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.senderId !== user?.id && !lastMsg.isRead) {
+      markAsRead(conversationId);
     }
-  }, [messages.length]);
+  }, [lastMessageId, conversationId, markAsRead, user?.id]);
 
   const handleSend = useCallback(
     (content: string) => {
       sendMessage(conversationId, content);
     },
     [conversationId, sendMessage],
+  );
+
+  const handleSendImage = useCallback(
+    (uri: string) => {
+      sendImageMessage(conversationId, uri);
+    },
+    [conversationId, sendImageMessage],
   );
 
   const handleTyping = useCallback(
@@ -386,7 +530,7 @@ export default function ChatScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
+        colors={[DS.background, "#0E1A35", "#0F1535"]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -395,6 +539,14 @@ export default function ChatScreen(): React.JSX.Element {
         photo={otherUserPhoto}
         online={isOtherOnline}
         onBack={() => navigation.goBack()}
+        onProfilePress={() => {
+          // Navigate to the other user's profile
+          navigation.navigate("UserDetail" as any, {
+            userId: otherUserId,
+            userName: otherUserName,
+            userPhoto: otherUserPhoto,
+          });
+        }}
       />
 
       <KeyboardAvoidingView
@@ -424,9 +576,20 @@ export default function ChatScreen(): React.JSX.Element {
               <TypingIndicator name={otherUserName.split(" ")[0]} />
             ) : null
           }
+          estimatedItemSize={70}
         />
 
-        <ChatInput onSend={handleSend} onTyping={handleTyping} />
+        <ChatInput
+          onSend={handleSend}
+          onSendImage={handleSendImage}
+          onSendImageWithCaption={(uri, caption) => {
+            // Send image, caption sent as separate text message after
+            sendImageMessage(conversationId, uri);
+            if (caption.trim()) sendMessage(conversationId, caption);
+          }}
+          onTyping={handleTyping}
+          onVoice={() => navigation.navigate("VoiceMessage", { conversationId })}
+        />
       </KeyboardAvoidingView>
     </View>
   );
@@ -448,9 +611,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.glass.border,
-    backgroundColor: "rgba(0, 51, 153, 0.3)",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(10,22,40,0.85)",
   },
   backButton: {
     width: 36,
@@ -458,9 +621,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  backArrow: {
-    fontSize: 24,
-    color: colors.text.primary,
+  headerProfileRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    flex: 1,
   },
   headerProfile: {
     marginLeft: spacing.sm,
@@ -469,7 +633,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.glass.whiteMid,
+    backgroundColor: "rgba(255,255,255,0.06)",
   },
   headerAvatarFallback: {
     width: 40,
@@ -491,7 +655,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: "#1A1A2E",
+    backgroundColor: DS.background,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -499,7 +663,7 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 4.5,
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#00D68F",
   },
   headerInfo: {
     marginLeft: spacing.sm,
@@ -519,7 +683,7 @@ const styles = StyleSheet.create({
   // Bubbles
   bubbleWrapper: {
     marginVertical: 2,
-    maxWidth: "80%",
+    maxWidth: "75%",
   },
   bubbleWrapperOwn: {
     alignSelf: "flex-end",
@@ -530,17 +694,21 @@ const styles = StyleSheet.create({
   bubble: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
-    borderRadius: radii.lg,
+    borderRadius: 18,
   },
   bubbleOwn: {
-    borderBottomRightRadius: radii.sm,
+    borderBottomRightRadius: 4,
+    borderWidth: 0.5,
+    borderColor: "rgba(255,215,0,0.35)",
   },
   bubbleTailOwn: {
     borderBottomRightRadius: 4,
   },
   bubbleOther: {
-    backgroundColor: colors.glass.whiteMid,
-    borderBottomLeftRadius: radii.sm,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 0.5,
+    borderColor: "rgba(255,255,255,0.12)",
+    borderBottomLeftRadius: 4,
   },
   bubbleTailOther: {
     borderBottomLeftRadius: 4,
@@ -550,6 +718,20 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: radii.md,
     marginBottom: spacing.xs,
+  },
+  captionText: {
+    fontFamily: typography.families.body,
+    fontSize: 12,
+    fontStyle: "italic",
+    color: "rgba(255,255,255,0.70)",
+    marginTop: 4,
+  },
+  captionTextOther: {
+    fontFamily: typography.families.body,
+    fontSize: 12,
+    fontStyle: "italic",
+    color: "rgba(255,255,255,0.70)",
+    marginTop: 4,
   },
   bubbleTextOwn: {
     fontFamily: typography.families.body,
@@ -573,12 +755,12 @@ const styles = StyleSheet.create({
   bubbleTimeOwn: {
     fontFamily: typography.families.body,
     fontSize: 11,
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(255,255,255,0.45)",
   },
   bubbleTimeOther: {
     fontFamily: typography.families.body,
     fontSize: 11,
-    color: colors.text.secondary,
+    color: "rgba(255,255,255,0.45)",
     textAlign: "right",
     marginTop: 2,
   },
@@ -614,50 +796,87 @@ const styles = StyleSheet.create({
 
   // Input
   inputContainer: {
+    minHeight: 64,
     paddingHorizontal: spacing.sm,
     paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.glass.border,
-    backgroundColor: "rgba(26, 26, 46, 0.9)",
+    borderTopWidth: 0.5,
+    borderTopColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(10,22,40,0.95)",
   },
   inputRow: {
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: spacing.sm,
+    gap: 8,
   },
   textInput: {
     flex: 1,
     minHeight: 40,
     maxHeight: 120,
-    backgroundColor: colors.glass.white,
-    borderRadius: radii.xl,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 20,
     paddingHorizontal: spacing.md,
     paddingTop: Platform.OS === "ios" ? 10 : 8,
     paddingBottom: Platform.OS === "ios" ? 10 : 8,
     fontFamily: typography.families.body,
     fontSize: 15,
     color: colors.text.primary,
+    borderWidth: 0.5,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  textInputFocused: {
+    borderColor: "rgba(255,215,0,0.50)",
     borderWidth: 1,
-    borderColor: colors.glass.border,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.eu.orange,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    overflow: "hidden",
+    marginBottom: 1,
+  },
+  sendGrad: {
+    width: 38,
+    height: 38,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 0,
   },
   sendButtonDisabled: {
-    opacity: 0.4,
+    opacity: 0.6,
   },
   sendButtonPressed: {
     opacity: 0.7,
   },
-  sendIcon: {
-    fontSize: 18,
-    color: "#FFFFFF",
-    marginLeft: 2,
+
+  // Image picker / voice
+  attachButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,107,43,0.15)",
+    borderWidth: 0.5,
+    borderColor: "rgba(255,107,43,0.30)",
+  },
+  imagePreviewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  imagePreviewThumb: {
+    width: 60,
+    height: 60,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: "rgba(255,215,0,0.2)",
+  },
+  imagePreviewCancel: {
+    position: "absolute",
+    top: -6,
+    left: 48,
+    padding: 2,
+    backgroundColor: "rgba(10,22,40,0.8)",
+    borderRadius: 12,
   },
 });

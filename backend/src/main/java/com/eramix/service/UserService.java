@@ -15,6 +15,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 
+import com.eramix.dto.user.PhotoOrderEntry;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -60,6 +62,17 @@ public class UserService {
         if (request.getDestinationCountry() != null) user.setDestinationCountry(request.getDestinationCountry());
         if (request.getMobilityStartDate() != null) user.setMobilityStart(request.getMobilityStartDate());
         if (request.getMobilityEndDate() != null) user.setMobilityEnd(request.getMobilityEndDate());
+
+        if (request.getWhyAmIHere() != null) user.setWhyAmIHere(request.getWhyAmIHere());
+        if (request.getFavoriteSong() != null) user.setFavoriteSong(request.getFavoriteSong());
+        if (request.getFavoriteFood() != null) user.setFavoriteFood(request.getFavoriteFood());
+        if (request.getSpecialHobby() != null) user.setSpecialHobby(request.getSpecialHobby());
+        if (request.getCustomPrompts() != null) user.setCustomPrompts(request.getCustomPrompts());
+        if (request.getSocialInstagram() != null) user.setSocialInstagram(request.getSocialInstagram());
+        if (request.getSocialTiktok() != null) user.setSocialTiktok(request.getSocialTiktok());
+        if (request.getHeight() != null) user.setHeight(request.getHeight());
+        if (request.getZodiac() != null) user.setZodiac(request.getZodiac());
+        if (request.getProfession() != null) user.setProfession(request.getProfession());
 
         if (request.getHomeUniversityId() != null) {
             University home = universityRepository.findById(request.getHomeUniversityId())
@@ -117,7 +130,7 @@ public class UserService {
     // ── 5. POST /me/photos ── Añadir foto adicional ──────
 
     @Transactional
-    public UserPhotoResponse addPhoto(Long userId, MultipartFile file, Integer displayOrder) {
+    public UserPhotoResponse addPhoto(Long userId, MultipartFile file, Integer displayOrder, String caption) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
@@ -133,6 +146,7 @@ public class UserService {
                 .user(user)
                 .photoUrl(url)
                 .displayOrder(order)
+                .caption(caption)
                 .build();
 
         photo = userPhotoRepository.save(photo);
@@ -162,6 +176,27 @@ public class UserService {
                 .stream()
                 .map(this::mapToPhotoResponse)
                 .toList();
+    }
+
+    // ── 7b. PUT /me/photos/reorder ── Reordenar fotos ────
+
+    @Transactional
+    public void reorderPhotos(Long userId, List<PhotoOrderEntry> photoOrders) {
+        List<UserPhoto> photos = userPhotoRepository.findByUserIdOrderByDisplayOrderAsc(userId);
+        Map<Long, UserPhoto> photoMap = new HashMap<>();
+        for (UserPhoto p : photos) {
+            if (!p.getUser().getId().equals(userId)) {
+                throw new IllegalArgumentException("No tienes permiso sobre alguna de las fotos");
+            }
+            photoMap.put(p.getId(), p);
+        }
+        for (PhotoOrderEntry entry : photoOrders) {
+            UserPhoto photo = photoMap.get(entry.getPhotoId());
+            if (photo != null) {
+                photo.setDisplayOrder(entry.getOrder());
+            }
+        }
+        userPhotoRepository.saveAll(photos);
     }
 
     // ── 8. PUT /me/location ── Actualizar ubicación ──────
@@ -205,6 +240,16 @@ public class UserService {
                 .isVerified(user.getIsVerified())
                 .lastSeen(user.getLastSeen())
                 .createdAt(user.getCreatedAt())
+                .whyAmIHere(user.getWhyAmIHere())
+                .favoriteSong(user.getFavoriteSong())
+                .favoriteFood(user.getFavoriteFood())
+                .specialHobby(user.getSpecialHobby())
+                .customPrompts(user.getCustomPrompts())
+                .socialInstagram(user.getSocialInstagram())
+                .socialTiktok(user.getSocialTiktok())
+                .height(user.getHeight())
+                .zodiac(user.getZodiac())
+                .profession(user.getProfession())
                 .interests(user.getInterests().stream()
                         .map(i -> UserProfileResponse.InterestSummary.builder()
                                 .id(i.getId())
@@ -245,6 +290,7 @@ public class UserService {
                 .photoUrl(photo.getPhotoUrl())
                 .displayOrder(photo.getDisplayOrder())
                 .createdAt(photo.getCreatedAt())
+                .caption(photo.getCaption())
                 .build();
     }
 }

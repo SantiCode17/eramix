@@ -9,10 +9,12 @@ import { useNavigation } from "@react-navigation/native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
 import type { ExchangeRequest } from "@/types/exchange";
 import * as exchangeApi from "@/api/exchange";
 import { handleError } from "@/utils/errorHandler";
+import { useLoadingTimeout } from "@/hooks/useLoadingTimeout";
+import { CategoryTab } from "@/components";
 
 export default function ExchangeRequestsScreen() {
   const nav = useNavigation();
@@ -35,6 +37,9 @@ export default function ExchangeRequestsScreen() {
   }, [tab]);
 
   useEffect(() => { fetch(); }, [fetch]);
+
+  // Timeout: if loading for > 8s, show empty state
+  const loadingTimedOut = useLoadingTimeout(loading, 8000);
 
   const handleAccept = async (id: number) => {
     try {
@@ -83,25 +88,37 @@ export default function ExchangeRequestsScreen() {
   );
 
   return (
-    <LinearGradient colors={[colors.background.start, colors.background.end]} style={[styles.container, { paddingTop: insets.top }]}>
+    <LinearGradient colors={[DS.background, "#0E1A35", "#0F1535"]} style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.headerBar}>
-        <Pressable onPress={() => nav.goBack()} style={styles.backBtn}><Text style={{ fontSize: 22 }}>←</Text></Pressable>
+        <Pressable onPress={() => nav.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={20} color={colors.text.primary} />
+        </Pressable>
         <Text style={styles.headerTitle}>Solicitudes</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.tabs}>
         {(["received", "sent"] as const).map((t) => (
-          <Pressable key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => setTab(t)}>
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === "received" ? "Recibidas" : "Enviadas"}
-            </Text>
-          </Pressable>
+          <CategoryTab
+            key={t}
+            label={t === "received" ? "Recibidas" : "Enviadas"}
+            active={tab === t}
+            onPress={() => setTab(t)}
+          />
         ))}
       </View>
 
-      {loading ? (
+      {loading && !loadingTimedOut ? (
         <View style={styles.center}><ActivityIndicator size="large" color={colors.eu.star} /></View>
+      ) : (loading && loadingTimedOut) || error ? (
+        <View style={styles.empty}>
+          <Ionicons name="file-tray-outline" size={48} color={colors.text.secondary} />
+          <Text style={styles.emptyTitle}>Sin solicitudes</Text>
+          <Text style={styles.emptySubtitle}>No se pudieron cargar las solicitudes</Text>
+          <Pressable style={styles.retryBtn} onPress={() => { setLoading(true); fetch(); }}>
+            <Text style={styles.retryText}>Reintentar</Text>
+          </Pressable>
+        </View>
       ) : (
         <FlashList
           data={requests}
@@ -124,14 +141,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   headerBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  backBtn: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.08)", justifyContent: "center", alignItems: "center" },
   headerTitle: { flex: 1, textAlign: "center", fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary },
   tabs: { flexDirection: "row", paddingHorizontal: spacing.lg, gap: spacing.sm, marginBottom: spacing.md },
-  tab: { flex: 1, paddingVertical: spacing.sm, borderRadius: radii.full, backgroundColor: colors.glass.white, borderWidth: 1, borderColor: colors.glass.border, alignItems: "center" },
-  tabActive: { backgroundColor: colors.eu.star + "20", borderColor: colors.eu.star },
-  tabText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.caption, color: colors.text.secondary },
-  tabTextActive: { color: colors.eu.star },
-  card: { backgroundColor: colors.glass.white, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.glass.border, padding: spacing.md, marginBottom: spacing.md },
+  card: { backgroundColor: "rgba(255,255,255,0.04)", borderRadius: radii.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255,255,255,0.08)", padding: spacing.md, marginBottom: spacing.md },
   name: { fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary },
   langRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm, flexWrap: "wrap" },
   langBadge: { backgroundColor: colors.eu.star + "20", paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radii.full },
@@ -144,4 +157,7 @@ const styles = StyleSheet.create({
   rejectText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.caption, color: colors.status.error },
   empty: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: spacing.xxl },
   emptyTitle: { fontFamily: typography.families.heading, ...typography.sizes.h3, color: colors.text.primary, marginTop: spacing.md },
+  emptySubtitle: { fontFamily: typography.families.body, ...typography.sizes.caption, color: colors.text.secondary, marginTop: spacing.xs, textAlign: "center" },
+  retryBtn: { marginTop: spacing.lg, borderWidth: 1, borderColor: colors.eu.star, borderRadius: radii.full, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm, backgroundColor: colors.eu.star + "10" },
+  retryText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.caption, color: colors.eu.star },
 });

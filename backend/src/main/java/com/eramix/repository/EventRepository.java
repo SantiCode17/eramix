@@ -25,4 +25,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "(:category IS NULL OR e.category = :category) " +
             "ORDER BY e.startDatetime ASC")
     Page<Event> findUpcomingByCategory(@Param("now") Instant now, @Param("category") String category, Pageable pageable);
+
+    @Query("SELECT e FROM Event e WHERE e.isPublic = true AND e.startDatetime > :now AND " +
+            "(LOWER(e.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(e.location) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+            "ORDER BY e.startDatetime ASC")
+    Page<Event> searchByText(@Param("now") Instant now, @Param("query") String query, Pageable pageable);
 }

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Switch } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { GlassCard, Header } from "@/design-system/components";
-import { colors, typography, spacing } from "@/design-system/tokens";
+import { colors, typography, spacing, DS } from "@/design-system/tokens";
 
 interface NotificationSetting {
   key: string;
@@ -57,7 +57,7 @@ export default function NotificationSettingsScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
+        colors={[DS.background, "#0E1A35", "#0F1535"]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
   },
   rowBorder: {
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(255,255,255,0.06)",
   },
   rowContent: { flex: 1, marginRight: spacing.md },

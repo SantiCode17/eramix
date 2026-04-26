@@ -20,6 +20,7 @@ import {
   ErrorState,
   Header,
 } from "@/design-system";
+import { DS } from "@/design-system/tokens";
 
 export default function ComponentGallery(): React.JSX.Element {
   const insets = useSafeAreaInsets();
@@ -29,7 +30,7 @@ export default function ComponentGallery(): React.JSX.Element {
 
   return (
     <LinearGradient
-      colors={[colors.background.start, colors.background.end]}
+      colors={[DS.background, "#0E1A35", "#0F1535"]}
       style={styles.gradient}
     >
       <Header title="Component Gallery" variant="glass" />

@@ -52,3 +52,29 @@ export async function markConversationAsRead(
   );
   return data.data;
 }
+
+// ── Send image message ──────────────────────────────
+
+export async function sendImageMessage(
+  conversationId: number,
+  imageUri: string,
+): Promise<MessageData> {
+  const formData = new FormData();
+  const filename = imageUri.split("/").pop() ?? "photo.jpg";
+  const match = /\.(\w+)$/.exec(filename);
+  const ext = match ? match[1] : "jpg";
+
+  formData.append("file", {
+    uri: imageUri,
+    name: filename,
+    type: `image/${ext}`,
+  } as unknown as Blob);
+  formData.append("conversationId", String(conversationId));
+  formData.append("type", "IMAGE");
+
+    const { data } = await apiClient.post<ApiResponse<MessageData>>(
+      `/v1/conversations/${conversationId}/messages/image`,
+      formData
+    );
+  return data.data;
+}

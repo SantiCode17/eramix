@@ -2,3 +2,8 @@ export { default as DiscoverScreen } from "./DiscoverScreen";
 export { default as NearbyMapScreen } from "./NearbyMapScreen";
 export { default as FriendRequestsScreen } from "./FriendRequestsScreen";
 export { default as UserDetailScreen } from "./UserDetailScreen";
+export { default as SmartMatchScreen } from "./SmartMatchScreen";
+export { default as ActivityFeedScreen } from "./ActivityFeedScreen";
+export { default as CulturalMapScreen } from "./CulturalMapScreen";
+export { default as TimeCapsuleScreen } from "./TimeCapsuleScreen";
+export { default as LiveLocationScreen } from "./LiveLocationScreen";

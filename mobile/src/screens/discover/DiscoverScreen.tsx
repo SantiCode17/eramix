@@ -1,14 +1,23 @@
-import React, { useEffect, useState, useCallback } from "react";
+/**
+ * ════════════════════════════════════════════════════════
+ *  DiscoverScreen — Swipeable Card Stack v2
+ *  European Glass · Reanimated 4 · Filter + Actions
+ *  IMPROVED: Better swipe sensitivity, larger gesture area,
+ *  bigger action buttons, smoother animations
+ * ════════════════════════════════════════════════════════
+ */
+
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   Dimensions,
   ActivityIndicator,
-  Modal,
+  Pressable,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -17,334 +26,411 @@ import Animated, {
   runOnJS,
   interpolate,
   Extrapolation,
+  FadeIn,
+  FadeInDown,
+  Easing,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import * as Haptics from "expo-haptics";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, DrawerActions } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { useDiscoverStore } from "@/store/useDiscoverStore";
-import { UserCard, CARD_WIDTH, FilterModal } from "./components";
-import { StoriesBar, StoryViewerScreen, CreateStoryScreen } from "@/screens/stories";
 import { Ionicons } from "@expo/vector-icons";
-import { EmptyState, Header, GlassButton } from "@/design-system";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+
+import { useDiscoverStore } from "@/store/useDiscoverStore";
+import { useAuthStore } from "@/store";
+import { CarouselUserCard, FilterModal, MatchCelebrationModal } from "./components";
+import type { User } from "@/types";
+import { EmptyState, ScreenBackground } from "@/design-system";
+import {
+  colors,
+  typography,
+  spacing,
+  radii,
+  DS,
+} from "@/design-system/tokens";
 import type { DiscoverStackParamList, DiscoverFilters } from "@/types";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+// MUCH lower thresholds for easier swiping
+const SWIPE_THRESHOLD = 60;
+const SWIPE_VELOCITY = 300;
+const TAB_BAR_HEIGHT = 64;
 
 type NavProp = StackNavigationProp<DiscoverStackParamList, "DiscoverMain">;
 
+/* ─── Component ───────────────────────────────────── */
 export default function DiscoverScreen(): React.JSX.Element {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavProp>();
+
+  /* ── Store ── */
   const {
     users,
     currentIndex,
     loading,
     error,
     filters,
+    sentRequests,
+    requestedIds,
+    receivedRequests,
     fetchUsers,
+    fetchSentRequests,
+    fetchReceivedRequests,
     dismissUser,
     sendFriendRequest,
     setFilters,
-    resetFilters,
   } = useDiscoverStore();
 
+  /* ── Auth (for my own photo in the match modal) ── */
+  const myUser = useAuthStore((s) => s.user);
+
+  /* ── Local state ── */
   const [filterVisible, setFilterVisible] = useState(false);
-  const [storyViewerData, setStoryViewerData] = useState<{
-    groups: import("@/types/stories").UserStories[];
-    userId: number;
-  } | null>(null);
-  const [createStoryVisible, setCreateStoryVisible] = useState(false);
+  const [matchedUser, setMatchedUser] = useState<User | null>(null);
 
-  // Swipe animation values
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
+  /* ── Derived ── */
   const currentUser = users[currentIndex];
   const nextUser = users[currentIndex + 1];
   const thirdUser = users[currentIndex + 2];
+  const hasCards = currentIndex < users.length;
 
+  /* ── Card dimensions ── */
+  const HEADER_H = insets.top + 56;
+  const TAB_H = TAB_BAR_HEIGHT + insets.bottom;
+  const availH = SCREEN_H - HEADER_H - TAB_H;
+  const CARD_H = availH - 24;
+  const CARD_W = SCREEN_W - 16;
+
+  /* ── Gesture values ── */
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+
+  /* ── Fetch on mount ── */
+  useEffect(() => {
+    fetchUsers();
+    fetchSentRequests();
+    fetchReceivedRequests();
+  }, []);
+
+  /* ── Callbacks ── */
   const handleSwipeComplete = useCallback(
     (direction: "left" | "right") => {
       if (!currentUser) return;
-
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       if (direction === "right") {
-        sendFriendRequest(currentUser.id);
+        const alreadySent =
+          sentRequests?.some(
+            (r) => r.receiverId === currentUser.id && r.status === "PENDING",
+          ) || requestedIds.has(currentUser.id);
+
+        if (!alreadySent) {
+          /* Check if this person already liked us → mutual match */
+          const isMatch = receivedRequests.some(
+            (r) => r.senderId === currentUser.id && r.status === "PENDING",
+          );
+          sendFriendRequest(currentUser.id);
+          if (isMatch) {
+            setMatchedUser(currentUser);
+          }
+        } else {
+          dismissUser(currentUser.id);
+        }
       } else {
         dismissUser(currentUser.id);
       }
 
-      // Reset animation
       translateX.value = 0;
       translateY.value = 0;
     },
-    [currentUser, sendFriendRequest, dismissUser],
+    [currentUser, sendFriendRequest, dismissUser, sentRequests, requestedIds, receivedRequests],
   );
 
-  const panGesture = Gesture.Pan()
-    .onUpdate((event) => {
-      translateX.value = event.translationX;
-      translateY.value = event.translationY * 0.3; // Dampen vertical
-    })
-    .onEnd((event) => {
-      if (Math.abs(event.translationX) > SWIPE_THRESHOLD) {
-        const direction = event.translationX > 0 ? "right" : "left";
-        const targetX = direction === "right" ? SCREEN_WIDTH * 1.5 : -SCREEN_WIDTH * 1.5;
+  const handleGoToChat = useCallback(() => {
+    setMatchedUser(null);
+    /* Navigate up to the tab navigator and switch to Chat tab */
+    navigation.getParent()?.navigate("Chat" as never);
+  }, [navigation]);
 
-        translateX.value = withTiming(targetX, { duration: 250 }, () => {
-          runOnJS(handleSwipeComplete)(direction);
-        });
-        translateY.value = withTiming(0, { duration: 250 });
+  const handleDismissMatch = useCallback(() => {
+    setMatchedUser(null);
+  }, []);
+
+  const swipeOff = useCallback(
+    (direction: "left" | "right") => {
+      "worklet";
+      const dest = direction === "right" ? SCREEN_W * 1.5 : -SCREEN_W * 1.5;
+      translateX.value = withTiming(dest, {
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+      });
+
+      runOnJS(handleSwipeComplete)(direction);
+
+      // Reset after animation
+      setTimeout(() => {
+        translateX.value = 0;
+        translateY.value = 0;
+      }, 300);
+    },
+    [handleSwipeComplete]
+  );
+
+  /* ── Pan gesture — IMPROVED sensitivity ── */
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-15, 15]) // Lower threshold to start recognizing
+    .failOffsetY([-30, 30]) // Fail if vertical movement is dominant
+    .onUpdate((e) => {
+      // More responsive 1:1 mapping for X
+      translateX.value = e.translationX * 1.1;
+      // Subtle Y movement for natural feel
+      translateY.value = e.translationY * 0.3;
+    })
+    .onEnd((e) => {
+      if (
+        Math.abs(e.translationX) > SWIPE_THRESHOLD ||
+        Math.abs(e.velocityX) > SWIPE_VELOCITY
+      ) {
+        swipeOff(e.translationX > 0 ? "right" : "left");
       } else {
-        // Snap back
-        translateX.value = withSpring(0, { damping: 15, stiffness: 150 });
-        translateY.value = withSpring(0, { damping: 15, stiffness: 150 });
+        // Snap back with bouncy spring
+        translateX.value = withSpring(0, { damping: 18, stiffness: 200 });
+        translateY.value = withSpring(0, { damping: 18, stiffness: 200 });
       }
     });
 
-  // Top card animated style
-  const topCardStyle = useAnimatedStyle(() => ({
+  /* ── Animated styles ── */
+  const topCardAnim = useAnimatedStyle(() => ({
     transform: [
       { translateX: translateX.value },
       { translateY: translateY.value },
       {
         rotate: `${interpolate(
           translateX.value,
-          [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
+          [-SCREEN_W, 0, SCREEN_W],
           [-15, 0, 15],
-          Extrapolation.CLAMP,
+          Extrapolation.CLAMP
         )}deg`,
       },
     ],
   }));
 
-  // Second card: scales up as top card is swiped
-  const secondCardStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      Math.abs(translateX.value),
-      [0, SWIPE_THRESHOLD],
-      [0.95, 1],
-      Extrapolation.CLAMP,
-    );
-    return {
-      transform: [{ scale }],
-      opacity: interpolate(
-        Math.abs(translateX.value),
-        [0, SWIPE_THRESHOLD],
-        [0.7, 1],
-        Extrapolation.CLAMP,
-      ),
-    };
-  });
-
-  // Third card
-  const thirdCardStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      Math.abs(translateX.value),
-      [0, SWIPE_THRESHOLD],
-      [0.9, 0.95],
-      Extrapolation.CLAMP,
-    );
-    return {
-      transform: [{ scale }],
-      opacity: interpolate(
-        Math.abs(translateX.value),
-        [0, SWIPE_THRESHOLD],
-        [0.4, 0.7],
-        Extrapolation.CLAMP,
-      ),
-    };
-  });
-
-  // Swipe indicator overlays
-  const likeOverlayStyle = useAnimatedStyle(() => ({
+  const likeOverlay = useAnimatedStyle(() => ({
     opacity: interpolate(
       translateX.value,
       [0, SWIPE_THRESHOLD],
       [0, 1],
-      Extrapolation.CLAMP,
+      Extrapolation.CLAMP
     ),
   }));
 
-  const nopeOverlayStyle = useAnimatedStyle(() => ({
+  const nopeOverlay = useAnimatedStyle(() => ({
     opacity: interpolate(
       translateX.value,
       [-SWIPE_THRESHOLD, 0],
       [1, 0],
-      Extrapolation.CLAMP,
+      Extrapolation.CLAMP
     ),
   }));
 
+  const secondCardAnim = useAnimatedStyle(() => {
+    const abs = Math.abs(translateX.value);
+    return {
+      transform: [
+        { scale: interpolate(abs, [0, SWIPE_THRESHOLD], [0.95, 1], Extrapolation.CLAMP) },
+      ],
+      opacity: interpolate(abs, [0, SWIPE_THRESHOLD * 0.5], [0.5, 1], Extrapolation.CLAMP),
+    };
+  });
+
+  const thirdCardAnim = useAnimatedStyle(() => {
+    const abs = Math.abs(translateX.value);
+    return {
+      transform: [
+        { scale: interpolate(abs, [0, SWIPE_THRESHOLD], [0.9, 0.95], Extrapolation.CLAMP) },
+      ],
+      opacity: interpolate(abs, [0, SWIPE_THRESHOLD], [0, 0.5], Extrapolation.CLAMP),
+    };
+  });
+
+  /* ── Border glow on swipe ── */
+  const cardBorderColor = useAnimatedStyle(() => {
+    const likeIntensity = interpolate(
+      translateX.value,
+      [0, SWIPE_THRESHOLD * 1.5],
+      [0, 1],
+      Extrapolation.CLAMP
+    );
+    const nopeIntensity = interpolate(
+      translateX.value,
+      [-SWIPE_THRESHOLD * 1.5, 0],
+      [1, 0],
+      Extrapolation.CLAMP
+    );
+
+    if (likeIntensity > 0) {
+      return {
+        borderColor: `rgba(255,215,0,${likeIntensity * 0.6})`,
+        borderWidth: 2,
+      };
+    }
+    if (nopeIntensity > 0) {
+      return {
+        borderColor: `rgba(255,79,111,${nopeIntensity * 0.6})`,
+        borderWidth: 2,
+      };
+    }
+    return { borderColor: "rgba(255,255,255,0.08)", borderWidth: 1 };
+  });
+
+  /* ── Filter apply ── */
   const handleApplyFilters = useCallback(
     (newFilters: DiscoverFilters) => {
       setFilters(newFilters);
+      setFilterVisible(false);
       fetchUsers();
     },
-    [setFilters, fetchUsers],
+    [setFilters, fetchUsers]
   );
 
-  const handleManualDismiss = useCallback(() => {
-    if (!currentUser) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    dismissUser(currentUser.id);
-  }, [currentUser, dismissUser]);
-
-  const handleManualConnect = useCallback(() => {
-    if (!currentUser) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    sendFriendRequest(currentUser.id);
-  }, [currentUser, sendFriendRequest]);
-
+  /* ── Render ── */
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
-        style={StyleSheet.absoluteFill}
-      />
-
-      {/* Header */}
-      <Header
-        title="Descubrir"
-        right={
-          <View style={styles.headerActions}>
+    <ScreenBackground>
+      {/* ═══ Header ═══ */}
+      <Animated.View
+        entering={FadeIn.delay(50)}
+        style={[st.header, { paddingTop: insets.top + 8 }]}
+      >
+        <View style={st.headerRow}>
+          <View style={st.headerLeft}>
             <Pressable
-              onPress={() => navigation.navigate("FriendRequests")}
-              style={styles.headerBtn}
+              onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+              style={st.glassBtn}
             >
-              <Ionicons name="mail-outline" size={20} color={colors.text.primary} />
+              <Ionicons name="menu-outline" size={22} color="#FFFFFF" />
+            </Pressable>
+            <Text style={st.headerTitle}>Descubrir</Text>
+          </View>
+          <View style={st.headerActions}>
+            <Pressable
+              onPress={() => navigation.navigate("Notifications")}
+              style={st.glassBtn}
+            >
+              <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
             </Pressable>
             <Pressable
-              onPress={() => navigation.navigate("NearbyMap")}
-              style={styles.headerBtn}
+              onPress={() => navigation.navigate("LiveLocation")}
+              style={st.glassBtn}
             >
-              <Ionicons name="map-outline" size={20} color={colors.text.primary} />
+              <Ionicons name="location-outline" size={22} color="#FFFFFF" />
             </Pressable>
             <Pressable
               onPress={() => setFilterVisible(true)}
-              style={styles.headerBtn}
+              style={st.glassBtn}
             >
-              <Ionicons name="options-outline" size={20} color={colors.text.primary} />
+              <Ionicons name="options-outline" size={22} color="#FFFFFF" />
             </Pressable>
           </View>
-        }
-      />
+        </View>
+      </Animated.View>
 
-      {/* Stories Bar */}
-      <StoriesBar
-        onCreateStory={() => setCreateStoryVisible(true)}
-        onViewStories={(userId, groups) =>
-          setStoryViewerData({ userId, groups })
-        }
-      />
-
-      {/* Card Stack */}
-      <View style={styles.cardStack}>
+      {/* ═══ Card Stack ═══ */}
+      <View style={st.cardStack}>
         {loading && !currentUser ? (
-          <ActivityIndicator size="large" color={colors.eu.star} />
+          <View style={st.loadingWrap}>
+            <ActivityIndicator size="large" color={DS.primary} />
+            <Text style={st.loadingText}>Buscando perfiles...</Text>
+          </View>
         ) : error ? (
           <EmptyState
             icon="alert-circle-outline"
             title="Error"
             message={error}
-            action={
-              <GlassButton title="Reintentar" variant="secondary" size="sm" onPress={fetchUsers} />
-            }
+            ctaLabel="Reintentar"
+            onCtaPress={fetchUsers}
           />
         ) : !currentUser ? (
-          <EmptyState
-            icon="search-outline"
-            title="Sin más perfiles"
-            message="Has visto todos los perfiles disponibles. Ajusta los filtros o vuelve más tarde."
-            action={
-              <GlassButton title="Cambiar filtros" variant="secondary" size="sm" onPress={() => setFilterVisible(true)} />
-            }
-          />
+          <View style={st.emptyContainer}>
+            <EmptyState
+              icon="search-outline"
+              title="Sin más perfiles"
+              message="Has visto todos los perfiles. Ajusta filtros o vuelve más tarde."
+              ctaLabel="Cambiar filtros"
+              onCtaPress={() => setFilterVisible(true)}
+            />
+          </View>
         ) : (
           <>
-            {/* Third card (bottom) */}
-            {thirdUser ? (
+            {/* Third card */}
+            {thirdUser && (
               <Animated.View
-                style={[styles.cardWrapper, styles.backCard2, thirdCardStyle]}
+                style={[
+                  st.cardWrap,
+                  { width: CARD_W, height: CARD_H, top: 24 },
+                  thirdCardAnim,
+                ]}
                 pointerEvents="none"
               >
-                <UserCard user={thirdUser} />
+                <CarouselUserCard user={thirdUser} />
               </Animated.View>
-            ) : null}
-
+            )}
             {/* Second card */}
-            {nextUser ? (
+            {nextUser && (
               <Animated.View
-                style={[styles.cardWrapper, styles.backCard1, secondCardStyle]}
+                style={[
+                  st.cardWrap,
+                  { width: CARD_W, height: CARD_H, top: 18 },
+                  secondCardAnim,
+                ]}
                 pointerEvents="none"
               >
-                <UserCard user={nextUser} />
+                <CarouselUserCard user={nextUser} />
               </Animated.View>
-            ) : null}
-
-            {/* Top card (swipeable) */}
+            )}
+            {/* Top card — swipeable */}
             <GestureDetector gesture={panGesture}>
-              <Animated.View style={[styles.cardWrapper, topCardStyle]}>
+              <Animated.View
+                style={[
+                  st.cardWrap,
+                  { width: CARD_W, height: CARD_H, top: 12 },
+                  topCardAnim,
+                  cardBorderColor,
+                ]}
+              >
                 {/* LIKE overlay */}
-                <Animated.View style={[styles.swipeOverlay, styles.likeOverlay, likeOverlayStyle]}>
-                  <Text style={styles.overlayText}>CONECTAR</Text>
+                <Animated.View style={[st.swipeOverlay, st.likePos, likeOverlay]}>
+                  <LinearGradient
+                    colors={["rgba(255,215,0,0.25)", "rgba(255,215,0,0.05)"]}
+                    style={[st.overlayGrad, { borderColor: "rgba(255,215,0,0.8)", backgroundColor: "rgba(4,6,26,0.6)" }]}
+                  >
+                    <Text style={[st.overlayText, { color: "#FFD700" }]}>
+                      LIKE ✦
+                    </Text>
+                  </LinearGradient>
                 </Animated.View>
 
                 {/* NOPE overlay */}
-                <Animated.View style={[styles.swipeOverlay, styles.nopeOverlay, nopeOverlayStyle]}>
-                  <Text style={styles.overlayText}>PASAR ✕</Text>
+                <Animated.View style={[st.swipeOverlay, st.nopePos, nopeOverlay]}>
+                  <LinearGradient
+                    colors={["rgba(255,79,111,0.25)", "rgba(255,79,111,0.05)"]}
+                    style={[st.overlayGrad, { borderColor: "rgba(255,79,111,0.8)", backgroundColor: "rgba(4,6,26,0.6)" }]}
+                  >
+                    <Text style={[st.overlayText, { color: "#FF4F6F" }]}>
+                      NOPE ✕
+                    </Text>
+                  </LinearGradient>
                 </Animated.View>
 
-                <UserCard
-                  user={currentUser}
-                  onDismiss={handleManualDismiss}
-                  onSendRequest={handleManualConnect}
-                  onViewProfile={() =>
-                    navigation.navigate("UserDetail", { userId: currentUser.id })
-                  }
-                />
+                <CarouselUserCard user={currentUser} />
               </Animated.View>
             </GestureDetector>
           </>
         )}
       </View>
 
-      {/* Action buttons */}
-      {currentUser ? (
-        <View style={styles.actionBar}>
-          <Pressable
-            style={[styles.actionBtn, styles.actionBtnPass]}
-            onPress={handleManualDismiss}
-          >
-            <Ionicons name="close" size={26} color={colors.status.error} />
-          </Pressable>
-          <Pressable
-            style={[styles.actionBtn, styles.actionBtnInfo]}
-            onPress={() => navigation.navigate("UserDetail", { userId: currentUser.id })}
-          >
-            <Ionicons name="information-outline" size={22} color={colors.eu.star} />
-          </Pressable>
-          <Pressable
-            style={[styles.actionBtn, styles.actionBtnConnect]}
-            onPress={handleManualConnect}
-          >
-            <LinearGradient
-              colors={[...colors.gradient.primary]}
-              style={styles.connectGradient}
-            >
-              <Ionicons name="heart" size={26} color="#FFF" />
-            </LinearGradient>
-          </Pressable>
-        </View>
-      ) : null}
 
-      {/* Filter Modal */}
+
+      {/* ═══ Filter Modal ═══ */}
       <FilterModal
         visible={filterVisible}
         onClose={() => setFilterVisible(false)}
@@ -352,131 +438,95 @@ export default function DiscoverScreen(): React.JSX.Element {
         onApply={handleApplyFilters}
       />
 
-      {/* Story Viewer Modal */}
-      <Modal
-        visible={!!storyViewerData}
-        animationType="fade"
-        statusBarTranslucent
-      >
-        {storyViewerData && (
-          <StoryViewerScreen
-            groups={storyViewerData.groups}
-            initialUserId={storyViewerData.userId}
-            onClose={() => setStoryViewerData(null)}
-          />
-        )}
-      </Modal>
-
-      {/* Create Story Modal */}
-      <Modal
-        visible={createStoryVisible}
-        animationType="slide"
-        statusBarTranslucent
-      >
-        <CreateStoryScreen onClose={() => setCreateStoryVisible(false)} />
-      </Modal>
-    </View>
+      {/* ═══ Match Celebration Modal ═══ */}
+      {matchedUser && (
+        <MatchCelebrationModal
+          visible
+          matchedUser={matchedUser}
+          myPhotoUrl={myUser?.profilePhotoUrl ?? null}
+          onGoToChat={handleGoToChat}
+          onContinue={handleDismissMatch}
+        />
+      )}
+    </ScreenBackground>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  headerActions: {
+/* ═══ Styles — European Glass ═══ */
+const st = StyleSheet.create({
+  /* Header */
+  header: { paddingHorizontal: 16, paddingBottom: 4 },
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
+    justifyContent: "space-between",
   },
-  headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerBtnText: {
-    fontSize: 18,
-  },
-  // Card stack
-  cardStack: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
-  },
-  cardWrapper: {
-    position: "absolute",
-  },
-  backCard1: {
-    top: spacing.sm,
-  },
-  backCard2: {
-    top: spacing.md,
-  },
-  // Swipe overlays
-  swipeOverlay: {
-    position: "absolute",
-    top: spacing.xl,
-    zIndex: 10,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: 3,
-  },
-  likeOverlay: {
-    right: spacing.lg,
-    borderColor: colors.status.success,
-    backgroundColor: "rgba(76, 175, 80, 0.2)",
-  },
-  nopeOverlay: {
-    left: spacing.lg,
-    borderColor: colors.status.error,
-    backgroundColor: "rgba(244, 67, 54, 0.2)",
-  },
-  overlayText: {
+  headerTitle: {
     fontFamily: typography.families.heading,
     fontSize: typography.sizes.h3.fontSize,
     color: colors.text.primary,
+    letterSpacing: -0.5,
   },
-  // Action bar
-  actionBar: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: spacing.lg,
-    paddingBottom: spacing.lg + 4,
-    paddingTop: spacing.sm,
-  },
-  actionBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  glassBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.10)",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
+    borderWidth: 0.5,
+    borderColor: "rgba(255,255,255,0.12)",
   },
-  actionBtnPass: {
-    backgroundColor: "rgba(244, 67, 54, 0.12)",
-    borderColor: "rgba(244, 67, 54, 0.3)",
-  },
-  actionBtnInfo: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255, 215, 0, 0.1)",
-    borderColor: "rgba(255, 215, 0, 0.25)",
-  },
-  actionBtnConnect: {
-    borderColor: "transparent",
+
+  /* Card Stack */
+  cardStack: { flex: 1, alignItems: "center", justifyContent: "center" },
+  cardWrap: {
+    position: "absolute",
+    borderRadius: 24,
     overflow: "hidden",
   },
-  connectGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
+
+  /* Loading */
+  loadingWrap: { alignItems: "center", gap: 16 },
+  loadingText: {
+    fontFamily: typography.families.body,
+    fontSize: typography.sizes.bodySmall.fontSize,
+    color: colors.text.tertiary,
   },
+
+  /* Empty State */
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "flex-start",
+    alignItems: "center",
+    width: "100%",
+    paddingTop: 0,
+    marginTop: -80,
+  },
+
+  /* Swipe Overlays */
+  swipeOverlay: {
+    position: "absolute",
+    top: 40,
+    zIndex: 100,
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  likePos: { left: 32, transform: [{ rotate: "-15deg" }] },
+  nopePos: { right: 32, transform: [{ rotate: "15deg" }] },
+  overlayGrad: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 4,
+  },
+  overlayText: {
+    fontFamily: typography.families.heading,
+    fontSize: 42,
+    letterSpacing: 2,
+  },
+
+
 });

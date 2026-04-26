@@ -19,7 +19,7 @@ public class CityGuideController {
     private final CityGuideService cityGuideService;
 
     private Long currentUserId() {
-        return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        return (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
     // ── Places ──────────────────────────────────────

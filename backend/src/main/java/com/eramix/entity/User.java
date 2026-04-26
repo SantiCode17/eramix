@@ -95,6 +95,60 @@ public class User extends BaseEntity {
     @Column(name = "last_seen")
     private Instant lastSeen;
 
+    @Column(name = "auth_provider", nullable = false, length = 20)
+    @Builder.Default
+    private String authProvider = "LOCAL";
+
+    @Column(name = "provider_id")
+    private String providerId;
+
+    @Column(name = "degree", length = 150)
+    private String degree;
+
+    @Column(name = "gender", length = 20)
+    private String gender;
+
+    @Column(name = "looking_for_gender", length = 20)
+    private String lookingForGender;
+
+    @Column(name = "show_gender_on_profile", nullable = false)
+    @Builder.Default
+    private Boolean showGenderOnProfile = true;
+
+    @Column(name = "notifications_enabled", nullable = false)
+    @Builder.Default
+    private Boolean notificationsEnabled = false;
+
+    @Column(name = "why_am_i_here", length = 100)
+    private String whyAmIHere;
+
+    @Column(name = "favorite_song", length = 255)
+    private String favoriteSong;
+
+    @Column(name = "favorite_food", length = 255)
+    private String favoriteFood;
+
+    @Column(name = "special_hobby", length = 255)
+    private String specialHobby;
+
+    @Column(name = "custom_prompts", columnDefinition = "JSON")
+    private String customPrompts;
+
+    @Column(name = "social_instagram", length = 255)
+    private String socialInstagram;
+
+    @Column(name = "social_tiktok", length = 255)
+    private String socialTiktok;
+
+    @Column(name = "height")
+    private Integer height;
+
+    @Column(name = "zodiac", length = 50)
+    private String zodiac;
+
+    @Column(name = "profession", length = 150)
+    private String profession;
+
     // --- Relationships ---
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -114,4 +168,10 @@ public class User extends BaseEntity {
     @OrderBy("displayOrder ASC")
     @Builder.Default
     private Set<UserPhoto> photos = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "user_intention", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "intention")
+    @Builder.Default
+    private Set<String> intentions = new HashSet<>();
 }

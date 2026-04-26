@@ -60,6 +60,31 @@ public class NotificationService {
                 .build();
     }
 
+    // ── Listar notificaciones filtradas por tipo ──────────
+
+    @Transactional(readOnly = true)
+    public PageResponse<NotificationResponse> getNotificationsByType(Long userId, String type, int page, int size) {
+        NotificationType notifType;
+        try {
+            notifType = NotificationType.valueOf(type.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return getNotifications(userId, page, size);
+        }
+
+        Page<Notification> pageResult = notificationRepository
+                .findByUserIdAndTypeOrderByCreatedAtDesc(userId, notifType, PageRequest.of(page, size));
+
+        return PageResponse.<NotificationResponse>builder()
+                .content(pageResult.getContent().stream().map(this::toResponse).toList())
+                .page(pageResult.getNumber())
+                .size(pageResult.getSize())
+                .totalElements(pageResult.getTotalElements())
+                .totalPages(pageResult.getTotalPages())
+                .first(pageResult.isFirst())
+                .last(pageResult.isLast())
+                .build();
+    }
+
     // ── Contar no leídas ──────────────────────────────────
 
     @Transactional(readOnly = true)

@@ -99,6 +99,6 @@ public class LanguageExchangeController {
     // ── Helpers ─────────────────────────────────────────
 
     private Long currentUserId() {
-        return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        return (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 }

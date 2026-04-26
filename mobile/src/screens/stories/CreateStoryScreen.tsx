@@ -16,7 +16,7 @@ import * as Haptics from "expo-haptics";
 import * as storiesApi from "@/api/stories";
 import { handleError } from "@/utils/errorHandler";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
 
 interface Props {
   onClose: () => void;
@@ -62,7 +62,7 @@ export default function CreateStoryScreen({
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
+        colors={[DS.background, "#0E1A35"]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -125,8 +125,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.glass.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(255,255,255,0.08)",
   },
   headerTitle: {
     fontFamily: typography.families.subheading,
@@ -149,9 +149,9 @@ const styles = StyleSheet.create({
     margin: spacing.lg,
     borderRadius: radii.xl,
     overflow: "hidden",
-    backgroundColor: colors.glass.white,
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderColor: "rgba(255,255,255,0.12)",
   },
   preview: {
     width: "100%",
@@ -176,12 +176,12 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   captionInput: {
-    backgroundColor: colors.glass.white,
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
-    borderColor: colors.glass.border,
-    borderRadius: radii.md,
+    borderColor: "rgba(255,255,255,0.15)",
+    borderRadius: radii.lg,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
+    paddingVertical: spacing.sm + 4,
     fontFamily: typography.families.body,
     fontSize: 15,
     color: colors.text.primary,

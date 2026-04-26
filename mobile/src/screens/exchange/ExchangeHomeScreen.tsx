@@ -1,19 +1,20 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  View, Text, StyleSheet, Pressable, ActivityIndicator, RefreshControl,
+  View, Text, Image, StyleSheet, Pressable, ActivityIndicator, RefreshControl,
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
 import type { ExchangeSession, ExchangeStackParamList } from "@/types/exchange";
 import * as exchangeApi from "@/api/exchange";
 import { handleError } from "@/utils/errorHandler";
+// import { languageExchangeHero } from "@/assets/images";
 
 type Nav = StackNavigationProp<ExchangeStackParamList, "ExchangeHome">;
 
@@ -73,7 +74,7 @@ export default function ExchangeHomeScreen() {
 
   return (
     <LinearGradient
-      colors={[colors.background.start, colors.background.end]}
+      colors={[DS.background, "#0E1A35", "#0F1535"]}
       style={[styles.container, { paddingTop: insets.top }]}
     >
       <View style={styles.header}>
@@ -98,9 +99,9 @@ export default function ExchangeHomeScreen() {
         <View style={styles.empty}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.status.error} />
           <Text style={styles.emptyTitle}>Error al cargar sesiones</Text>
-          <Text style={styles.emptySubtitle}>{error}</Text>
-          <Pressable style={styles.actionBtn} onPress={() => { setLoading(true); fetch(); }}>
-            <Text style={styles.actionLabel}>Reintentar</Text>
+          <Text style={styles.emptySubtitle}>No se pudo conectar al servidor</Text>
+          <Pressable style={styles.retryBtn} onPress={() => { setLoading(true); fetch(); }}>
+            <Text style={styles.retryBtnText}>Reintentar</Text>
           </Pressable>
         </View>
       ) : sessions.length === 0 ? (
@@ -129,15 +130,15 @@ const styles = StyleSheet.create({
   headerTitle: { ...typography.sizes.h2, fontFamily: typography.families.heading, color: colors.text.primary },
   actions: { flexDirection: "row", paddingHorizontal: spacing.lg, gap: spacing.md, marginBottom: spacing.md },
   actionBtn: {
-    flex: 1, backgroundColor: colors.glass.white, borderRadius: radii.lg,
-    borderWidth: 1, borderColor: colors.glass.border, padding: spacing.md,
+    flex: 1, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255,255,255,0.08)", padding: spacing.md,
     alignItems: "center", gap: spacing.xs,
   },
   actionEmoji: { fontSize: 28 },
   actionLabel: { fontFamily: typography.families.bodyMedium, ...typography.sizes.caption, color: colors.text.primary },
   card: {
-    backgroundColor: colors.glass.white, borderRadius: radii.lg,
-    borderWidth: 1, borderColor: colors.glass.border,
+    backgroundColor: "rgba(255,255,255,0.04)", borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255,255,255,0.08)",
     padding: spacing.md, marginBottom: spacing.md,
   },
   cardRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
@@ -154,4 +155,19 @@ const styles = StyleSheet.create({
   empty: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: spacing.xl },
   emptyTitle: { fontFamily: typography.families.heading, ...typography.sizes.h3, color: colors.text.primary, marginTop: spacing.md, textAlign: "center" },
   emptySubtitle: { fontFamily: typography.families.body, ...typography.sizes.body, color: colors.text.secondary, textAlign: "center", marginTop: spacing.sm },
+  retryBtn: {
+    marginTop: spacing.lg,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.eu.star,
+    backgroundColor: "rgba(255, 215, 0, 0.10)",
+  },
+  retryBtnText: {
+    fontFamily: typography.families.bodyMedium,
+    ...typography.sizes.button,
+    color: colors.eu.star,
+    textAlign: "center",
+  },
 });

@@ -16,10 +16,11 @@ import {
   LoadingSpinner,
   EmptyState,
 } from "@/design-system/components";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
 import { useProfileStore } from "@/store";
 import type { BlockedUser } from "@/types";
 import { handleError } from "@/utils/errorHandler";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
 
 export default function BlockedUsersScreen(): React.JSX.Element {
   const navigation = useNavigation();
@@ -59,7 +60,7 @@ export default function BlockedUsersScreen(): React.JSX.Element {
         <View style={styles.row}>
           {item.receiverProfilePhotoUrl ? (
             <Image
-              source={{ uri: item.receiverProfilePhotoUrl }}
+              source={{ uri: resolveMediaUrl(item.receiverProfilePhotoUrl) }}
               style={styles.avatar}
             />
           ) : (
@@ -89,7 +90,7 @@ export default function BlockedUsersScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
+        colors={[DS.background, "#0E1A35", "#0F1535"]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.eu.deep,
+    backgroundColor: "rgba(19,34,64,0.55)",
     alignItems: "center",
     justifyContent: "center",
     marginRight: spacing.md,
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radii.full,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.status.warning,
     backgroundColor: "rgba(255,152,0,0.1)",
   },

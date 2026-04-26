@@ -84,31 +84,49 @@ export type {
   ExchangeStackParamList,
 } from "./exchange";
 export type {
-  Achievement,
-  UserProgress,
-  LeaderboardEntry,
-  GamificationStackParamList,
-} from "./gamification";
-export type {
-  Challenge,
-  ChallengeSubmission,
-  ChallengesStackParamList,
-} from "./challenges";
-export type {
   HousingPost,
   HousingStackParamList,
 } from "./housing";
-export type {
-  Place,
-  PlaceReview,
-  PlaceCategory,
-  CityGuideStackParamList,
-} from "./cityGuide";
 export type {
   AiMessageData,
   AiConversation,
   AiAssistantStackParamList,
 } from "./aiAssistant";
+export type {
+  LedgerTransaction,
+  SpendingCategory,
+  GrantAllocation,
+  BudgetAlert,
+  BudgetAlertResponse,
+  FinancialSummary,
+  CreateTransactionRequest,
+  FinanceStackParamList,
+} from "./finance";
+export type {
+  TicketListing,
+  CryptographicTicket,
+  ValidateTicketResponse,
+  CreateTicketListingRequest,
+  TicketingStackParamList,
+} from "./ticketing";
+export type {
+  WellbeingCheckin,
+  EmergencyResource,
+  EmergencyContact,
+  WellbeingSummary,
+  SOSActivation,
+  WellbeingStackParamList,
+} from "./wellbeing";
+export type {
+  ConsentStatus,
+  ConsentUpdateRequest,
+  DataExportResponse,
+} from "./privacy";
+export type {
+  OcrScanResult,
+  ExtractedField,
+  OcrStackParamList,
+} from "./ocr";
 
 // ── Navigation types ────────────────────────────────
 
@@ -131,11 +149,24 @@ export type MainTabParamList = {
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
+  EditProfileHub: undefined;
+  ManageCard: undefined;
+  ProfilePreview: undefined;
+  EditAbout: undefined;
+  EditBasics: undefined;
+  EditLifestyle: undefined;
+  EditPassions: undefined;
+  EditSong: undefined;
   EditProfile: undefined;
   EditPhotos: undefined;
   Interests: undefined;
   Languages: undefined;
   ViewProfile: { userId: number };
+  MoodBoard: undefined;
+  AugmentedProfile: undefined;
+  CardCustomize: undefined;
+  CreatePost: { communityId: number; editPost?: { id: number; content: string; imageUrl?: string } };
+  PostDetail: { communityId: number; postId: number };
 };
 
 export type SettingsStackParamList = {
@@ -149,13 +180,10 @@ export type SettingsStackParamList = {
 export type DrawerParamList = {
   HomeTabs: undefined;
   Globe: undefined;
-  Groups: undefined;
-  Notifications: undefined;
-  Exchange: undefined;
-  Gamification: undefined;
-  Challenges: undefined;
-  Housing: undefined;
-  CityGuide: undefined;
+  Finance: undefined;
+  Ticketing: undefined;
+  PlacesToVisit: undefined;
+  Wellbeing: undefined;
   AiAssistant: undefined;
   Settings: undefined;
   About: undefined;

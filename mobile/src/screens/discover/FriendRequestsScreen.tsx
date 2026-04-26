@@ -8,17 +8,186 @@ import {
   Pressable,
   RefreshControl,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+
 import { useDiscoverStore } from "@/store/useDiscoverStore";
-import { Header, LoadingSpinner, EmptyState, GlassButton } from "@/design-system";
-import { colors, typography, spacing, radii, shadows } from "@/design-system/tokens";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
+import {
+  GlassCard,
+  Header,
+  LoadingSpinner,
+  EmptyState,
+  ScreenBackground,
+} from "@/design-system";
+import {
+  colors,
+  typography,
+  spacing,
+  radii,
+} from "@/design-system/tokens";
+import { CategoryTab } from "@/components";
 import type { FriendRequestResponse, DiscoverStackParamList } from "@/types";
 
 type NavProp = StackNavigationProp<DiscoverStackParamList, "FriendRequests">;
 type Tab = "received" | "sent";
+
+/* ── helper ───────────────────────────────────────── */
+
+function formatRelativeDate(dateStr: string): string {
+  const now = Date.now();
+  const date = new Date(dateStr).getTime();
+  const diff = now - date;
+  const mins = Math.floor(diff / 60_000);
+  const hours = Math.floor(diff / 3_600_000);
+  const days = Math.floor(diff / 86_400_000);
+
+  if (mins < 1) return "Ahora";
+  if (mins < 60) return `Hace ${mins} min`;
+  if (hours < 24) return `Hace ${hours}h`;
+  if (days < 7) return `Hace ${days}d`;
+  return new Date(dateStr).toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+/* ── AvatarBlock ──────────────────────────────────── */
+
+function AvatarBlock({
+  uri,
+  initial,
+  gradColors,
+}: {
+  uri: string | null;
+  initial: string;
+  gradColors: [string, string];
+}) {
+  if (uri) {
+    return (
+      <Image
+        source={{ uri: resolveMediaUrl(uri) }}
+        style={st.avatar}
+      />
+    );
+  }
+  return (
+    <LinearGradient colors={gradColors} style={st.avatarPlaceholder}>
+      <Text style={st.avatarInitial}>{initial}</Text>
+    </LinearGradient>
+  );
+}
+
+/* ── ReceivedItem ─────────────────────────────────── */
+
+interface ReceivedItemProps {
+  item: FriendRequestResponse;
+  index: number;
+  onAccept: (id: number) => void;
+  onReject: (id: number) => void;
+  onPress: (userId: number) => void;
+}
+
+const ReceivedItem = React.memo(function ReceivedItem({
+  item,
+  index,
+  onAccept,
+  onReject,
+  onPress,
+}: ReceivedItemProps) {
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 50).duration(350)}>
+      <GlassCard style={st.card}>
+        <Pressable style={st.cardLeft} onPress={() => onPress(item.senderId)}>
+          <AvatarBlock
+            uri={item.senderProfilePhotoUrl}
+            initial={item.senderFirstName[0]}
+            gradColors={["#1A3DE8", "#3B6BFF"]}
+          />
+          <View style={st.cardInfo}>
+            <Text style={st.cardName} numberOfLines={1}>
+              {item.senderFirstName} {item.senderLastName}
+            </Text>
+            <Text style={st.cardDate}>{formatRelativeDate(item.createdAt)}</Text>
+          </View>
+        </Pressable>
+
+        <View style={st.cardActions}>
+          <Pressable style={st.rejectBtn} onPress={() => onReject(item.id)}>
+            <Ionicons name="close" size={18} color="#FF6B6B" />
+          </Pressable>
+          <Pressable style={st.acceptBtn} onPress={() => onAccept(item.id)}>
+            <Ionicons name="checkmark" size={18} color="#4CAF50" />
+          </Pressable>
+        </View>
+      </GlassCard>
+    </Animated.View>
+  );
+});
+
+/* ── SentItem ─────────────────────────────────────── */
+
+interface SentItemProps {
+  item: FriendRequestResponse;
+  index: number;
+  onCancel: (id: number) => void;
+  onPress: (userId: number) => void;
+}
+
+const SentItem = React.memo(function SentItem({
+  item,
+  index,
+  onCancel,
+  onPress,
+}: SentItemProps) {
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 50).duration(350)}>
+      <GlassCard style={st.card}>
+        <Pressable style={st.cardLeft} onPress={() => onPress(item.receiverId)}>
+          <AvatarBlock
+            uri={item.receiverProfilePhotoUrl}
+            initial={item.receiverFirstName[0]}
+            gradColors={["#8B5CF6", "#B47AFF"]}
+          />
+          <View style={st.cardInfo}>
+            <Text style={st.cardName} numberOfLines={1}>
+              {item.receiverFirstName} {item.receiverLastName}
+            </Text>
+            <Text style={st.cardDate}>{formatRelativeDate(item.createdAt)}</Text>
+          </View>
+        </Pressable>
+
+        {item.status === "PENDING" ? (
+          <Pressable style={st.cancelBtn} onPress={() => onCancel(item.id)}>
+            <Text style={st.cancelText}>Cancelar</Text>
+          </Pressable>
+        ) : (
+          <View
+            style={[
+              st.statusBadge,
+              item.status === "ACCEPTED" ? st.statusAccepted : st.statusRejected,
+            ]}
+          >
+            <Text
+              style={[
+                st.statusText,
+                { color: item.status === "ACCEPTED" ? "#4CAF50" : "#FF6B6B" },
+              ]}
+            >
+              {item.status === "ACCEPTED" ? "Aceptada" : "Rechazada"}
+            </Text>
+          </View>
+        )}
+      </GlassCard>
+    </Animated.View>
+  );
+});
+
+/* ── Screen ──────────────────────────────────────── */
 
 export default function FriendRequestsScreen(): React.JSX.Element {
   const navigation = useNavigation<NavProp>();
@@ -70,164 +239,61 @@ export default function FriendRequestsScreen(): React.JSX.Element {
     [cancelRequest],
   );
 
+  const handleUserPress = useCallback(
+    (userId: number) => {
+      navigation.navigate("UserDetail", { userId });
+    },
+    [navigation],
+  );
+
   const data = activeTab === "received" ? receivedRequests : sentRequests;
 
-  const renderReceivedItem = useCallback(
-    ({ item }: { item: FriendRequestResponse }) => (
-      <View style={styles.card}>
-        <Pressable
-          style={styles.cardLeft}
-          onPress={() =>
-            navigation.navigate("UserDetail", { userId: item.senderId })
-          }
-        >
-          {item.senderProfilePhotoUrl ? (
-            <Image
-              source={{ uri: item.senderProfilePhotoUrl }}
-              style={styles.avatar}
-            />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitial}>
-                {item.senderFirstName[0]}
-              </Text>
-            </View>
-          )}
-          <View style={styles.cardInfo}>
-            <Text style={styles.cardName} numberOfLines={1}>
-              {item.senderFirstName} {item.senderLastName}
-            </Text>
-            <Text style={styles.cardDate}>
-              {formatRelativeDate(item.createdAt)}
-            </Text>
-          </View>
-        </Pressable>
-        <View style={styles.cardActions}>
-          <Pressable
-            style={styles.rejectBtn}
-            onPress={() => handleReject(item.id)}
-          >
-            <Text style={styles.btnEmoji}>✕</Text>
-          </Pressable>
-          <Pressable
-            style={styles.acceptBtn}
-            onPress={() => handleAccept(item.id)}
-          >
-            <Text style={styles.btnEmoji}>✓</Text>
-          </Pressable>
-        </View>
-      </View>
-    ),
-    [navigation, handleAccept, handleReject],
-  );
-
-  const renderSentItem = useCallback(
-    ({ item }: { item: FriendRequestResponse }) => (
-      <View style={styles.card}>
-        <Pressable
-          style={styles.cardLeft}
-          onPress={() =>
-            navigation.navigate("UserDetail", { userId: item.receiverId })
-          }
-        >
-          {item.receiverProfilePhotoUrl ? (
-            <Image
-              source={{ uri: item.receiverProfilePhotoUrl }}
-              style={styles.avatar}
-            />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitial}>
-                {item.receiverFirstName[0]}
-              </Text>
-            </View>
-          )}
-          <View style={styles.cardInfo}>
-            <Text style={styles.cardName} numberOfLines={1}>
-              {item.receiverFirstName} {item.receiverLastName}
-            </Text>
-            <Text style={styles.cardDate}>
-              {formatRelativeDate(item.createdAt)}
-            </Text>
-          </View>
-        </Pressable>
-        {item.status === "PENDING" ? (
-          <Pressable
-            style={styles.cancelBtn}
-            onPress={() => handleCancel(item.id)}
-          >
-            <Text style={styles.cancelText}>Cancelar</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.statusBadge}>
-            <Text
-              style={[
-                styles.statusText,
-                item.status === "ACCEPTED"
-                  ? styles.statusAccepted
-                  : styles.statusRejected,
-              ]}
-            >
-              {item.status === "ACCEPTED" ? "Aceptada" : "Rechazada"}
-            </Text>
-          </View>
-        )}
-      </View>
-    ),
-    [navigation, handleCancel],
-  );
-
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
-        style={StyleSheet.absoluteFill}
-      />
+    <ScreenBackground>
       <Header title="Solicitudes" onBack={() => navigation.goBack()} />
 
-      {/* Tab bar */}
-      <View style={styles.tabBar}>
-        <Pressable
-          style={[styles.tab, activeTab === "received" && styles.tabActive]}
+      {/* tab bar */}
+      <View style={st.tabRow}>
+        <CategoryTab
+          label={`Recibidas${receivedRequests.length > 0 ? ` (${receivedRequests.length})` : ""}`}
+          active={activeTab === "received"}
           onPress={() => setActiveTab("received")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "received" && styles.tabTextActive,
-            ]}
-          >
-            Recibidas ({receivedRequests.length})
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.tab, activeTab === "sent" && styles.tabActive]}
+        />
+        <CategoryTab
+          label={`Enviadas${sentRequests.length > 0 ? ` (${sentRequests.length})` : ""}`}
+          active={activeTab === "sent"}
           onPress={() => setActiveTab("sent")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "sent" && styles.tabTextActive,
-            ]}
-          >
-            Enviadas ({sentRequests.length})
-          </Text>
-        </Pressable>
+        />
       </View>
 
-      {/* List */}
+      {/* list */}
       {requestsLoading && data.length === 0 ? (
-        <View style={styles.centered}>
+        <View style={st.centered}>
           <LoadingSpinner size={48} />
         </View>
       ) : (
         <FlatList
           data={data}
           keyExtractor={(item) => String(item.id)}
-          renderItem={
-            activeTab === "received" ? renderReceivedItem : renderSentItem
+          renderItem={({ item, index }) =>
+            activeTab === "received" ? (
+              <ReceivedItem
+                item={item}
+                index={index}
+                onAccept={handleAccept}
+                onReject={handleReject}
+                onPress={handleUserPress}
+              />
+            ) : (
+              <SentItem
+                item={item}
+                index={index}
+                onCancel={handleCancel}
+                onPress={handleUserPress}
+              />
+            )
           }
-          contentContainerStyle={styles.list}
+          contentContainerStyle={st.list}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -252,83 +318,39 @@ export default function FriendRequestsScreen(): React.JSX.Element {
           }
         />
       )}
-    </View>
+    </ScreenBackground>
   );
 }
 
-// ── Helpers ─────────────────────────────────────────
+/* ── styles ──────────────────────────────────────── */
 
-function formatRelativeDate(dateStr: string): string {
-  const now = Date.now();
-  const date = new Date(dateStr).getTime();
-  const diff = now - date;
-  const mins = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (mins < 1) return "Ahora";
-  if (mins < 60) return `Hace ${mins} min`;
-  if (hours < 24) return `Hace ${hours}h`;
-  if (days < 7) return `Hace ${days}d`;
-  return new Date(dateStr).toLocaleDateString("es-ES", {
-    day: "numeric",
-    month: "short",
-  });
-}
-
-// ── Styles ──────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+const st = StyleSheet.create({
   centered: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  // Tab bar
-  tabBar: {
+
+  tabRow: {
     flexDirection: "row",
     marginHorizontal: spacing.md,
     marginBottom: spacing.md,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    borderRadius: radii.md,
-    padding: spacing.xxs,
+    gap: spacing.sm,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    alignItems: "center",
-    borderRadius: radii.sm,
-  },
-  tabActive: {
-    backgroundColor: "rgba(255, 204, 0, 0.15)",
-  },
-  tabText: {
-    fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.caption.fontSize,
-    color: colors.text.secondary,
-  },
-  tabTextActive: {
-    color: colors.eu.star,
-  },
-  // List
+
+  /* list */
   list: {
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingBottom: 100,
+    gap: spacing.sm,
   },
-  // Card
+
+  /* card */
   card: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    borderRadius: radii.lg,
     padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.glass.border,
   },
   cardLeft: {
     flexDirection: "row",
@@ -345,7 +367,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.eu.deep,
     alignItems: "center",
     justifyContent: "center",
     marginRight: spacing.md,
@@ -353,7 +374,7 @@ const styles = StyleSheet.create({
   avatarInitial: {
     fontFamily: typography.families.heading,
     fontSize: 20,
-    color: colors.eu.star,
+    color: "rgba(255,255,255,0.9)",
   },
   cardInfo: {
     flex: 1,
@@ -367,9 +388,10 @@ const styles = StyleSheet.create({
     fontFamily: typography.families.body,
     fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
-    marginTop: spacing.xxs,
+    marginTop: 2,
   },
-  // Actions
+
+  /* actions */
   cardActions: {
     flexDirection: "row",
     gap: spacing.sm,
@@ -379,9 +401,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(76, 175, 80, 0.2)",
-    borderWidth: 1,
-    borderColor: "rgba(76, 175, 80, 0.4)",
+    backgroundColor: "rgba(76,175,80,0.12)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(76,175,80,0.35)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -389,23 +411,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(244, 67, 54, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(244, 67, 54, 0.3)",
+    backgroundColor: "rgba(244,67,54,0.10)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(244,67,54,0.3)",
     alignItems: "center",
     justifyContent: "center",
-  },
-  btnEmoji: {
-    fontSize: 18,
-    color: colors.text.primary,
   },
   cancelBtn: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
     borderRadius: radii.full,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: colors.glass.border,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.08)",
     marginLeft: spacing.sm,
   },
   cancelText: {
@@ -415,15 +433,18 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     marginLeft: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.full,
+  },
+  statusAccepted: {
+    backgroundColor: "rgba(76,175,80,0.10)",
+  },
+  statusRejected: {
+    backgroundColor: "rgba(244,67,54,0.10)",
   },
   statusText: {
     fontFamily: typography.families.bodyMedium,
     fontSize: typography.sizes.bodySmall.fontSize,
-  },
-  statusAccepted: {
-    color: colors.status.success,
-  },
-  statusRejected: {
-    color: colors.status.error,
   },
 });

@@ -21,9 +21,12 @@ public class NotificationController {
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<NotificationResponse>>> getNotifications(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(
-                ApiResponse.ok(notificationService.getNotifications(currentUserId(), page, size)));
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String type) {
+        PageResponse<NotificationResponse> result = (type != null && !type.isBlank())
+                ? notificationService.getNotificationsByType(currentUserId(), type, page, size)
+                : notificationService.getNotifications(currentUserId(), page, size);
+        return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
     // ── 2. GET /unread-count ── Contar no leídas ──────────

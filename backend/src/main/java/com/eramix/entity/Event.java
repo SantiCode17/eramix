@@ -52,6 +52,9 @@ public class Event extends BaseEntity {
     @Builder.Default
     private Boolean isPublic = true;
 
+    @Column(name = "cover_image_url", length = 500)
+    private String coverImageUrl;
+
     @OneToMany(mappedBy = "event", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<EventParticipant> participants = new HashSet<>();

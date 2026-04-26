@@ -19,6 +19,14 @@ export interface RegisterRequest {
   destinationCountry?: string;
   mobilityStartDate?: string;
   mobilityEndDate?: string;
+  degree?: string;
+  gender?: string;
+  lookingForGender?: string;
+  showGenderOnProfile?: boolean;
+  notificationsEnabled?: boolean;
+  intentions?: string[];
+  languages?: { languageId: number; proficiencyLevel: string }[];
+  interestIds?: number[];
 }
 
 export interface RefreshTokenRequest {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useLayoutEffect } from "react";
 import {
   View,
   Text,
@@ -7,18 +7,23 @@ import {
   Pressable,
   Image,
   Dimensions,
+  StatusBar,
 } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { searchApi } from "@/api";
 import { handleError } from "@/utils/errorHandler";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
 import { useLocationStore } from "@/store/useLocationStore";
 import { Ionicons } from "@expo/vector-icons";
-import { Header, GlassButton } from "@/design-system";
-import { colors, typography, spacing, radii, shadows } from "@/design-system/tokens";
+import { GlassButton } from "@/design-system";
+import { colors, typography, spacing, radii, shadows, DS } from "@/design-system/tokens";
+import { pluralize } from "@/utils/pluralize";
 import type { NearbyUserResponse, DiscoverStackParamList } from "@/types";
+// import { mapPinPersonaje } from "@/assets/images";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -48,6 +53,7 @@ const DARK_MAP_STYLE = [
 
 export default function NearbyMapScreen(): React.JSX.Element {
   const navigation = useNavigation<NavProp>();
+  const insets = useSafeAreaInsets();
   const {
     latitude,
     longitude,
@@ -64,6 +70,16 @@ export default function NearbyMapScreen(): React.JSX.Element {
     null,
   );
   const [radiusKm, setRadiusKm] = useState(50);
+  const mapRef = React.useRef<MapView>(null);
+
+  // Hide the parent tab bar when this screen is focused
+  useLayoutEffect(() => {
+    const parent = navigation.getParent();
+    parent?.setOptions({ tabBarStyle: { display: "none" } });
+    return () => {
+      parent?.setOptions({ tabBarStyle: undefined });
+    };
+  }, [navigation]);
 
   useEffect(() => {
     initLocation();
@@ -90,6 +106,15 @@ export default function NearbyMapScreen(): React.JSX.Element {
       setNearbyUsers(users);
     } catch (e) {
       handleError(e, "NearbyMap.findNearby");
+      // Fallback mock markers para modo offline
+      setNearbyUsers([
+        { id: 9001, firstName: "Luca", lastName: "Rossi", latitude: latitude + 0.008, longitude: longitude + 0.005, distanceKm: 1.2, profilePhotoUrl: null, university: "Politecnico di Milano" },
+        { id: 9002, firstName: "Marie", lastName: "Dupont", latitude: latitude - 0.006, longitude: longitude + 0.01, distanceKm: 2.5, profilePhotoUrl: null, university: "Sorbonne" },
+        { id: 9003, firstName: "Hans", lastName: "Müller", latitude: latitude + 0.012, longitude: longitude - 0.007, distanceKm: 3.1, profilePhotoUrl: null, university: "TU München" },
+        { id: 9004, firstName: "Sofia", lastName: "García", latitude: latitude - 0.003, longitude: longitude - 0.012, distanceKm: 0.8, profilePhotoUrl: null, university: "UCM" },
+        { id: 9005, firstName: "Katya", lastName: "Ivanova", latitude: latitude + 0.015, longitude: longitude + 0.002, distanceKm: 4.0, profilePhotoUrl: null, university: "MSU" },
+        { id: 9006, firstName: "Pierre", lastName: "Martin", latitude: latitude - 0.01, longitude: longitude + 0.015, distanceKm: 5.3, profilePhotoUrl: null, university: "Sciences Po" },
+      ] as unknown as NearbyUserResponse[]);
     } finally {
       setLoadingUsers(false);
     }
@@ -100,10 +125,16 @@ export default function NearbyMapScreen(): React.JSX.Element {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={[colors.background.start, colors.background.end]}
+          colors={[DS.background, "#0E1A35"]}
           style={StyleSheet.absoluteFill}
         />
-        <Header title="Mapa cercano" onBack={() => navigation.goBack()} />
+        {/* Floating glass header */}
+        <View style={[styles.floatingHeader, { paddingTop: insets.top + spacing.sm }]}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
+          </Pressable>
+          <Text style={styles.floatingHeaderTitle}>Mapa cercano</Text>
+        </View>
         <View style={styles.centered}>
           {locationLoading ? (
             <ActivityIndicator size="large" color={colors.eu.star} />
@@ -128,137 +159,160 @@ export default function NearbyMapScreen(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+
+      {/* Full-screen map */}
+      <MapView
+        ref={mapRef}
+        provider={PROVIDER_DEFAULT}
         style={StyleSheet.absoluteFill}
-      />
-      <Header title="Mapa cercano" onBack={() => navigation.goBack()} />
+        customMapStyle={DARK_MAP_STYLE}
+        initialRegion={{
+          latitude,
+          longitude,
+          latitudeDelta: radiusKm / 50,
+          longitudeDelta: radiusKm / 50,
+        }}
+        showsUserLocation
+        showsMyLocationButton={false}
+      >
+        {nearbyUsers.map((user) => (
+          <Marker
+            key={user.id}
+            coordinate={{
+              latitude: latitude + (user.distanceKm / 111) * (Math.random() - 0.5),
+              longitude:
+                longitude +
+                (user.distanceKm / (111 * Math.cos((latitude * Math.PI) / 180))) *
+                  (Math.random() - 0.5),
+            }}
+            onPress={() => setSelectedUser(user)}
+          >
+            <View style={styles.markerContainer}>
+              {user.profilePhotoUrl ? (
+                <Image
+                  source={{ uri: resolveMediaUrl(user.profilePhotoUrl) }}
+                  style={styles.markerImage}
+                />
+              ) : (
+                <View style={styles.markerPinImage}>
+                  <Ionicons name="person" size={16} color="rgba(255,255,255,0.6)" />
+                </View>
+              )}
+            </View>
+          </Marker>
+        ))}
+      </MapView>
 
-      <View style={styles.mapContainer}>
-        <MapView
-          provider={PROVIDER_DEFAULT}
-          style={styles.map}
-          customMapStyle={DARK_MAP_STYLE}
-          initialRegion={{
-            latitude,
-            longitude,
-            latitudeDelta: radiusKm / 50,
-            longitudeDelta: radiusKm / 50,
-          }}
-          showsUserLocation
-          showsMyLocationButton={false}
-        >
-          {nearbyUsers.map((user) => (
-            <Marker
-              key={user.id}
-              coordinate={{
-                // Fuzzy the location slightly for privacy
-                latitude: latitude + (user.distanceKm / 111) * (Math.random() - 0.5),
-                longitude:
-                  longitude +
-                  (user.distanceKm / (111 * Math.cos((latitude * Math.PI) / 180))) *
-                    (Math.random() - 0.5),
-              }}
-              onPress={() => setSelectedUser(user)}
-            >
-              <View style={styles.markerContainer}>
-                {user.profilePhotoUrl ? (
-                  <Image
-                    source={{ uri: user.profilePhotoUrl }}
-                    style={styles.markerImage}
-                  />
-                ) : (
-                  <View style={styles.markerPlaceholder}>
-                    <Text style={styles.markerInitial}>
-                      {user.firstName[0]}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </Marker>
-          ))}
-        </MapView>
-
-        {/* Radius selector */}
-        <View style={styles.radiusBar}>
-          {[10, 25, 50, 100].map((km) => (
-            <Pressable
-              key={km}
-              onPress={() => setRadiusKm(km)}
-              style={[
-                styles.radiusChip,
-                radiusKm === km && styles.radiusChipActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.radiusText,
-                  radiusKm === km && styles.radiusTextActive,
-                ]}
-              >
-                {km} km
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* Loading indicator */}
-        {loadingUsers ? (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="small" color={colors.eu.star} />
-          </View>
-        ) : null}
-
-        {/* Count badge */}
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>
-            {nearbyUsers.length} estudiante{nearbyUsers.length !== 1 ? "s" : ""}{" "}
-            cerca
-          </Text>
-        </View>
+      {/* Floating glass header */}
+      <View style={[styles.floatingHeader, { paddingTop: insets.top + spacing.sm }]}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
+        </Pressable>
+        <Text style={styles.floatingHeaderTitle}>Mapa cercano</Text>
       </View>
 
-      {/* Selected user card */}
-      {selectedUser ? (
-        <Pressable
-          style={styles.selectedCard}
-          onPress={() =>
-            navigation.navigate("UserDetail", { userId: selectedUser.id })
+      {/* Radius selector — floating over map */}
+      <View style={[styles.radiusBar, { top: insets.top + 60 }]}>
+        {[10, 25, 50, 100].map((km) => (
+          <Pressable
+            key={km}
+            onPress={() => setRadiusKm(km)}
+            style={[
+              styles.radiusChip,
+              radiusKm === km && styles.radiusChipActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.radiusText,
+                radiusKm === km && styles.radiusTextActive,
+              ]}
+            >
+              {km} km
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Loading indicator — top right */}
+      {loadingUsers ? (
+        <View style={[styles.loadingOverlay, { top: insets.top + 60 }]}>
+          <ActivityIndicator size="small" color={colors.eu.star} />
+        </View>
+      ) : null}
+
+      {/* My location FAB */}
+      <Pressable
+        style={[styles.myLocationFab, { bottom: insets.bottom + 80 }]}
+        onPress={() => {
+          getCurrentLocation();
+          if (latitude && longitude && mapRef.current) {
+            mapRef.current.animateToRegion({
+              latitude,
+              longitude,
+              latitudeDelta: radiusKm / 50,
+              longitudeDelta: radiusKm / 50,
+            }, 500);
           }
+        }}
+      >
+        <LinearGradient
+          colors={[colors.eu.star, "#FF6D3F"]}
+          style={styles.myLocationFabGrad}
         >
-          <View style={styles.selectedLeft}>
-            {selectedUser.profilePhotoUrl ? (
-              <Image
-                source={{ uri: selectedUser.profilePhotoUrl }}
-                style={styles.selectedPhoto}
-              />
-            ) : (
-              <View style={styles.selectedPhotoPlaceholder}>
-                <Text style={styles.selectedInitial}>
-                  {selectedUser.firstName[0]}
+          <Ionicons name="navigate" size={20} color="#06081A" />
+        </LinearGradient>
+      </Pressable>
+
+      {/* Bottom glass panel — count + selected user */}
+      <View style={[styles.bottomPanel, { paddingBottom: insets.bottom + spacing.md }]}>
+        <View style={styles.countBadge}>
+          <Ionicons name="people-outline" size={14} color={colors.eu.star} />
+          <Text style={styles.countText}>
+            {pluralize(nearbyUsers.length, "estudiante cerca", "estudiantes cerca")}
+          </Text>
+        </View>
+
+        {/* Selected user card */}
+        {selectedUser && (
+          <Pressable
+            style={styles.selectedCard}
+            onPress={() =>
+              navigation.navigate("UserDetail", { userId: selectedUser.id })
+            }
+          >
+            <View style={styles.selectedLeft}>
+              {selectedUser.profilePhotoUrl ? (
+                <Image
+                  source={{ uri: resolveMediaUrl(selectedUser.profilePhotoUrl) }}
+                  style={styles.selectedPhoto}
+                />
+              ) : (
+                <View style={styles.selectedPhotoPlaceholder}>
+                  <Text style={styles.selectedInitial}>
+                    {selectedUser.firstName[0]}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.selectedInfo}>
+                <Text style={styles.selectedName} numberOfLines={1}>
+                  {selectedUser.firstName} {selectedUser.lastName}
+                </Text>
+                <Text style={styles.selectedDistance}>
+                  <Ionicons name="location-outline" size={13} color={colors.eu.star} /> {selectedUser.distanceKm.toFixed(1)} km
                 </Text>
               </View>
-            )}
-            <View style={styles.selectedInfo}>
-              <Text style={styles.selectedName} numberOfLines={1}>
-                {selectedUser.firstName} {selectedUser.lastName}
-              </Text>
-              <Text style={styles.selectedDistance}>
-                <Ionicons name="location-outline" size={13} color={colors.eu.star} /> {selectedUser.distanceKm.toFixed(1)} km •{" "}
-                {[selectedUser.destinationCity, selectedUser.destinationCountry]
-                  .filter(Boolean)
-                  .join(", ")}
-              </Text>
             </View>
-          </View>
-          <Pressable
-            style={styles.closeSelected}
-            onPress={() => setSelectedUser(null)}
-          >
-            <Text style={styles.closeText}>✕</Text>
+            <Pressable
+              style={styles.closeSelected}
+              onPress={() => setSelectedUser(null)}
+            >
+              <Text style={styles.closeText}>✕</Text>
+            </Pressable>
           </Pressable>
-        </Pressable>
-      ) : null}
+        )}
+      </View>
     </View>
   );
 }
@@ -266,6 +320,7 @@ export default function NearbyMapScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: DS.background,
   },
   centered: {
     flex: 1,
@@ -290,13 +345,34 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: spacing.lg,
   },
-  // Map
-  mapContainer: {
-    flex: 1,
-    position: "relative",
+  // Floating header
+  floatingHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+    backgroundColor: "rgba(4,6,26,0.85)",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+    zIndex: 10,
   },
-  map: {
-    flex: 1,
+  floatingHeaderTitle: {
+    fontFamily: typography.families.heading,
+    fontSize: typography.sizes.h3.fontSize,
+    color: colors.text.primary,
+    marginLeft: spacing.sm,
+  },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   // Markers
   markerContainer: {
@@ -306,44 +382,38 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.eu.star,
     overflow: "hidden",
-    ...shadows.glassSmall,
   },
   markerImage: {
     width: "100%",
     height: "100%",
   },
-  markerPlaceholder: {
+  markerPinImage: {
     width: "100%",
     height: "100%",
-    backgroundColor: colors.eu.deep,
+    backgroundColor: "rgba(19,34,64,0.55)",
     alignItems: "center",
     justifyContent: "center",
-  },
-  markerInitial: {
-    fontFamily: typography.families.heading,
-    fontSize: 18,
-    color: colors.eu.star,
   },
   // Radius bar
   radiusBar: {
     position: "absolute",
-    top: spacing.md,
     left: spacing.md,
     right: spacing.md,
     flexDirection: "row",
     justifyContent: "center",
     gap: spacing.sm,
+    zIndex: 5,
   },
   radiusChip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
     borderRadius: radii.full,
-    backgroundColor: "rgba(26, 26, 46, 0.85)",
+    backgroundColor: "rgba(4,6,26,0.88)",
     borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderColor: "rgba(255,255,255,0.12)",
   },
   radiusChipActive: {
-    backgroundColor: "rgba(255, 204, 0, 0.2)",
+    backgroundColor: "rgba(255,204,0,0.22)",
     borderColor: colors.eu.star,
   },
   radiusText: {
@@ -354,42 +424,71 @@ const styles = StyleSheet.create({
   radiusTextActive: {
     color: colors.eu.star,
   },
-  // Loading
+  // Loading — top right
   loadingOverlay: {
     position: "absolute",
-    top: spacing.xl + 40,
-    alignSelf: "center",
-    backgroundColor: "rgba(26, 26, 46, 0.85)",
+    right: spacing.sm,
+    backgroundColor: "rgba(4,6,26,0.88)",
     borderRadius: radii.full,
     padding: spacing.sm,
-  },
-  // Count
-  countBadge: {
-    position: "absolute",
-    bottom: spacing.md,
-    alignSelf: "center",
-    backgroundColor: "rgba(26, 26, 46, 0.9)",
-    borderRadius: radii.full,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
     borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderColor: "rgba(255,255,255,0.10)",
+    zIndex: 5,
+  },
+  // My location FAB
+  myLocationFab: {
+    position: "absolute",
+    right: spacing.md,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    overflow: "hidden",
+    zIndex: 5,
+  },
+  myLocationFabGrad: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // Bottom panel
+  bottomPanel: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(4,6,26,0.92)",
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.12)",
+  },
+  countBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
   },
   countText: {
     fontFamily: typography.families.bodyMedium,
     fontSize: typography.sizes.bodySmall.fontSize,
-    color: colors.text.primary,
+    color: colors.eu.star,
   },
   // Selected card
   selectedCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "rgba(26, 26, 46, 0.95)",
-    borderTopWidth: 1,
-    borderTopColor: colors.glass.border,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: radii.lg,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.10)",
   },
   selectedLeft: {
     flexDirection: "row",
@@ -406,7 +505,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.eu.deep,
+    backgroundColor: "rgba(19,34,64,0.55)",
     alignItems: "center",
     justifyContent: "center",
     marginRight: spacing.md,
@@ -434,7 +533,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
     marginLeft: spacing.sm,

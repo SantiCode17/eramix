@@ -4,5 +4,6 @@ public enum ProficiencyLevel {
     BASIC,
     INTERMEDIATE,
     ADVANCED,
-    NATIVE
+    NATIVE,
+    TO_PRACTICE
 }

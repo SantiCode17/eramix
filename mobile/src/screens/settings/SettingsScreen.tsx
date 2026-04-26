@@ -1,11 +1,11 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { GlassCard, Header } from "@/design-system/components";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
+import { ScreenBackground } from "@/design-system/components";
 import { useAuthStore } from "@/store";
 import type { SettingsStackParamList } from "@/types";
 
@@ -23,14 +23,26 @@ interface SettingsItem {
 export default function SettingsScreen(): React.JSX.Element {
   const navigation = useNavigation<Nav>();
   const logout = useAuthStore((s) => s.logout);
+  const insets = useSafeAreaInsets();
 
   const sections: { title: string; items: SettingsItem[] }[] = [
     {
-      title: "Cuenta",
+      title: "Descubrimiento",
+      items: [
+        {
+          icon: "options-outline",
+          label: "Preferencias",
+          subtitle: "Edad, distancia y filtros",
+          onPress: () => navigation.navigate("PrivacySettings"), // Route to be implemented
+        },
+      ],
+    },
+    {
+      title: "Cuenta y Privacidad",
       items: [
         {
           icon: "lock-closed-outline",
-          label: "Privacidad",
+          label: "Privacidad y Seguridad",
           subtitle: "Visibilidad del perfil",
           onPress: () => navigation.navigate("PrivacySettings"),
         },
@@ -71,88 +83,137 @@ export default function SettingsScreen(): React.JSX.Element {
   ];
 
   return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <Header title="Ajustes" onBack={() => navigation.goBack()} />
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {sections.map((section) => (
-          <View key={section.title} style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <GlassCard variant="surface">
-              {section.items.map((item, idx) => (
-                <Pressable
-                  key={item.label}
-                  style={[
-                    styles.row,
-                    idx < section.items.length - 1 && styles.rowBorder,
-                  ]}
-                  onPress={item.onPress}
-                >
-                  <Ionicons name={item.icon} size={22} color={item.danger ? "#FF4B4B" : colors.eu.star} />
-                  <View style={styles.rowContent}>
-                    <Text
-                      style={[
-                        styles.rowLabel,
-                        item.danger && styles.dangerText,
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                    {item.subtitle && (
-                      <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
-                    )}
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={colors.text.secondary} />
-                </Pressable>
-              ))}
-            </GlassCard>
-          </View>
-        ))}
-
-        {/* App info */}
-        <View style={styles.appInfo}>
-          <Text style={styles.appName}>Eramix</Text>
-          <Text style={styles.appVersion}>v1.0.0</Text>
+    <ScreenBackground>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
+        {/* Header */}
+        <View style={st.header}>
+          <Pressable
+            onPress={() => navigation.getParent()?.goBack()}
+            style={st.backBtn}
+            hitSlop={12}
+          >
+            <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
+          </Pressable>
+          <Text style={st.headerTitle}>Ajustes</Text>
+          <View style={{ width: 40 }} />
         </View>
 
-        <View style={{ height: spacing.xxxl }} />
-      </ScrollView>
-    </View>
+        <ScrollView contentContainerStyle={st.scrollContent}>
+          {sections.map((section) => (
+            <View key={section.title} style={st.section}>
+              <Text style={st.sectionTitle}>{section.title}</Text>
+              <View style={st.card}>
+                {section.items.map((item, idx) => (
+                  <Pressable
+                    key={item.label}
+                    style={[
+                      st.row,
+                      idx < section.items.length - 1 && st.rowBorder,
+                    ]}
+                    onPress={item.onPress}
+                  >
+                    <View style={st.iconWrap}>
+                      <Ionicons
+                        name={item.icon}
+                        size={20}
+                        color={item.danger ? colors.status.error : colors.eu.star}
+                      />
+                    </View>
+                    <View style={st.rowContent}>
+                      <Text
+                        style={[st.rowLabel, item.danger && st.dangerText]}
+                      >
+                        {item.label}
+                      </Text>
+                      {item.subtitle && (
+                        <Text style={st.rowSubtitle}>{item.subtitle}</Text>
+                      )}
+                    </View>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={colors.text.tertiary}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ))}
+
+          {/* App info */}
+          <View style={st.appInfo}>
+            <Text style={st.appName}>Eramix</Text>
+            <Text style={st.appVersion}>v1.0.0</Text>
+          </View>
+
+          <View style={{ height: spacing.xxl }} />
+        </ScrollView>
+      </View>
+    </ScreenBackground>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
+const st = StyleSheet.create({
+  scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+
+  /* Header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.full,
+    backgroundColor: colors.glass.white,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontFamily: typography.families.heading,
+    fontSize: typography.sizes.h3.fontSize,
+    color: colors.text.primary,
+  },
+
+  /* Section */
   section: { marginBottom: spacing.lg },
   sectionTitle: {
-    fontFamily: typography.families.subheading,
+    fontFamily: typography.families.bodyMedium,
     fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     marginBottom: spacing.sm,
     marginLeft: spacing.xs,
+  },
+  card: {
+    backgroundColor: colors.glass.white,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    paddingHorizontal: spacing.md,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: spacing.sm + 4,
+    paddingVertical: spacing.md,
   },
   rowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.06)",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.glass.border,
   },
-  rowEmoji: {
-    fontSize: 22,
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.glass.white,
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: spacing.md,
   },
   rowContent: { flex: 1 },
@@ -165,29 +226,21 @@ const styles = StyleSheet.create({
     fontFamily: typography.families.body,
     fontSize: typography.sizes.bodySmall.fontSize,
     color: colors.text.secondary,
-    marginTop: spacing.xxs,
+    marginTop: 2,
   },
-  rowArrow: {
-    fontSize: 22,
-    color: colors.text.secondary,
-    marginLeft: spacing.sm,
-  },
-  dangerText: {
-    color: colors.status.error,
-  },
-  appInfo: {
-    alignItems: "center",
-    paddingVertical: spacing.xl,
-  },
+  dangerText: { color: colors.status.error },
+
+  /* App info */
+  appInfo: { alignItems: "center", paddingVertical: spacing.xl },
   appName: {
-    fontFamily: typography.families.heading,
+    fontFamily: typography.families.bodyMedium,
     fontSize: typography.sizes.body.fontSize,
     color: colors.text.secondary,
   },
   appVersion: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.bodySmall.fontSize,
-    color: colors.text.disabled,
-    marginTop: spacing.xxs,
+    fontSize: typography.sizes.caption.fontSize,
+    color: colors.text.tertiary,
+    marginTop: spacing.xs,
   },
 });

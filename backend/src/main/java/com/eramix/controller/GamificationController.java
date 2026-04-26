@@ -20,7 +20,7 @@ public class GamificationController {
     private final GamificationService gamificationService;
 
     private Long currentUserId() {
-        return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        return (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
     @GetMapping("/progress")

@@ -16,10 +16,11 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
 import type { GroupData, GroupsStackParamList } from "@/types/groups";
 import * as groupsApi from "@/api/groups";
 import { handleError } from "@/utils/errorHandler";
+import { pluralize } from "@/utils/pluralize";
 
 type Nav = StackNavigationProp<GroupsStackParamList, "GroupsList">;
 
@@ -54,7 +55,7 @@ function Avatar({ uri, name, size = 50 }: { uri: string | null; name: string; si
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: colors.eu.deep + "30",
+        backgroundColor: "rgba(19,34,64,0.85)",
         justifyContent: "center",
         alignItems: "center",
       }}
@@ -94,7 +95,7 @@ function GroupItem({ item, onPress, index }: { item: GroupData; onPress: () => v
               </View>
             )}
           </View>
-          <Text style={styles.memberCount}><Ionicons name="people-outline" size={13} color={colors.text.secondary} /> {item.memberCount} miembros</Text>
+          <Text style={styles.memberCount}><Ionicons name="people-outline" size={13} color={colors.text.secondary} /> {pluralize(item.memberCount, "miembro", "miembros")}</Text>
         </View>
       </Pressable>
     </Animated.View>
@@ -147,7 +148,7 @@ export default function GroupsListScreen() {
 
   if (loading) {
     return (
-      <LinearGradient colors={[colors.background.start, colors.background.end]} style={styles.center}>
+      <LinearGradient colors={[DS.background, "#0E1A35", "#0F1535"]} style={styles.center}>
         <ActivityIndicator size="large" color={colors.eu.star} />
       </LinearGradient>
     );
@@ -155,7 +156,7 @@ export default function GroupsListScreen() {
 
   return (
     <LinearGradient
-      colors={[colors.background.start, colors.background.end]}
+      colors={[DS.background, "#0E1A35", "#0F1535"]}
       style={[styles.container, { paddingTop: insets.top }]}
     >
       <View style={styles.header}>
@@ -180,7 +181,7 @@ export default function GroupsListScreen() {
           </Text>
           <Pressable style={styles.createBtn} onPress={() => nav.navigate("CreateGroup")}>
             <LinearGradient
-              colors={[colors.eu.orange, "#FF8B4F"]}
+              colors={["#FFD700", "#FF6B2B"]}
               style={styles.createBtnGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
@@ -230,11 +231,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.glass.whiteMid,
+    backgroundColor: "rgba(255,255,255,0.06)",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.08)",
   },
   addBtnText: { color: colors.text.primary, fontSize: 22, fontWeight: "700" },
   item: {
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.glass.border,
+    borderBottomColor: "rgba(255,255,255,0.08)",
   },
   itemContent: { flex: 1, marginLeft: spacing.md },
   itemHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
@@ -307,11 +308,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: spacing.sm,
   },
-  createBtn: { marginTop: spacing.lg, borderRadius: radii.lg, overflow: "hidden" },
+  createBtn: { marginTop: spacing.lg, borderRadius: radii.full, overflow: "hidden" },
   createBtnGradient: {
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    borderRadius: radii.lg,
+    borderRadius: radii.full,
   },
   createBtnText: {
     color: "#FFF",

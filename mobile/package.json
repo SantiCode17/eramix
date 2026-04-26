@@ -3,10 +3,16 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "start": "expo start",
+    "start": "EXPO_NO_DOCTOR=1 expo start --offline --clear",
+    "start:online": "EXPO_NO_DOCTOR=1 expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:preview": "eas build --profile preview --platform android",
+    "build:production": "eas build --profile production --platform android",
+    "submit:android": "eas submit --platform android --profile production",
+    "lint": "eslint src/ --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -24,6 +30,7 @@
     "axios": "^1.14.0",
     "date-fns": "^4.1.0",
     "expo": "~54.0.33",
+    "expo-blur": "~15.0.8",
     "expo-font": "~14.0.11",
     "expo-gl": "~16.0.10",
     "expo-haptics": "~15.0.8",

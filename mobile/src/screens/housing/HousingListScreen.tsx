@@ -1,22 +1,38 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  View, Text, StyleSheet, Pressable, ActivityIndicator, RefreshControl,
+  View,
+  Text,
+  Pressable,
+  ActivityIndicator,
+  RefreshControl,
+  StyleSheet,
+  Dimensions,
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { LinearGradient } from "expo-linear-gradient";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import type { StackNavigationProp } from "@react-navigation/stack";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { useNavigation, DrawerActions } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  colors,
+  typography,
+  spacing,
+  radii,
+  shadows,
+  DS,
+  layout,
+} from "@/design-system/tokens";
+import { ScreenBackground, Header, GlassCard, EmptyState } from "@/design-system/components";
 import type { HousingPost, HousingStackParamList } from "@/types/housing";
 import * as housingApi from "@/api/housing";
 import { handleError } from "@/utils/errorHandler";
 
 type Nav = StackNavigationProp<HousingStackParamList, "HousingList">;
+const { width: SW } = Dimensions.get("window");
 
+/* ─── component ──────────────────────── */
 export default function HousingListScreen() {
   const nav = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
@@ -25,90 +41,275 @@ export default function HousingListScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetch = useCallback(async () => {
-    try { setError(null); setPosts(await housingApi.getAllPosts()); }
-    catch (e) { setError(handleError(e, "Housing.getAllPosts")); }
-    finally { setLoading(false); setRefreshing(false); }
+  const fetchData = useCallback(async () => {
+    try {
+      setError(null);
+      setPosts(await housingApi.getAllPosts());
+    } catch (e) {
+      setError(handleError(e, "Housing.getAllPosts"));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
+  /* ─── card ─── */
   const renderItem = useCallback(
     ({ item, index }: { item: HousingPost; index: number }) => (
       <Animated.View entering={FadeInDown.delay(index * 50).duration(400)}>
         <Pressable
-          style={styles.card}
+          style={st.card}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             nav.navigate("HousingDetail", { postId: item.id });
           }}
         >
-          <View style={styles.typeBadge}>
-            <Text style={styles.typeText}>{item.postType === "OFFER" ? "Oferta" : "Busca"}</Text>
+          {/* type badge */}
+          <View
+            style={[
+              st.typeBadge,
+              {
+                backgroundColor:
+                  item.postType === "OFFER"
+                    ? colors.status.successBg
+                    : colors.eu.star + "20",
+              },
+            ]}
+          >
+            <Ionicons
+              name={item.postType === "OFFER" ? "home" : "search"}
+              size={12}
+              color={
+                item.postType === "OFFER"
+                  ? colors.status.success
+                  : colors.eu.star
+              }
+            />
+            <Text
+              style={[
+                st.typeText,
+                {
+                  color:
+                    item.postType === "OFFER"
+                      ? colors.status.success
+                      : colors.eu.star,
+                },
+              ]}
+            >
+              {item.postType === "OFFER" ? "Oferta" : "Busca"}
+            </Text>
           </View>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.city}><Ionicons name="location-outline" size={12} color={colors.eu.star} /> {item.city}</Text>
-          <View style={styles.priceRow}>
-            <Text style={styles.price}>{item.monthlyRent}€/mes</Text>
-            <Text style={styles.rooms}><Ionicons name="bed-outline" size={12} color={colors.text.secondary} /> {item.roomsAvailable} hab.</Text>
-          </View>
-          <Text style={styles.date}>Disponible: {item.availableFrom}</Text>
-          <Text style={styles.author}>
-            {item.userFirstName} {item.userLastName}
+
+          <Text style={st.title} numberOfLines={2}>
+            {item.title}
           </Text>
+
+          <View style={st.locationRow}>
+            <Ionicons
+              name="location-outline"
+              size={13}
+              color={colors.text.secondary}
+            />
+            <Text style={st.city}>{item.city}</Text>
+          </View>
+
+          <View style={st.priceRow}>
+            <Text style={st.price}>{item.monthlyRent}€/mes</Text>
+            <View style={st.roomsBadge}>
+              <Ionicons
+                name="bed-outline"
+                size={13}
+                color={colors.text.secondary}
+              />
+              <Text style={st.rooms}>{item.roomsAvailable} hab.</Text>
+            </View>
+          </View>
+
+          <View style={st.metaRow}>
+            <Text style={st.date}>
+              <Ionicons
+                name="calendar-outline"
+                size={11}
+                color={colors.text.tertiary}
+              />{" "}
+              {item.availableFrom}
+            </Text>
+            <Text style={st.author}>
+              {item.userFirstName} {item.userLastName}
+            </Text>
+          </View>
         </Pressable>
       </Animated.View>
-    ), [nav],
+    ),
+    [nav],
   );
 
+  /* ─── render ─── */
   return (
-    <LinearGradient colors={[colors.background.start, colors.background.end]} style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Alojamiento</Text>
-      </View>
+    <ScreenBackground>
+      <Animated.View entering={FadeIn.duration(400)} style={{ flex: 1 }}>
+        {/* header */}
+        <View style={[st.header, { paddingTop: insets.top + spacing.sm }]}>
+          <Pressable
+            onPress={() => nav.dispatch(DrawerActions.openDrawer())}
+            style={st.hamburger}
+            hitSlop={12}
+          >
+            <Ionicons name="menu" size={22} color={colors.text.primary} />
+          </Pressable>
+          <Text style={st.headerTitle}>Alojamiento</Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-      {loading ? (
-        <View style={styles.center}><ActivityIndicator size="large" color={colors.eu.star} /></View>
-      ) : (
-        <FlashList
-          data={posts}
-          renderItem={renderItem}
-          keyExtractor={(i) => String(i.id)}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetch(); }} tintColor={colors.eu.star} colors={[colors.eu.star]} />}
-          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + 80 }}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons name="home-outline" size={48} color={colors.text.secondary} />
-              <Text style={styles.emptyTitle}>No hay anuncios</Text>
-              <Text style={styles.emptySubtitle}>Publica tu oferta o búsqueda de piso</Text>
-            </View>
-          }
-        />
-      )}
-    </LinearGradient>
+        {loading ? (
+          <View style={st.center}>
+            <ActivityIndicator size="large" color={DS.primary} />
+          </View>
+        ) : (
+          <FlashList
+            data={posts}
+            renderItem={renderItem}
+            keyExtractor={(i) => String(i.id)}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  setRefreshing(true);
+                  fetchData();
+                }}
+                tintColor={DS.primary}
+                colors={[DS.primary]}
+              />
+            }
+            contentContainerStyle={{
+              paddingHorizontal: layout.screenPadding,
+              paddingBottom: insets.bottom + 80,
+            }}
+            ListEmptyComponent={
+              <EmptyState
+                icon="home-outline"
+                title="No hay anuncios"
+                message="Publica tu oferta o búsqueda de piso"
+              />
+            }
+          />
+        )}
+      </Animated.View>
+    </ScreenBackground>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
+/* ─── styles ─────────────────────────── */
+const st = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  headerTitle: { ...typography.sizes.h2, fontFamily: typography.families.heading, color: colors.text.primary },
-  card: {
-    backgroundColor: colors.glass.white, borderRadius: radii.lg,
-    borderWidth: 1, borderColor: colors.glass.border,
-    padding: spacing.md, marginBottom: spacing.md,
+
+  /* header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.md,
   },
-  typeBadge: { alignSelf: "flex-start", backgroundColor: colors.eu.star + "20", borderRadius: radii.full, paddingHorizontal: spacing.sm, paddingVertical: spacing.xxs },
-  typeText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.bodySmall, color: colors.eu.star },
-  title: { fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary, marginTop: spacing.sm },
-  city: { fontFamily: typography.families.body, ...typography.sizes.caption, color: colors.text.secondary, marginTop: spacing.xs },
-  priceRow: { flexDirection: "row", justifyContent: "space-between", marginTop: spacing.sm },
-  price: { fontFamily: typography.families.heading, ...typography.sizes.body, color: colors.eu.star },
-  rooms: { fontFamily: typography.families.body, ...typography.sizes.caption, color: colors.text.secondary },
-  date: { fontFamily: typography.families.body, ...typography.sizes.bodySmall, color: colors.text.secondary, marginTop: spacing.xs },
-  author: { fontFamily: typography.families.body, ...typography.sizes.bodySmall, color: colors.text.disabled, marginTop: spacing.sm },
-  empty: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: spacing.xxl },
-  emptyTitle: { fontFamily: typography.families.heading, ...typography.sizes.h3, color: colors.text.primary, marginTop: spacing.md },
-  emptySubtitle: { fontFamily: typography.families.body, ...typography.sizes.body, color: colors.text.secondary, textAlign: "center", marginTop: spacing.sm },
+  hamburger: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    backgroundColor: colors.glass.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.glass.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontFamily: typography.families.heading,
+    ...typography.sizes.h3,
+    color: colors.text.primary,
+  },
+
+  /* card */
+  card: {
+    backgroundColor: colors.background.card,
+    borderRadius: radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.glass.border,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    ...shadows.glassSmall,
+  },
+  typeBadge: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xxs,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+  },
+  typeText: {
+    fontFamily: typography.families.bodyMedium,
+    ...typography.sizes.caption,
+    fontWeight: "600",
+  },
+  title: {
+    fontFamily: typography.families.subheading,
+    ...typography.sizes.body,
+    color: colors.text.primary,
+    marginTop: spacing.sm,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xxs,
+    marginTop: spacing.xs,
+  },
+  city: {
+    fontFamily: typography.families.body,
+    ...typography.sizes.caption,
+    color: colors.text.secondary,
+  },
+  priceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: spacing.sm,
+  },
+  price: {
+    fontFamily: typography.families.heading,
+    ...typography.sizes.h4,
+    color: DS.primary,
+  },
+  roomsBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xxs,
+  },
+  rooms: {
+    fontFamily: typography.families.body,
+    ...typography.sizes.caption,
+    color: colors.text.secondary,
+  },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.glass.border,
+  },
+  date: {
+    fontFamily: typography.families.body,
+    ...typography.sizes.tiny,
+    color: colors.text.tertiary,
+  },
+  author: {
+    fontFamily: typography.families.body,
+    ...typography.sizes.tiny,
+    color: colors.text.tertiary,
+  },
 });

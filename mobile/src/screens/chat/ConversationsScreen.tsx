@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -19,38 +19,38 @@ import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import { useChatStore } from "@/store/useChatStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { colors, typography, spacing, radii, borders, shadows, DS } from "@/design-system/tokens";
+import * as groupsApi from "@/api/groups";
+import type { GroupData } from "@/types/groups";
+import { CategoryTab } from "@/components";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
 import type { ChatStackParamList, ConversationData } from "@/types/chat";
+// import { chatEmpty } from "@/assets/images";
 
 type Nav = StackNavigationProp<ChatStackParamList, "ConversationsList">;
 
-// ── Relative Time ───────────────────────────────────
+const TAB_FILTERS = ["Todos", "Sin leer", "Grupos"] as const;
+type TabFilter = (typeof TAB_FILTERS)[number];
 
 function relativeTime(isoDate: string | null): string {
   if (!isoDate) return "";
   const now = Date.now();
   const date = new Date(isoDate).getTime();
   const diff = now - date;
-
   const minutes = Math.floor(diff / 60_000);
   if (minutes < 1) return "Ahora";
   if (minutes < 60) return `${minutes}m`;
-
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h`;
-
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d`;
-
   return new Date(isoDate).toLocaleDateString("es-ES", {
     day: "numeric",
     month: "short",
   });
 }
 
-// ── Avatar Component ────────────────────────────────
-
-function Avatar({
+function ChatAvatar({
   uri,
   name,
   online,
@@ -79,27 +79,26 @@ function Avatar({
           ]}
         />
       ) : (
-        <View
+        <LinearGradient
+          colors={["rgba(59,107,255,0.3)", "rgba(26,61,232,0.2)"]}
           style={[
             styles.avatarFallback,
             { width: size, height: size, borderRadius: size / 2 },
           ]}
         >
-          <Text style={[styles.avatarInitials, { fontSize: size * 0.36 }]}>
+          <Text style={[styles.avatarInitials, { fontSize: size * 0.34 }]}>
             {initials}
           </Text>
-        </View>
+        </LinearGradient>
       )}
       {online && (
-        <View style={[styles.onlineIndicator, { right: 0, bottom: 0 }]}>
+        <View style={styles.onlineRing}>
           <View style={styles.onlineDot} />
         </View>
       )}
     </View>
   );
 }
-
-// ── Conversation Row ────────────────────────────────
 
 function ConversationRow({
   conversation,
@@ -109,26 +108,22 @@ function ConversationRow({
   onPress: () => void;
 }) {
   const hasUnread = conversation.unreadCount > 0;
-  const preview = conversation.lastMessage?.content ?? "Inicia la conversación";
+  const preview = conversation.lastMessage?.content ?? "Inicia la conversacion";
   const truncated =
-    preview.length > 45 ? preview.substring(0, 45) + "..." : preview;
+    preview.length > 42 ? preview.substring(0, 42) + "..." : preview;
   const time = relativeTime(conversation.lastMessageAt);
   const fullName = `${conversation.otherUserFirstName} ${conversation.otherUserLastName}`;
 
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        pressed && styles.rowPressed,
-      ]}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
     >
-      <Avatar
-        uri={conversation.otherUserProfilePhotoUrl}
+      <ChatAvatar
+        uri={resolveMediaUrl(conversation.otherUserProfilePhotoUrl) ?? null}
         name={fullName}
         online={conversation.otherUserOnline}
       />
-
       <View style={styles.rowContent}>
         <View style={styles.rowTop}>
           <Text
@@ -141,7 +136,6 @@ function ConversationRow({
             {time}
           </Text>
         </View>
-
         <View style={styles.rowBottom}>
           <Text
             style={[styles.preview, hasUnread && styles.previewUnread]}
@@ -160,60 +154,163 @@ function ConversationRow({
           )}
         </View>
       </View>
+      {hasUnread && <View style={styles.unreadDot} />}
     </Pressable>
   );
 }
 
-// ── Empty State ─────────────────────────────────────
-
 function ChatEmptyState() {
   return (
     <View style={styles.emptyContainer}>
-      <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.emptyIconCircle}>
-        <Ionicons name="chatbubbles-outline" size={40} color={colors.eu.star} />
+      <Animated.View
+        entering={FadeInDown.delay(200).springify()}
+        style={styles.emptyIconCircle}
+      >
+        <Ionicons name="chatbubbles-outline" size={40} color="rgba(255,215,0,0.5)" />
       </Animated.View>
-      <Animated.Text entering={FadeInDown.delay(400).springify()} style={styles.emptyTitle}>
+      <Animated.Text
+        entering={FadeInDown.delay(400).springify()}
+        style={styles.emptyTitle}
+      >
         Sin conversaciones
       </Animated.Text>
-      <Animated.Text entering={FadeInDown.delay(600).springify()} style={styles.emptySubtitle}>
+      <Animated.Text
+        entering={FadeInDown.delay(600).springify()}
+        style={styles.emptySubtitle}
+      >
         Descubre estudiantes Erasmus y empieza a chatear
       </Animated.Text>
     </View>
   );
 }
 
-// ── Main Screen ─────────────────────────────────────
+function GroupRow({
+  group,
+  onPress,
+}: {
+  group: GroupData;
+  onPress: () => void;
+}) {
+  const hasUnread = (group.unreadCount ?? 0) > 0;
+  const preview = group.lastMessage ?? "Grupo creado";
+  const truncated = preview.length > 42 ? preview.substring(0, 42) + "..." : preview;
+  const time = group.lastMessageAt ? relativeTime(group.lastMessageAt) : "";
+  const initials = group.name.slice(0, 2).toUpperCase();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+    >
+      <View style={{ width: 52, height: 52 }}>
+        {resolveMediaUrl(group.avatarUrl) ? (
+          <Image
+            source={{ uri: resolveMediaUrl(group.avatarUrl)! }}
+            style={[styles.avatar, { width: 52, height: 52, borderRadius: 26 }]}
+          />
+        ) : (
+          <LinearGradient
+            colors={["rgba(255,215,0,0.2)", "rgba(255,107,43,0.15)"]}
+            style={[styles.avatarFallback, { width: 52, height: 52, borderRadius: 26 }]}
+          >
+            <Text style={[styles.avatarInitials, { fontSize: 18 }]}>{initials}</Text>
+          </LinearGradient>
+        )}
+      </View>
+      <View style={styles.rowContent}>
+        <View style={styles.rowTop}>
+          <View style={{ flexDirection: "row", alignItems: "center", flex: 1, gap: 6 }}>
+            <Ionicons name="people" size={13} color={colors.eu.star} />
+            <Text style={[styles.name, hasUnread && styles.nameUnread]} numberOfLines={1}>
+              {group.name}
+            </Text>
+          </View>
+          <Text style={[styles.time, hasUnread && styles.timeUnread]}>{time}</Text>
+        </View>
+        <View style={styles.rowBottom}>
+          <Text style={[styles.preview, hasUnread && styles.previewUnread]} numberOfLines={1}>
+            {truncated}
+          </Text>
+          {hasUnread && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {group.unreadCount > 99 ? "99+" : String(group.unreadCount)}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </Pressable>
+  );
+}
 
 export default function ConversationsScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
-
   const user = useAuthStore((s) => s.user);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<TabFilter>("Todos");
+  const [groups, setGroups] = useState<GroupData[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
   const {
     conversations,
     isLoadingConversations,
     isWsConnected,
-    initialize,
-    teardown,
     fetchConversations,
   } = useChatStore();
 
-  // Initialize WebSocket on mount
+  const filteredConversations = useMemo(() => {
+    let list = conversations;
+
+    // Tab filter
+    if (activeFilter === "Sin leer") {
+      list = list.filter((c) => c.unreadCount > 0);
+    } else if (activeFilter === "Grupos") {
+      return []; // Groups are handled separately
+    }
+
+    // Search filter
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.toLowerCase();
+    return list.filter((c) => {
+      const name = `${c.otherUserFirstName} ${c.otherUserLastName}`.toLowerCase();
+      return name.includes(q);
+    });
+  }, [conversations, searchQuery, activeFilter]);
+
+  const filteredGroups = useMemo(() => {
+    if (activeFilter !== "Grupos") return [];
+    if (!searchQuery.trim()) return groups;
+    const q = searchQuery.toLowerCase();
+    return groups.filter((g) => g.name.toLowerCase().includes(q));
+  }, [groups, searchQuery, activeFilter]);
+
+  const fetchGroups = useCallback(async () => {
+    setGroupsLoading(true);
+    try {
+      const data = await groupsApi.getMyGroups();
+      setGroups(data ?? []);
+    } catch (e) {
+      console.warn("[Chat] Error fetching groups:", e);
+    } finally {
+      setGroupsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (user?.id) {
-      initialize(user.id);
       fetchConversations();
+      fetchGroups();
     }
-    return () => teardown();
   }, [user?.id]);
 
-  // Refetch on focus
   useEffect(() => {
     const unsub = navigation.addListener("focus", () => {
       fetchConversations();
+      fetchGroups();
     });
     return unsub;
-  }, [navigation, fetchConversations]);
+  }, [navigation, fetchConversations, fetchGroups]);
 
   const handlePress = useCallback(
     (conv: ConversationData) => {
@@ -222,7 +319,7 @@ export default function ConversationsScreen(): React.JSX.Element {
         conversationId: conv.id,
         otherUserId: conv.otherUserId,
         otherUserName: `${conv.otherUserFirstName} ${conv.otherUserLastName}`,
-        otherUserPhoto: conv.otherUserProfilePhotoUrl,
+        otherUserPhoto: resolveMediaUrl(conv.otherUserProfilePhotoUrl) ?? null,
       });
     },
     [navigation],
@@ -241,39 +338,112 @@ export default function ConversationsScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
+        colors={[DS.background, "#0E1A35", "#0F1535"]}
         style={StyleSheet.absoluteFill}
       />
-
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
+      <Animated.View
+        entering={FadeIn.delay(50)}
+        style={[styles.header, { paddingTop: insets.top + spacing.sm }]}
+      >
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Mensajes</Text>
-          <View style={styles.headerActions}>
-            <View style={[
-              styles.connectionDot,
-              { backgroundColor: isWsConnected ? "rgba(76,175,80,0.15)" : "rgba(244,67,54,0.15)" },
-            ]}>
-              <View style={[styles.connDot, { backgroundColor: isWsConnected ? "#4CAF50" : "#F44336" }]} />
-              <Text style={styles.connText}>{isWsConnected ? "Online" : "Offline"}</Text>
-            </View>
+          <View>
+            <Text style={styles.headerTitle}>Mensajes</Text>
+            <Text style={styles.headerSubtitle}>Tus conversaciones</Text>
+          </View>
+          <View
+            style={[
+              styles.connectionPill,
+              {
+                backgroundColor: isWsConnected
+                  ? "rgba(0,214,143,0.10)"
+                  : "rgba(255,79,111,0.10)",
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.connDot,
+                { backgroundColor: isWsConnected ? "#00D68F" : "#FF4F6F" },
+              ]}
+            />
+            <Text
+              style={[
+                styles.connText,
+                { color: isWsConnected ? "#00D68F" : "#FF4F6F" },
+              ]}
+            >
+              {isWsConnected ? "Online" : "Offline"}
+            </Text>
           </View>
         </View>
-        {/* Search bar */}
         <View style={styles.searchBar}>
-          <Ionicons name="search-outline" size={16} color={colors.text.disabled} />
-          <Text style={styles.searchPlaceholder}>Buscar conversaciones...</Text>
+          <Ionicons
+            name="search-outline"
+            size={16}
+            color={colors.text.disabled}
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar conversaciones..."
+            placeholderTextColor={colors.text.disabled}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+              <Ionicons name="close-circle" size={16} color={colors.text.tertiary} />
+            </Pressable>
+          )}
         </View>
-      </View>
-
-      {/* Conversations List */}
+        {/* Filter tabs */}
+        <View style={styles.filterRow}>
+          {TAB_FILTERS.map((tab) => (
+            <CategoryTab
+              key={tab}
+              label={tab}
+              active={activeFilter === tab}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setActiveFilter(tab);
+              }}
+            />
+          ))}
+        </View>
+      </Animated.View>
       {isLoadingConversations && conversations.length === 0 ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={colors.eu.star} size="large" />
+          <Text style={styles.loadingText}>Cargando mensajes...</Text>
         </View>
+      ) : activeFilter === "Grupos" ? (
+        <FlashList
+          data={filteredGroups}
+          renderItem={({ item }: { item: GroupData }) => (
+            <GroupRow
+              group={item}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                navigation.navigate("GroupChat" as any, { groupId: item.id, groupName: item.name });
+              }}
+            />
+          )}
+          keyExtractor={(item) => `group-${item.id}`}
+          ListEmptyComponent={ChatEmptyState}
+          refreshControl={
+            <RefreshControl
+              refreshing={groupsLoading}
+              onRefresh={fetchGroups}
+              tintColor={colors.eu.star}
+              colors={[colors.eu.star]}
+            />
+          }
+          contentContainerStyle={{ paddingBottom: insets.bottom + 80, flexGrow: 1 }}
+        />
       ) : (
         <FlashList
-          data={conversations}
+          data={filteredConversations}
           renderItem={renderItem}
           keyExtractor={(item) => String(item.id)}
           ListEmptyComponent={ChatEmptyState}
@@ -285,30 +455,40 @@ export default function ConversationsScreen(): React.JSX.Element {
               colors={[colors.eu.star]}
             />
           }
-          contentContainerStyle={{
-            paddingBottom: insets.bottom + 80,
-          }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 80, flexGrow: 1 }}
         />
       )}
+
+      {/* FAB — Create group */}
+      <Pressable
+        style={[styles.fab, { bottom: insets.bottom + 90 }]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          navigation.navigate("CreateGroup");
+        }}
+      >
+        <LinearGradient
+          colors={colors.gradient.accent}
+          style={styles.fabGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <Ionicons name="people-outline" size={22} color="#FFF" />
+          <Ionicons name="add" size={14} color="#FFF" style={{ marginLeft: -4, marginTop: -8 }} />
+        </LinearGradient>
+      </Pressable>
     </View>
   );
 }
 
-// ── Styles ──────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-  },
+  container: { flex: 1, backgroundColor: DS.background },
+  header: { paddingHorizontal: spacing.lg, paddingBottom: 0 },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   headerTitle: {
     fontFamily: typography.families.heading,
@@ -316,65 +496,59 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     letterSpacing: -0.5,
   },
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
+  headerSubtitle: {
+    fontFamily: typography.families.body,
+    fontSize: typography.sizes.caption.fontSize,
+    color: colors.text.tertiary,
+    marginTop: 2,
   },
-  connectionDot: {
+  connectionPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: radii.full,
+    borderWidth: borders.hairline,
+    borderColor: "rgba(255,255,255,0.06)",
   },
-  connDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
+  connDot: { width: 7, height: 7, borderRadius: 3.5 },
   connText: {
     fontFamily: typography.families.bodyMedium,
     fontSize: typography.sizes.tiny.fontSize,
-    color: colors.text.secondary,
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: radii.lg,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
+    paddingVertical: 0,
+    borderWidth: borders.hairline,
+    borderColor: "rgba(255,255,255,0.08)",
+    height: 42,
+    marginBottom: spacing.sm,
   },
-  searchPlaceholder: {
+  searchInput: {
+    flex: 1,
     fontFamily: typography.families.body,
     fontSize: typography.sizes.bodySmall.fontSize,
-    color: colors.text.disabled,
+    color: colors.text.primary,
+    padding: 0,
+    height: 42,
   },
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  // Row
   row: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: 13,
     gap: spacing.md,
+    borderBottomWidth: borders.hairline,
+    borderBottomColor: "rgba(255,255,255,0.04)",
   },
-  rowPressed: {
-    backgroundColor: colors.glass.white,
-  },
-  rowContent: {
-    flex: 1,
-    gap: spacing.xxs,
-  },
+  rowPressed: { backgroundColor: "rgba(255,255,255,0.04)" },
+  rowContent: { flex: 1, gap: 3 },
   rowTop: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -386,26 +560,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
   },
-
-  // Avatar
-  avatar: {
-    backgroundColor: colors.glass.whiteMid,
+  unreadDot: {
+    width: 4,
+    height: 28,
+    borderRadius: 2,
+    backgroundColor: colors.eu.star,
+    opacity: 0.7,
   },
-  avatarFallback: {
-    backgroundColor: colors.eu.mid,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  avatar: { backgroundColor: "rgba(255,255,255,0.06)" },
+  avatarFallback: { alignItems: "center", justifyContent: "center" },
   avatarInitials: {
     fontFamily: typography.families.subheading,
     color: colors.text.primary,
   },
-  onlineIndicator: {
+  onlineRing: {
     position: "absolute",
+    right: -1,
+    bottom: -1,
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#1A1A2E",
+    backgroundColor: DS.background,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -413,28 +588,22 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#00D68F",
   },
-
-  // Text
   name: {
     fontFamily: typography.families.bodyMedium,
     fontSize: 16,
     color: colors.text.primary,
     flex: 1,
   },
-  nameUnread: {
-    fontFamily: typography.families.bodyBold,
-  },
+  nameUnread: { fontFamily: typography.families.bodyBold },
   time: {
     fontFamily: typography.families.body,
     fontSize: 12,
     color: colors.text.secondary,
     marginLeft: spacing.sm,
   },
-  timeUnread: {
-    color: colors.eu.star,
-  },
+  timeUnread: { color: colors.eu.star },
   preview: {
     fontFamily: typography.families.body,
     fontSize: 14,
@@ -445,8 +614,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontFamily: typography.families.bodyMedium,
   },
-
-  // Badge
   badge: {
     minWidth: 22,
     height: 22,
@@ -459,24 +626,33 @@ const styles = StyleSheet.create({
   badgeText: {
     fontFamily: typography.families.bodyBold,
     fontSize: 11,
-    color: "#FFFFFF",
+    color: "#FFF",
   },
-
-  // Empty
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.md,
+  },
+  loadingText: {
+    fontFamily: typography.families.body,
+    fontSize: 14,
+    color: colors.text.tertiary,
+  },
   emptyContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 120,
+    paddingHorizontal: 32,
     gap: spacing.sm,
   },
   emptyIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "rgba(255, 215, 0, 0.08)",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255,215,0,0.06)",
     borderWidth: 1,
-    borderColor: "rgba(255, 215, 0, 0.15)",
+    borderColor: "rgba(255,215,0,0.15)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: spacing.md,
@@ -492,5 +668,46 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: "center",
     paddingHorizontal: spacing.xxl,
+  },
+  filterRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  filterTab: {
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.full,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  filterTabActive: {
+    backgroundColor: "rgba(255,215,0,0.12)",
+    borderColor: "rgba(255,215,0,0.25)",
+  },
+  filterTabText: {
+    fontFamily: typography.families.body,
+    fontSize: 13,
+    color: colors.text.secondary,
+  },
+  filterTabTextActive: {
+    color: colors.eu.star,
+    fontFamily: typography.families.bodyMedium,
+  },
+  fab: {
+    position: "absolute",
+    right: spacing.lg,
+    zIndex: 10,
+  },
+  fabGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    ...shadows.lg,
   },
 });

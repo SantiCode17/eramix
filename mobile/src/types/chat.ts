@@ -54,4 +54,15 @@ export type ChatStackParamList = {
     otherUserName: string;
     otherUserPhoto: string | null;
   };
+  VoiceMessage: {
+    conversationId: number;
+  };
+  CreateGroup: undefined;
+  GroupChat: {
+    groupId: number;
+    groupName: string;
+  };
+  GroupSettings: {
+    groupId: number;
+  };
 };

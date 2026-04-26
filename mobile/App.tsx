@@ -2,15 +2,18 @@ import React from "react";
 import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RootNavigator } from "@/navigation";
 import { useAppFonts } from "@/design-system/fonts";
+import { initializeNotifications, setupNotificationResponseListener } from "@/services/notificationService";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 2,
+      retry: false, // Axios interceptor handles retries with circuit breaker
       staleTime: 5 * 60 * 1000,
+      refetchOnWindowFocus: false,
     },
   },
 });
@@ -74,6 +77,22 @@ class ErrorBoundary extends React.Component<
 export default function App(): React.JSX.Element {
   const { loaded: fontsLoaded } = useAppFonts();
 
+  React.useEffect(() => {
+    // Initialize notifications
+    const initNotifications = async () => {
+      await initializeNotifications();
+    };
+    initNotifications();
+
+    // Setup notification response listener
+    const removeListener = setupNotificationResponseListener((data) => {
+      console.log("[App] Notification pressed:", data);
+      // Navigation can be handled here if needed
+    });
+
+    return () => removeListener();
+  }, []);
+
   if (!fontsLoaded) {
     return (
       <View style={styles.loading}>
@@ -84,12 +103,14 @@ export default function App(): React.JSX.Element {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <StatusBar style="light" translucent backgroundColor="transparent" />
-          <RootNavigator />
-        </QueryClientProvider>
-      </ErrorBoundary>
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <StatusBar style="light" translucent backgroundColor="transparent" />
+            <RootNavigator />
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

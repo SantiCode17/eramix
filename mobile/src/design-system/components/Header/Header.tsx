@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation, DrawerActions } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, borders } from "../../tokens";
 
@@ -19,6 +20,8 @@ export interface HeaderProps {
   left?: React.ReactNode;
   right?: React.ReactNode;
   onBack?: () => void;
+  /** Show drawer hamburger button when no onBack is provided */
+  showDrawer?: boolean;
   large?: boolean;
   style?: StyleProp<ViewStyle>;
 }
@@ -30,10 +33,12 @@ export default function Header({
   left,
   right,
   onBack,
+  showDrawer = false,
   large = false,
   style,
 }: HeaderProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
 
   const renderLeft = () => {
     if (left) return left;
@@ -42,6 +47,19 @@ export default function Header({
         <Pressable onPress={onBack} hitSlop={12} style={styles.backBtn}>
           <View style={styles.backCircle}>
             <Ionicons name="chevron-back" size={20} color={colors.text.primary} />
+          </View>
+        </Pressable>
+      );
+    }
+    if (showDrawer) {
+      return (
+        <Pressable
+          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          hitSlop={12}
+          style={styles.backBtn}
+        >
+          <View style={styles.backCircle}>
+            <Ionicons name="menu" size={20} color={colors.text.primary} />
           </View>
         </Pressable>
       );
@@ -107,7 +125,7 @@ export default function Header({
 
 const styles = StyleSheet.create({
   wrapper: { zIndex: 10, overflow: "hidden" },
-  solidBg: { backgroundColor: colors.background.start },
+  solidBg: { backgroundColor: "#04061A" },
   border: { borderBottomWidth: borders.hairline, borderBottomColor: colors.glass.border },
   container: {
     flexDirection: "row",

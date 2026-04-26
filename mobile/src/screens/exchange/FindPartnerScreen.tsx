@@ -1,132 +1,261 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
-  View, Text, StyleSheet, Pressable, Image, ActivityIndicator, RefreshControl,
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Image,
+  ActivityIndicator,
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
-import type { ExchangePartner } from "@/types/exchange";
+import {
+  colors,
+  typography,
+  spacing,
+  radii,
+  TAB_BAR_HEIGHT,
+} from "@/design-system/tokens";
+import { ScreenBackground } from "@/design-system/components";
 import * as exchangeApi from "@/api/exchange";
 import { handleError } from "@/utils/errorHandler";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
+import type { ExchangePartner } from "@/types/exchange";
 
-export default function FindPartnerScreen() {
-  const nav = useNavigation();
+export default function FindPartnerScreen(): React.JSX.Element {
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const [partners, setPartners] = useState<ExchangePartner[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetch = useCallback(async () => {
-    try { setError(null); setPartners(await exchangeApi.findPartners()); }
-    catch (e) { setError(handleError(e, "FindPartner.findPartners")); }
-    finally { setLoading(false); }
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await exchangeApi.findPartners();
+        setPartners(data);
+      } catch (e) {
+        handleError(e, "FindPartner.fetch");
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
-
-  const renderPartner = useCallback(
+  const renderItem = useCallback(
     ({ item, index }: { item: ExchangePartner; index: number }) => (
-      <Animated.View entering={FadeInDown.delay(index * 60).duration(400)}>
-        <Pressable style={styles.card}>
-          <View style={styles.row}>
-            {item.profilePhotoUrl ? (
-              <Image source={{ uri: item.profilePhotoUrl }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarPh]}>
-                <Text style={styles.avatarText}>{item.firstName?.[0] ?? "?"}</Text>
+      <Animated.View entering={FadeInDown.delay(index * 60).duration(300)}>
+        <View style={st.card}>
+          {item.photoUrl ? (
+            <Image
+              source={{ uri: resolveMediaUrl(item.photoUrl) }}
+              style={st.avatar}
+            />
+          ) : (
+            <View style={[st.avatar, st.avatarPlaceholder]}>
+              <Text style={st.avatarInitial}>{item.name?.[0] ?? "?"}</Text>
+            </View>
+          )}
+          <View style={st.cardBody}>
+            <Text style={st.name} numberOfLines={1}>
+              {item.name}
+            </Text>
+            {item.city && (
+              <View style={st.metaRow}>
+                <Ionicons name="location-outline" size={12} color={colors.text.secondary} />
+                <Text style={st.city}>{item.city}</Text>
               </View>
             )}
-            <View style={{ flex: 1, marginLeft: spacing.sm }}>
-              <Text style={styles.name}>{item.firstName} {item.lastName}</Text>
-              {item.destinationCity && <Text style={styles.city}><Ionicons name="location-outline" size={12} color={colors.text.secondary} /> {item.destinationCity}</Text>}
-              {item.averageRating != null && (
-                <Text style={styles.rating}><Ionicons name="star" size={12} color={colors.eu.star} /> {item.averageRating} · {item.sessionsCompleted} sesiones</Text>
+            <View style={st.badges}>
+              {item.teaches && (
+                <View style={st.badge}>
+                  <Text style={st.badgeText}>Enseña: {item.teaches}</Text>
+                </View>
+              )}
+              {item.learns && (
+                <View style={[st.badge, st.badgeLearn]}>
+                  <Text style={[st.badgeText, st.badgeLearnText]}>
+                    Aprende: {item.learns}
+                  </Text>
+                </View>
               )}
             </View>
           </View>
-
-          {item.teaches.length > 0 && (
-            <View style={styles.langRow}>
-              <Text style={styles.langLabel}>Enseña:</Text>
-              {item.teaches.map((l) => (
-                <View key={l.languageId} style={styles.langBadge}>
-                  <Text style={styles.langText}>{l.languageName}</Text>
-                </View>
-              ))}
+          {item.rating != null && (
+            <View style={st.ratingWrap}>
+              <Ionicons name="star" size={12} color={colors.eu.star} />
+              <Text style={st.ratingText}>{item.rating.toFixed(1)}</Text>
             </View>
           )}
-          {item.learns.length > 0 && (
-            <View style={styles.langRow}>
-              <Text style={styles.langLabel}>Aprende:</Text>
-              {item.learns.map((l) => (
-                <View key={l.languageId} style={[styles.langBadge, { backgroundColor: colors.eu.orange + "20" }]}>
-                  <Text style={[styles.langText, { color: colors.eu.orange }]}>{l.languageName}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </Pressable>
+        </View>
       </Animated.View>
-    ), [],
+    ),
+    [],
   );
 
   return (
-    <LinearGradient colors={[colors.background.start, colors.background.end]} style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.headerBar}>
-        <Pressable onPress={() => nav.goBack()} style={styles.backBtn}>
-          <Text style={{ fontSize: 22 }}>←</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Buscar Compañero</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <ScreenBackground>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
+        {/* Header */}
+        <View style={st.header}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={st.backBtn}>
+            <Ionicons name="chevron-back" size={22} color={colors.text.primary} />
+          </Pressable>
+          <Text style={st.headerTitle}>Buscar compañero</Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-      {loading ? (
-        <View style={styles.center}><ActivityIndicator size="large" color={colors.eu.star} /></View>
-      ) : (
-        <FlashList
-          data={partners}
-          renderItem={renderPartner}
-          keyExtractor={(i) => String(i.userId)}
-          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + 40 }}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons name="people-outline" size={48} color={colors.text.secondary} />
-              <Text style={styles.emptyTitle}>Sin compañeros disponibles</Text>
-            </View>
-          }
-        />
-      )}
-    </LinearGradient>
+        {loading ? (
+          <View style={st.center}>
+            <ActivityIndicator size="large" color={colors.eu.star} />
+          </View>
+        ) : (
+          <FlashList
+            data={partners}
+            keyExtractor={(p) => String(p.id)}
+            renderItem={renderItem}
+            contentContainerStyle={{
+              paddingBottom: insets.bottom + TAB_BAR_HEIGHT + spacing.md,
+            }}
+            ListEmptyComponent={
+              <View style={st.empty}>
+                <Ionicons name="people-outline" size={48} color={colors.text.secondary} />
+                <Text style={st.emptyTitle}>Sin resultados</Text>
+                <Text style={st.emptySubtitle}>
+                  No hay compañeros de intercambio disponibles
+                </Text>
+              </View>
+            }
+          />
+        )}
+      </View>
+    </ScreenBackground>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
+const st = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  headerBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  backBtn: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
-  headerTitle: { flex: 1, textAlign: "center", fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary },
-  card: {
-    backgroundColor: colors.glass.white, borderRadius: radii.lg,
-    borderWidth: 1, borderColor: colors.glass.border,
-    padding: spacing.md, marginBottom: spacing.md,
+
+  /* Header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  row: { flexDirection: "row", alignItems: "center" },
-  avatar: { width: 48, height: 48, borderRadius: 24 },
-  avatarPh: { backgroundColor: colors.eu.mid, justifyContent: "center", alignItems: "center" },
-  avatarText: { fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary },
-  name: { fontFamily: typography.families.subheading, ...typography.sizes.body, color: colors.text.primary },
-  city: { fontFamily: typography.families.body, ...typography.sizes.bodySmall, color: colors.text.secondary },
-  rating: { fontFamily: typography.families.body, ...typography.sizes.bodySmall, color: colors.eu.star },
-  langRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", marginTop: spacing.sm, gap: spacing.xs },
-  langLabel: { fontFamily: typography.families.bodyMedium, ...typography.sizes.bodySmall, color: colors.text.secondary, marginRight: spacing.xs },
-  langBadge: { backgroundColor: colors.eu.star + "20", paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radii.full },
-  langText: { fontFamily: typography.families.bodyMedium, ...typography.sizes.bodySmall, color: colors.eu.star },
-  empty: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: spacing.xxl },
-  emptyTitle: { fontFamily: typography.families.heading, ...typography.sizes.h3, color: colors.text.primary, marginTop: spacing.md },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.full,
+    backgroundColor: colors.glass.white,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontFamily: typography.families.heading,
+    fontSize: typography.sizes.h4.fontSize,
+    color: colors.text.primary,
+  },
+
+  /* Card */
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    backgroundColor: colors.glass.white,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  avatarPlaceholder: {
+    backgroundColor: colors.glass.whiteMid,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarInitial: {
+    fontFamily: typography.families.subheading,
+    fontSize: 18,
+    color: colors.text.primary,
+  },
+  cardBody: { flex: 1, marginLeft: spacing.md },
+  name: {
+    fontFamily: typography.families.bodyMedium,
+    fontSize: typography.sizes.body.fontSize,
+    color: colors.text.primary,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xxs,
+    marginTop: 2,
+  },
+  city: {
+    fontFamily: typography.families.body,
+    fontSize: typography.sizes.caption.fontSize,
+    color: colors.text.secondary,
+  },
+  badges: {
+    flexDirection: "row",
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  badge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.full,
+    backgroundColor: "rgba(255,215,0,0.12)",
+  },
+  badgeText: {
+    fontFamily: typography.families.body,
+    fontSize: 10,
+    color: colors.eu.star,
+  },
+  badgeLearn: {
+    backgroundColor: "rgba(91,141,239,0.12)",
+  },
+  badgeLearnText: {
+    color: "#5B8DEF",
+  },
+  ratingWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  ratingText: {
+    fontFamily: typography.families.bodyMedium,
+    fontSize: typography.sizes.caption.fontSize,
+    color: colors.eu.star,
+  },
+
+  /* Empty */
+  empty: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: spacing.xxl,
+  },
+  emptyTitle: {
+    fontFamily: typography.families.heading,
+    fontSize: typography.sizes.h3.fontSize,
+    color: colors.text.primary,
+    marginTop: spacing.md,
+  },
+  emptySubtitle: {
+    fontFamily: typography.families.body,
+    fontSize: typography.sizes.body.fontSize,
+    color: colors.text.secondary,
+    textAlign: "center",
+    marginTop: spacing.sm,
+  },
 });

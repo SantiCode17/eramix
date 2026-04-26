@@ -19,6 +19,7 @@ export interface EventData {
   participantCount: number;
   currentUserStatus: string | null; // "GOING" | "INTERESTED" | null
   createdAt: string;
+  coverImageUrl?: string | null;
 }
 
 export interface EventCreateRequest {
@@ -32,6 +33,7 @@ export interface EventCreateRequest {
   endDatetime?: string;
   maxParticipants?: number;
   isPublic?: boolean;
+  coverImageUrl?: string;
 }
 
 export interface EventParticipant {

@@ -58,6 +58,20 @@ export async function getCommunity(id: number): Promise<CommunityData> {
   return data.data;
 }
 
+export async function createCommunity(payload: {
+  name: string;
+  description?: string;
+  category: CommunityCategory;
+  isPublic: boolean;
+  coverImageUrl?: string;
+}): Promise<CommunityData> {
+  const { data } = await apiClient.post<ApiResponse<CommunityData>>(
+    "/v1/communities",
+    payload,
+  );
+  return data.data;
+}
+
 // ── Join / Leave ────────────────────────────────────
 
 export async function joinCommunity(id: number): Promise<CommunityData> {
@@ -93,6 +107,25 @@ export async function createPost(
     request,
   );
   return data.data;
+}
+
+/** Upload an image for a community post, returns the media URL */
+export async function uploadPostImage(
+  communityId: number,
+  imageUri: string,
+): Promise<string> {
+  const ext = imageUri.split(".").pop() ?? "jpg";
+  const form = new FormData();
+  form.append("file", {
+    uri: imageUri,
+    type: `image/${ext === "png" ? "png" : "jpeg"}`,
+    name: `post_${Date.now()}.${ext}`,
+  } as any);
+  const { data } = await apiClient.post<ApiResponse<{ url: string }>>(
+    `/v1/communities/${communityId}/posts/upload-image`,
+    form
+  );
+  return data.data.url;
 }
 
 // ── Likes ───────────────────────────────────────────

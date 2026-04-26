@@ -31,4 +31,5 @@ public class EventResponse {
     private Long participantCount;
     private String currentUserStatus;
     private Instant createdAt;
+    private String coverImageUrl;
 }

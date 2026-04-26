@@ -43,9 +43,7 @@ export const profileApi = {
       type: mimeType,
     } as unknown as Blob);
 
-    const { data } = await apiClient.put("/v1/users/me/photo", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await apiClient.put("/v1/users/me/photo", formData);
     return data.data;
   },
 
@@ -66,9 +64,7 @@ export const profileApi = {
       formData.append("displayOrder", String(displayOrder));
     }
 
-    const { data } = await apiClient.post("/v1/users/me/photos", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await apiClient.post("/v1/users/me/photos", formData);
     return data.data;
   },
 
@@ -81,6 +77,13 @@ export const profileApi = {
   getMyPhotos: async (): Promise<UserPhotoResponse[]> => {
     const { data } = await apiClient.get("/v1/users/me/photos");
     return data.data;
+  },
+
+  /** PUT /v1/users/me/photos/reorder */
+  reorderPhotos: async (
+    photoOrders: Array<{ photoId: number; order: number }>
+  ): Promise<void> => {
+    await apiClient.put("/v1/users/me/photos/reorder", { photoOrders });
   },
 
   /** PUT /v1/users/me/location */

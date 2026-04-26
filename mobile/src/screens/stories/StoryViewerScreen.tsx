@@ -12,15 +12,27 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withSpring,
+  withSequence,
+  FadeIn,
+  FadeOut,
+  ZoomIn,
   runOnJS,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
 import * as storiesApi from "@/api/stories";
-import { colors, typography, spacing } from "@/design-system/tokens";
+import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
 import type { StoryData, UserStories } from "@/types/stories";
 
 const { width: W, height: H } = Dimensions.get("window");
-const STORY_DURATION = 5000; // 5s
+const STORY_DURATION = 5000;
+
+const REACTIONS = ["❤️", "🔥", "😂", "👏", "🎉"] as const;
+type ReactionEmoji = (typeof REACTIONS)[number];
 
 interface Props {
   groups: UserStories[];
@@ -40,6 +52,8 @@ export default function StoryViewerScreen({
     initialGroupIdx >= 0 ? initialGroupIdx : 0,
   );
   const [storyIdx, setStoryIdx] = useState(0);
+  const [sentReaction, setSentReaction] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
 
   const currentGroup = groups[groupIdx];
   const currentStory = currentGroup?.stories?.[storyIdx];
@@ -79,6 +93,19 @@ export default function StoryViewerScreen({
     }
   }, [storyIdx, groupIdx, groups]);
 
+  const handleReaction = useCallback(
+    (emoji: string) => {
+      if (!currentStory) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setSentReaction(emoji);
+      storiesApi.reactToStory(currentStory.id, emoji).catch(() => {});
+
+      // Auto-dismiss after 1.5s
+      setTimeout(() => setSentReaction(null), 1500);
+    },
+    [currentStory],
+  );
+
   // Reset timer on story change
   useEffect(() => {
     startTimer();
@@ -106,7 +133,7 @@ export default function StoryViewerScreen({
 
       {/* Background image */}
       <Image
-        source={{ uri: currentStory.mediaUrl }}
+        source={{ uri: resolveMediaUrl(currentStory.mediaUrl) }}
         style={StyleSheet.absoluteFill}
         resizeMode="cover"
       />
@@ -131,7 +158,7 @@ export default function StoryViewerScreen({
       <View style={[styles.header, { top: insets.top + 28 }]}>
         {currentGroup.userPhoto ? (
           <Image
-            source={{ uri: currentGroup.userPhoto }}
+            source={{ uri: resolveMediaUrl(currentGroup.userPhoto) }}
             style={styles.headerAvatar}
           />
         ) : (
@@ -153,10 +180,38 @@ export default function StoryViewerScreen({
 
       {/* Caption */}
       {currentStory.caption ? (
-        <View style={[styles.captionContainer, { bottom: insets.bottom + 40 }]}>
+        <View style={[styles.captionContainer, { bottom: insets.bottom + 100 }]}>
           <Text style={styles.captionText}>{currentStory.caption}</Text>
         </View>
       ) : null}
+
+      {/* Reaction bar */}
+      <View style={[styles.reactionBar, { bottom: insets.bottom + 24 }]}>
+        {REACTIONS.map((emoji) => (
+          <Pressable
+            key={emoji}
+            onPress={() => handleReaction(emoji)}
+            style={({ pressed }) => [
+              styles.reactionBtn,
+              pressed && styles.reactionBtnPressed,
+            ]}
+          >
+            <Text style={styles.reactionEmoji}>{emoji}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Floating reaction feedback */}
+      {sentReaction && (
+        <Animated.View
+          entering={ZoomIn.springify().damping(12)}
+          exiting={FadeOut.duration(300)}
+          style={styles.reactionFeedback}
+        >
+          <Text style={styles.reactionFeedbackEmoji}>{sentReaction}</Text>
+          <Text style={styles.reactionFeedbackText}>Reacción enviada</Text>
+        </Animated.View>
+      )}
 
       {/* Touch zones: left = prev, right = next */}
       <View style={styles.touchZones}>
@@ -206,7 +261,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.glass.white,
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   headerAvatarPlaceholder: {
     justifyContent: "center",
@@ -258,4 +313,54 @@ const styles = StyleSheet.create({
   },
   touchLeft: { flex: 1 },
   touchRight: { flex: 2 },
+
+  // Reactions
+  reactionBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 12,
+    zIndex: 12,
+  },
+  reactionBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reactionBtnPressed: {
+    transform: [{ scale: 1.25 }],
+    backgroundColor: "rgba(0,0,0,0.6)",
+  },
+  reactionEmoji: {
+    fontSize: 22,
+  },
+  reactionFeedback: {
+    position: "absolute",
+    alignSelf: "center",
+    top: "40%",
+    alignItems: "center",
+    zIndex: 20,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: "rgba(255,215,0,0.2)",
+  },
+  reactionFeedbackEmoji: {
+    fontSize: 48,
+    marginBottom: 4,
+  },
+  reactionFeedbackText: {
+    fontFamily: typography.families.bodyMedium,
+    fontSize: 13,
+    color: "rgba(255,255,255,0.8)",
+  },
 });

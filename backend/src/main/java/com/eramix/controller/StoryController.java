@@ -1,8 +1,11 @@
 package com.eramix.controller;
 
 import com.eramix.dto.ApiResponse;
+import com.eramix.dto.story.StoryReactionRequest;
+import com.eramix.dto.story.StoryReactionResponse;
 import com.eramix.dto.story.StoryResponse;
 import com.eramix.service.StoryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -59,6 +62,17 @@ public class StoryController {
             @PathVariable Long targetUserId) {
         return ResponseEntity.ok(
                 ApiResponse.ok(storyService.getUserStories(targetUserId, currentUserId())));
+    }
+
+    // ── 6. POST /{id}/react ── Reaccionar a una story ────
+
+    @PostMapping("/{id}/react")
+    public ResponseEntity<ApiResponse<StoryReactionResponse>> reactToStory(
+            @PathVariable Long id,
+            @Valid @RequestBody StoryReactionRequest request) {
+        return ResponseEntity.ok(
+                ApiResponse.ok("Reacción registrada",
+                        storyService.reactToStory(id, currentUserId(), request.getEmoji())));
     }
 
     // ── Helper ────────────────────────────────────────────

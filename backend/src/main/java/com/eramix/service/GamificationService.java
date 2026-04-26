@@ -7,6 +7,7 @@ import com.eramix.entity.*;
 import com.eramix.entity.enums.XpSourceType;
 import com.eramix.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -126,6 +127,7 @@ public class GamificationService {
 
     // ── Get all achievements with unlock status ─────
     @Transactional(readOnly = true)
+    @Cacheable(value = "achievements", key = "#userId")
     public List<AchievementResponse> getAllAchievements(Long userId) {
         List<Achievement> all = achievementRepo.findAll();
         List<UserAchievement> unlocked = userAchievementRepo.findByUserId(userId);
@@ -152,6 +154,7 @@ public class GamificationService {
 
     // ── Leaderboard ─────────────────────────────────
     @Transactional(readOnly = true)
+    @Cacheable(value = "leaderboard", key = "#limit")
     public List<LeaderboardEntry> getLeaderboard(int limit) {
         List<UserLevel> top = userLevelRepo.findTopByOrderByTotalXpDesc(PageRequest.of(0, limit));
         AtomicInteger rank = new AtomicInteger(1);

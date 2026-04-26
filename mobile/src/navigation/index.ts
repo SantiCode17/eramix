@@ -4,3 +4,6 @@ export { default as MainNavigator } from "./MainNavigator";
 export { default as DiscoverNavigator } from "./DiscoverNavigator";
 export { default as GroupsNavigator } from "./GroupsNavigator";
 export { default as CommunitiesNavigator } from "./CommunitiesNavigator";
+export { default as FinanceNavigator } from "./FinanceNavigator";
+export { default as TicketingNavigator } from "./TicketingNavigator";
+export { default as WellbeingNavigator } from "./WellbeingNavigator";

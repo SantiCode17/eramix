@@ -1,20 +1,26 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import {
+  colors,
+  typography,
+  spacing,
+  radii,
+  DS,
+} from "@/design-system/tokens";
+import { ScreenBackground } from "@/design-system/components";
 import { sendAiChat } from "@/api/aiAssistant";
 import { handleError } from "@/utils/errorHandler";
 import type { AiMessageData } from "@/types/aiAssistant";
@@ -28,14 +34,15 @@ export default function AiChatScreen() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [convId, setConvId] = useState<number | undefined>(route.params?.conversationId);
+  const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const listRef = useRef<any>(null);
 
   const handleSend = useCallback(async () => {
     const msg = text.trim();
     if (!msg || loading) return;
     setText("");
+    setErrorBanner(null);
 
-    // Optimistic user message
     const tempUser: AiMessageData = {
       id: Date.now(),
       role: "USER",
@@ -50,42 +57,59 @@ export default function AiChatScreen() {
       setConvId(res.id);
       setMessages(res.messages);
     } catch (e) {
-      const msg = handleError(e, "AiChat.send");
-      const errorMsg: AiMessageData = {
-        id: Date.now() + 1,
-        role: "ASSISTANT",
-        content: msg,
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, errorMsg]);
+      const errMsg = handleError(e, "AiChat.send");
+      setErrorBanner(errMsg);
     } finally {
       setLoading(false);
     }
   }, [text, loading, convId]);
 
-  const renderItem = useCallback(({ item }: { item: AiMessageData }) => {
-    const isUser = item.role === "USER";
-    return (
-      <Animated.View
-        entering={FadeInDown.duration(200)}
-        style={[styles.msgRow, isUser ? styles.msgRowUser : styles.msgRowAi]}
-      >
-        {!isUser && <View style={styles.avatar}><Ionicons name="chatbox-ellipses-outline" size={20} color={colors.eu.star} /></View>}
-        <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAi]}>
-          <Text style={[styles.bubbleText, isUser && styles.bubbleTextUser]}>{item.content}</Text>
-        </View>
-      </Animated.View>
-    );
-  }, []);
+  const renderItem = useCallback(
+    ({ item }: { item: AiMessageData }) => {
+      const isUser = item.role === "USER";
+      return (
+        <Animated.View
+          entering={FadeInDown.duration(200)}
+          style={[st.msgRow, isUser ? st.msgRowUser : st.msgRowAi]}
+        >
+          {!isUser && (
+            <View style={st.avatar}>
+              <Ionicons name="chatbox-ellipses-outline" size={20} color={colors.eu.star} />
+            </View>
+          )}
+          <View style={[st.bubble, isUser ? st.bubbleUser : st.bubbleAi]}>
+            <Text style={[st.bubbleText, isUser && st.bubbleTextUser]}>
+              {item.content}
+            </Text>
+          </View>
+        </Animated.View>
+      );
+    },
+    [],
+  );
 
   return (
-    <LinearGradient colors={[colors.background.start, colors.background.end]} style={styles.root}>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Text style={styles.headerTitle}>Asistente Erasmus</Text>
+    <ScreenBackground>
+      {/* Header */}
+      <View style={[st.header, { paddingTop: insets.top + spacing.sm }]}>
+        <Text style={st.headerTitle}>Asistente Erasmus</Text>
       </View>
 
+      {/* Error banner */}
+      {errorBanner && (
+        <Animated.View entering={FadeInUp.duration(300)} style={st.errorBanner}>
+          <Ionicons name="warning-outline" size={16} color={colors.status.error} />
+          <Text style={st.errorBannerText} numberOfLines={2}>
+            {errorBanner}
+          </Text>
+          <Pressable onPress={() => setErrorBanner(null)}>
+            <Ionicons name="close" size={16} color={colors.text.secondary} />
+          </Pressable>
+        </Animated.View>
+      )}
+
       <KeyboardAvoidingView
-        style={styles.body}
+        style={st.body}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={0}
       >
@@ -94,22 +118,33 @@ export default function AiChatScreen() {
           data={messages}
           keyExtractor={(m) => String(m.id)}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.lg }}
-          onContentSizeChange={() => listRef.current?.scrollToEnd?.({ animated: true })}
+          contentContainerStyle={{
+            paddingHorizontal: spacing.md,
+            paddingBottom: spacing.lg,
+          }}
+          onContentSizeChange={() =>
+            listRef.current?.scrollToEnd?.({ animated: true })
+          }
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons name="chatbox-ellipses-outline" size={64} color={colors.text.secondary} />
-              <Text style={styles.emptyTitle}>¡Hola! Soy tu asistente</Text>
-              <Text style={styles.emptySubtitle}>
-                Pregúntame sobre alojamiento, idiomas, documentos, ciudades o cualquier duda Erasmus.
+            <View style={st.empty}>
+              <Ionicons
+                name="chatbox-ellipses-outline"
+                size={64}
+                color={colors.text.secondary}
+              />
+              <Text style={st.emptyTitle}>¡Hola! Soy tu asistente</Text>
+              <Text style={st.emptySubtitle}>
+                Pregúntame sobre alojamiento, idiomas, documentos, ciudades o
+                cualquier duda Erasmus.
               </Text>
             </View>
           }
         />
 
-        <View style={[styles.inputBar, { paddingBottom: insets.bottom + 8 }]}>
+        {/* Input bar */}
+        <View style={[st.inputBar, { paddingBottom: insets.bottom + spacing.sm }]}>
           <TextInput
-            style={styles.input}
+            style={st.input}
             placeholder="Escribe tu mensaje…"
             placeholderTextColor={colors.text.secondary}
             value={text}
@@ -117,41 +152,54 @@ export default function AiChatScreen() {
             multiline
             maxLength={1000}
           />
-          <TouchableOpacity
-            style={[styles.sendBtn, (!text.trim() || loading) && styles.sendBtnDisabled]}
+          <Pressable
+            style={[st.sendBtn, (!text.trim() || loading) && st.sendBtnDisabled]}
             onPress={handleSend}
             disabled={!text.trim() || loading}
           >
             {loading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.sendIcon}>➤</Text>
+              <Ionicons name="send" size={18} color="#fff" />
             )}
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </ScreenBackground>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1 },
+const st = StyleSheet.create({
   header: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.glass.border,
   },
   headerTitle: {
-    ...typography.sizes.h3,
     fontFamily: typography.families.heading,
+    fontSize: typography.sizes.h3.fontSize,
+    lineHeight: typography.sizes.h3.lineHeight,
     color: colors.text.primary,
   },
   body: { flex: 1 },
-  msgRow: { flexDirection: "row", marginBottom: spacing.sm, maxWidth: "85%" },
+  msgRow: {
+    flexDirection: "row",
+    marginBottom: spacing.sm,
+    maxWidth: "85%",
+  },
   msgRowUser: { alignSelf: "flex-end" },
   msgRowAi: { alignSelf: "flex-start" },
-  avatar: { fontSize: 24, marginRight: spacing.xs, marginTop: 4 },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.glass.whiteMid,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: spacing.xs,
+    marginTop: spacing.xs,
+  },
   bubble: {
     borderRadius: radii.lg,
     paddingHorizontal: spacing.md,
@@ -160,17 +208,17 @@ const styles = StyleSheet.create({
   },
   bubbleUser: {
     backgroundColor: colors.eu.orange,
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: radii.xs,
   },
   bubbleAi: {
     backgroundColor: colors.glass.whiteMid,
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: radii.xs,
   },
   bubbleText: {
     fontFamily: typography.families.body,
-    ...typography.sizes.body,
-    color: colors.text.primary,
+    fontSize: typography.sizes.body.fontSize,
     lineHeight: 22,
+    color: colors.text.primary,
   },
   bubbleTextUser: { color: "#fff" },
   inputBar: {
@@ -178,9 +226,9 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.glass.border,
-    backgroundColor: colors.eu.deep + "CC",
+    backgroundColor: colors.overlay.light,
   },
   input: {
     flex: 1,
@@ -190,9 +238,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     color: colors.text.primary,
     fontFamily: typography.families.body,
-    ...typography.sizes.body,
+    fontSize: typography.sizes.body.fontSize,
     maxHeight: 100,
     marginRight: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
   },
   sendBtn: {
     width: 44,
@@ -203,20 +253,38 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   sendBtnDisabled: { opacity: 0.4 },
-  sendIcon: { color: "#fff", fontSize: 20 },
   empty: { alignItems: "center", marginTop: 80 },
   emptyTitle: {
     fontFamily: typography.families.heading,
-    ...typography.sizes.h3,
+    fontSize: typography.sizes.h3.fontSize,
     color: colors.text.primary,
     marginTop: spacing.md,
   },
   emptySubtitle: {
     fontFamily: typography.families.body,
-    ...typography.sizes.body,
+    fontSize: typography.sizes.body.fontSize,
     color: colors.text.secondary,
     textAlign: "center",
     marginTop: spacing.sm,
     paddingHorizontal: spacing.xl,
+  },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: colors.status.errorBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,79,111,0.25)",
+  },
+  errorBannerText: {
+    flex: 1,
+    fontFamily: typography.families.body,
+    fontSize: typography.sizes.caption.fontSize,
+    color: colors.text.secondary,
   },
 });

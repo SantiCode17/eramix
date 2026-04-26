@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,15 +7,19 @@ import {
   Pressable,
   Image,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
-import { FlashList } from "@shopify/flash-list";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { FadeInDown, FadeInRight } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 import * as searchApi from "@/api/search";
+import * as eventsApi from "@/api/events";
 import { handleError } from "@/utils/errorHandler";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
 import { Ionicons } from "@expo/vector-icons";
-import { Header } from "@/design-system";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { Header, ScreenBackground } from "@/design-system/components";
+import { colors, typography, spacing, radii, DS, TAB_BAR_HEIGHT } from "@/design-system/tokens";
+import { CategoryTab } from "@/components";
 
 interface UserResult {
   id: number;
@@ -26,6 +30,23 @@ interface UserResult {
   destinationCity: string | null;
   destinationCountry: string | null;
 }
+
+interface EventResult {
+  id: number;
+  title: string;
+  category?: string | null;
+  startDatetime: string;
+  location?: string | null;
+  participantCount?: number;
+}
+
+type SearchTab = "all" | "people" | "events";
+
+const TABS: { key: SearchTab; label: string; icon: React.ComponentProps<typeof Ionicons>["name"] }[] = [
+  { key: "all", label: "Todo", icon: "search-outline" },
+  { key: "people", label: "Personas", icon: "people-outline" },
+  { key: "events", label: "Eventos", icon: "calendar-outline" },
+];
 
 const QUICK_FILTERS = [
   { label: "🇪🇸 España", type: "country" as const, value: "Spain" },
@@ -39,17 +60,19 @@ const QUICK_FILTERS = [
 export default function SearchScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<UserResult[]>([]);
+  const [activeTab, setActiveTab] = useState<SearchTab>("all");
+  const [userResults, setUserResults] = useState<UserResult[]>([]);
+  const [eventResults, setEventResults] = useState<EventResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounced search
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!query.trim()) {
-      setResults([]);
+      setUserResults([]);
+      setEventResults([]);
       setSearched(false);
       return;
     }
@@ -58,14 +81,25 @@ export default function SearchScreen(): React.JSX.Element {
       setLoading(true);
       setSearched(true);
       try {
-        const res = await searchApi.searchUsers({
-          destinationCity: query.trim(),
-          page: 0,
-          size: 30,
-        });
-        setResults(res.content);
+        const [usersRes, eventsRes] = await Promise.allSettled([
+          searchApi.searchUsers({ destinationCity: query.trim(), page: 0, size: 20 }),
+          eventsApi.getUpcomingEvents(undefined, 0, 20),
+        ]);
+
+        if (usersRes.status === "fulfilled") setUserResults(usersRes.value.content);
+        if (eventsRes.status === "fulfilled") {
+          const q = query.trim().toLowerCase();
+          setEventResults(
+            eventsRes.value.content.filter(
+              (e: any) =>
+                e.title?.toLowerCase().includes(q) ||
+                e.location?.toLowerCase().includes(q) ||
+                e.category?.toLowerCase().includes(q),
+            ),
+          );
+        }
       } catch (e) {
-        handleError(e, "Search.searchUsers");
+        handleError(e, "Search.global");
       } finally {
         setLoading(false);
       }
@@ -75,6 +109,8 @@ export default function SearchScreen(): React.JSX.Element {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query]);
+
+  const totalResults = userResults.length + eventResults.length;
 
   const handleQuickFilter = useCallback(
     async (type: "country" | "city", value: string) => {
@@ -88,7 +124,8 @@ export default function SearchScreen(): React.JSX.Element {
         } else {
           data = await searchApi.findByCity(value);
         }
-        setResults(data);
+        setUserResults(data);
+        setEventResults([]);
       } catch (e) {
         handleError(e, "Search.quickFilter");
       } finally {
@@ -98,58 +135,99 @@ export default function SearchScreen(): React.JSX.Element {
     [],
   );
 
-  const renderItem = useCallback(({ item }: { item: UserResult }) => {
-    return (
-      <View style={styles.resultCard}>
-        {item.profilePhotoUrl ? (
-          <Image
-            source={{ uri: item.profilePhotoUrl }}
-            style={styles.resultAvatar}
-          />
-        ) : (
-          <View style={[styles.resultAvatar, styles.resultAvatarPlaceholder]}>
-            <Text style={styles.resultInitial}>
-              {item.firstName[0]?.toUpperCase()}
-            </Text>
-          </View>
-        )}
-        <View style={styles.resultBody}>
-          <Text style={styles.resultName} numberOfLines={1}>
-            {item.firstName} {item.lastName}
-          </Text>
-          {(item.destinationCity || item.destinationCountry) && (
-            <Text style={styles.resultLocation} numberOfLines={1}>
-              <Ionicons name="location-outline" size={12} color={colors.eu.star} />{" "}
-              {[item.destinationCity, item.destinationCountry]
-                .filter(Boolean)
-                .join(", ")}
-            </Text>
-          )}
-          {item.bio && (
-            <Text style={styles.resultBio} numberOfLines={1}>
-              {item.bio}
-            </Text>
-          )}
-        </View>
-      </View>
-    );
+  const handleClear = useCallback(() => {
+    setQuery("");
+    setUserResults([]);
+    setEventResults([]);
+    setSearched(false);
   }, []);
 
-  return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
-        style={StyleSheet.absoluteFill}
-      />
+  const renderUserCard = useCallback(
+    (item: UserResult, index: number) => (
+      <Animated.View key={`u-${item.id}`} entering={FadeInDown.delay(index * 50).duration(300)}>
+        <View style={st.resultCard}>
+          {item.profilePhotoUrl ? (
+            <Image
+              source={{ uri: resolveMediaUrl(item.profilePhotoUrl) }}
+              style={st.resultAvatar}
+            />
+          ) : (
+            <View style={[st.resultAvatar, st.resultAvatarPlaceholder]}>
+              <Text style={st.resultInitial}>{item.firstName[0]?.toUpperCase()}</Text>
+            </View>
+          )}
+          <View style={st.resultBody}>
+            <Text style={st.resultName} numberOfLines={1}>
+              {item.firstName} {item.lastName}
+            </Text>
+            {(item.destinationCity || item.destinationCountry) && (
+              <View style={st.resultMetaRow}>
+                <Ionicons name="location-outline" size={12} color={colors.eu.star} />
+                <Text style={st.resultLocation} numberOfLines={1}>
+                  {[item.destinationCity, item.destinationCountry].filter(Boolean).join(", ")}
+                </Text>
+              </View>
+            )}
+            {item.bio && (
+              <Text style={st.resultBio} numberOfLines={1}>{item.bio}</Text>
+            )}
+          </View>
+          <View style={st.resultTypeBadge}>
+            <Ionicons name="person-outline" size={10} color={colors.eu.star} />
+          </View>
+        </View>
+      </Animated.View>
+    ),
+    [],
+  );
 
+  const renderEventCard = useCallback(
+    (item: EventResult, index: number) => {
+      const dateStr = new Date(item.startDatetime).toLocaleDateString("es-ES", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      return (
+        <Animated.View key={`e-${item.id}`} entering={FadeInDown.delay(index * 50).duration(300)}>
+          <View style={st.resultCard}>
+            <View style={[st.resultAvatar, st.eventAvatarBg]}>
+              <Ionicons name="calendar-outline" size={22} color={colors.eu.star} />
+            </View>
+            <View style={st.resultBody}>
+              <Text style={st.resultName} numberOfLines={1}>{item.title}</Text>
+              <View style={st.resultMetaRow}>
+                <Ionicons name="time-outline" size={12} color={colors.eu.star} />
+                <Text style={st.resultLocation}>{dateStr}</Text>
+              </View>
+              {item.location && (
+                <View style={st.resultMetaRow}>
+                  <Ionicons name="location-outline" size={12} color={colors.text.tertiary} />
+                  <Text style={st.resultBio} numberOfLines={1}>{item.location}</Text>
+                </View>
+              )}
+            </View>
+            <View style={[st.resultTypeBadge, st.eventBadge]}>
+              <Ionicons name="calendar-outline" size={10} color={colors.eu.orange} />
+            </View>
+          </View>
+        </Animated.View>
+      );
+    },
+    [],
+  );
+
+  return (
+    <ScreenBackground>
       <Header title="Buscar" />
 
       {/* Search bar */}
-      <View style={styles.searchBar}>
+      <View style={st.searchBar}>
         <Ionicons name="search-outline" size={20} color={colors.text.secondary} />
         <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar ciudad, país..."
+          style={st.searchInput}
+          placeholder="Personas, eventos, ciudades..."
           placeholderTextColor={colors.text.disabled}
           value={query}
           onChangeText={setQuery}
@@ -158,31 +236,57 @@ export default function SearchScreen(): React.JSX.Element {
           returnKeyType="search"
         />
         {query.length > 0 && (
-          <Pressable
-            onPress={() => {
-              setQuery("");
-              setResults([]);
-              setSearched(false);
-            }}
-            hitSlop={10}
-          >
-            <Text style={styles.clearText}>✕</Text>
+          <Pressable onPress={handleClear} hitSlop={10}>
+            <Text style={st.clearText}>✕</Text>
           </Pressable>
         )}
       </View>
 
-      {/* Quick filters when no search */}
+      {/* Category tabs */}
+      {searched && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={st.tabRow}
+        >
+          {TABS.map((tab, i) => {
+            const active = activeTab === tab.key;
+            const count =
+              tab.key === "all"
+                ? totalResults
+                : tab.key === "people"
+                  ? userResults.length
+                  : eventResults.length;
+            return (
+              <Animated.View key={tab.key} entering={FadeInRight.delay(i * 40).duration(300)}>
+                <CategoryTab
+                  label={tab.label}
+                  icon={tab.icon}
+                  active={active}
+                  count={count}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setActiveTab(tab.key);
+                  }}
+                />
+              </Animated.View>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {/* Quick filters */}
       {!searched && (
-        <View style={styles.quickSection}>
-          <Text style={styles.quickTitle}>Explorar por país</Text>
-          <View style={styles.quickChips}>
+        <View style={st.quickSection}>
+          <Text style={st.quickTitle}>Explorar por país</Text>
+          <View style={st.quickChips}>
             {QUICK_FILTERS.map((f) => (
               <Pressable
                 key={f.value}
-                style={styles.quickChip}
+                style={st.quickChip}
                 onPress={() => handleQuickFilter(f.type, f.value)}
               >
-                <Text style={styles.quickChipText}>{f.label}</Text>
+                <Text style={st.quickChipText}>{f.label}</Text>
               </Pressable>
             ))}
           </View>
@@ -191,33 +295,57 @@ export default function SearchScreen(): React.JSX.Element {
 
       {/* Results */}
       {loading ? (
-        <View style={styles.center}>
+        <View style={st.center}>
           <ActivityIndicator size="large" color={colors.eu.star} />
         </View>
-      ) : searched && results.length === 0 ? (
-        <View style={styles.center}>
-          <Ionicons name="search-outline" size={48} color={colors.text.secondary} />
-          <Text style={styles.emptyText}>No se encontraron resultados</Text>
+      ) : searched && totalResults === 0 ? (
+        <View style={st.center}>
+          <View style={st.emptyCircle}>
+            <Ionicons name="search-outline" size={40} color={colors.eu.star} />
+          </View>
+          <Text style={st.emptyText}>No se encontraron resultados</Text>
+          <Text style={st.emptyHint}>Prueba con otra búsqueda</Text>
         </View>
       ) : (
-        <FlashList
-          data={results}
-          keyExtractor={(u) => String(u.id)}
-          renderItem={renderItem}
-          contentContainerStyle={{
-            paddingBottom: insets.bottom + spacing.xl,
-          }}
-        />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_HEIGHT + spacing.md }}
+        >
+          {(activeTab === "all" || activeTab === "people") && userResults.length > 0 && (
+            <View>
+              {activeTab === "all" && (
+                <View style={st.sectionHeader}>
+                  <Ionicons name="people-outline" size={15} color={colors.eu.star} />
+                  <Text style={st.sectionTitle}>Personas</Text>
+                  <Text style={st.sectionCount}>{userResults.length}</Text>
+                </View>
+              )}
+              {userResults.map((u, i) => renderUserCard(u, i))}
+            </View>
+          )}
+
+          {(activeTab === "all" || activeTab === "events") && eventResults.length > 0 && (
+            <View>
+              {activeTab === "all" && (
+                <View style={st.sectionHeader}>
+                  <Ionicons name="calendar-outline" size={15} color={colors.eu.orange} />
+                  <Text style={st.sectionTitle}>Eventos</Text>
+                  <Text style={st.sectionCount}>{eventResults.length}</Text>
+                </View>
+              )}
+              {eventResults.map((e, i) => renderEventCard(e, i))}
+            </View>
+          )}
+        </ScrollView>
       )}
-    </View>
+    </ScreenBackground>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
+const st = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  // Search
+  /* Search */
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -227,15 +355,15 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: radii.xl,
     backgroundColor: colors.glass.white,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.glass.border,
   },
-  searchIcon: { fontSize: 16, marginRight: spacing.sm },
   searchInput: {
     flex: 1,
     fontFamily: typography.families.body,
     fontSize: 15,
     color: colors.text.primary,
+    marginLeft: spacing.sm,
   },
   clearText: {
     fontSize: 16,
@@ -243,7 +371,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
   },
 
-  // Quick filters
+  /* Quick filters */
   quickSection: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
@@ -264,7 +392,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
     backgroundColor: colors.glass.white,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.glass.border,
   },
   quickChipText: {
@@ -273,7 +401,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
 
-  // Results
+  /* Results */
   resultCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -282,7 +410,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radii.lg,
     backgroundColor: colors.glass.white,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.glass.border,
   },
   resultAvatar: {
@@ -292,6 +420,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.glass.whiteMid,
   },
   resultAvatarPlaceholder: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  eventAvatarBg: {
+    backgroundColor: "rgba(255,109,63,0.10)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -306,11 +439,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.text.primary,
   },
+  resultMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+  },
   resultLocation: {
     fontFamily: typography.families.body,
     fontSize: 12,
     color: colors.text.secondary,
-    marginTop: 2,
   },
   resultBio: {
     fontFamily: typography.families.body,
@@ -318,12 +456,67 @@ const styles = StyleSheet.create({
     color: colors.text.disabled,
     marginTop: 2,
   },
+  resultTypeBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,215,0,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: spacing.sm,
+  },
+  eventBadge: {
+    backgroundColor: "rgba(255,109,63,0.10)",
+  },
 
-  // Empty
-  emptyEmoji: { fontSize: 48, marginBottom: spacing.md },
+  /* Tabs */
+  tabRow: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+    flexDirection: "row",
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontFamily: typography.families.subheading,
+    color: colors.text.primary,
+    flex: 1,
+  },
+  sectionCount: {
+    fontSize: 12,
+    color: colors.text.tertiary,
+  },
+
+  /* Empty */
+  emptyCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255,215,0,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,215,0,0.20)",
+    marginBottom: spacing.md,
+  },
   emptyText: {
     fontFamily: typography.families.body,
     fontSize: 15,
     color: colors.text.secondary,
+  },
+  emptyHint: {
+    fontFamily: typography.families.body,
+    fontSize: 12,
+    color: colors.text.tertiary,
+    marginTop: spacing.xs,
   },
 });

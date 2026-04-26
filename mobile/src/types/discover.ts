@@ -64,5 +64,11 @@ export type DiscoverStackParamList = {
   DiscoverMain: undefined;
   NearbyMap: undefined;
   FriendRequests: undefined;
+  Notifications: undefined;
   UserDetail: { userId: number };
+  SmartMatch: undefined;
+  ActivityFeed: undefined;
+  CulturalMap: undefined;
+  TimeCapsule: undefined;
+  LiveLocation: undefined;
 };

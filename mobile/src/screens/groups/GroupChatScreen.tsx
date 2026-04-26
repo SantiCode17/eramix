@@ -20,7 +20,9 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/useAuthStore";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { webSocketService } from "@/services/webSocketService";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
+import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
 import type { GroupMessageData, GroupsStackParamList } from "@/types/groups";
 import * as groupsApi from "@/api/groups";
 import { handleError } from "@/utils/errorHandler";
@@ -32,15 +34,16 @@ type Nav = StackNavigationProp<GroupsStackParamList, "GroupChat">;
 
 function SmallAvatar({ uri, name, size = 32 }: { uri: string | null; name: string; size?: number }) {
   const initials = name.charAt(0).toUpperCase();
-  return uri ? (
-    <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2 }} />
+  const resolvedUri = resolveMediaUrl(uri);
+  return resolvedUri ? (
+    <Image source={{ uri: resolvedUri }} style={{ width: size, height: size, borderRadius: size / 2 }} />
   ) : (
     <View
       style={{
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: colors.eu.deep + "40",
+        backgroundColor: "rgba(19,34,64,0.45)",
         justifyContent: "center",
         alignItems: "center",
       }}
@@ -126,7 +129,29 @@ export default function GroupChatScreen() {
 
   useEffect(() => {
     fetchMessages();
-  }, [fetchMessages]);
+    
+    // Subscribe to STOMP topic for live group messages
+    const unsubscribeWs = webSocketService.subscribeToGroup(groupId, (newMsg: GroupMessageData) => {
+      setMessages((prev) => {
+        // Skip if we already mapped this msg optimally
+        if (prev.some(m => m.id === newMsg.id || (m.id < 0 && m.content === newMsg.content))) {
+          // Replace optimistic
+          const idx = prev.findIndex(m => m.id < 0 && m.content === newMsg.content);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = newMsg;
+            return next;
+          }
+          return prev;
+        }
+        return [...prev, newMsg]; // new messages go at the end since inverted={false}
+      });
+    });
+
+    return () => {
+      unsubscribeWs();
+    };
+  }, [fetchMessages, groupId]);
 
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
@@ -136,7 +161,7 @@ export default function GroupChatScreen() {
 
     // Optimistic: add to local list
     const tempMsg: GroupMessageData = {
-      id: Date.now(),
+      id: -Date.now(),
       groupId,
       senderId: currentUserId || 0,
       senderFirstName: "Tú",
@@ -151,13 +176,11 @@ export default function GroupChatScreen() {
     setText("");
 
     try {
-      // In a full implementation this would go through WebSocket
-      // For now we refetch after a brief delay
-      setTimeout(() => fetchMessages(), 1000);
+      webSocketService.sendGroupMessage(groupId, trimmed);
     } finally {
       setSending(false);
     }
-  }, [text, sending, groupId, currentUserId, fetchMessages]);
+  }, [text, sending, groupId, currentUserId]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: GroupMessageData; index: number }) => {
@@ -171,7 +194,7 @@ export default function GroupChatScreen() {
 
   if (loading) {
     return (
-      <LinearGradient colors={[colors.background.start, colors.background.end]} style={styles.center}>
+      <LinearGradient colors={[DS.background, "#0E1A35", "#0F1535"]} style={styles.center}>
         <ActivityIndicator size="large" color={colors.eu.star} />
       </LinearGradient>
     );
@@ -179,7 +202,7 @@ export default function GroupChatScreen() {
 
   return (
     <LinearGradient
-      colors={[colors.background.start, colors.background.end]}
+      colors={[DS.background, "#0E1A35", "#0F1535"]}
       style={styles.container}
     >
       {/* Header */}
@@ -253,7 +276,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.glass.border,
+    borderBottomColor: "rgba(255,255,255,0.08)",
   },
   backBtn: { padding: spacing.sm },
   backText: { color: colors.text.primary, fontSize: 28, fontWeight: "300" },
@@ -278,8 +301,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     marginLeft: spacing.xs,
   },
-  bubbleMine: { backgroundColor: colors.eu.deep, marginLeft: "auto" },
-  bubbleOther: { backgroundColor: colors.glass.whiteMid },
+  bubbleMine: { backgroundColor: "rgba(19,34,64,0.55)", marginLeft: "auto" },
+  bubbleOther: { backgroundColor: "rgba(255,255,255,0.06)" },
   senderName: {
     fontFamily: typography.families.bodyMedium,
     ...typography.sizes.bodySmall,
@@ -306,14 +329,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.glass.border,
+    borderTopColor: "rgba(255,255,255,0.08)",
   },
   inputWrapper: {
     flex: 1,
-    backgroundColor: colors.glass.white,
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.08)",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     maxHeight: 120,

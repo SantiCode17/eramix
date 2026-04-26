@@ -64,33 +64,37 @@ export {
   ExchangeSessionDetailScreen,
 } from "./exchange";
 
-// Gamification screens
-export {
-  GamificationHomeScreen,
-  AchievementsScreen,
-  LeaderboardScreen,
-} from "./gamification";
-
-// Challenge screens
-export {
-  ChallengesListScreen,
-  ChallengeDetailScreen,
-} from "./challenges";
-
 // Housing screens
 export {
   HousingListScreen,
   HousingDetailScreen,
 } from "./housing";
 
-// CityGuide screens
+// Places to Visit screens
 export {
-  CityGuideListScreen,
-  PlaceDetailScreen,
-} from "./cityGuide";
+  PlacesToVisitScreen,
+} from "./placesToVisit";
 
 // AI Assistant screens
 export {
   AiChatScreen,
 } from "./aiAssistant";
 
+// Finance screens
+export {
+  FinanceHomeScreen,
+  AddTransactionScreen,
+} from "./finance";
+
+// Ticketing screens
+export {
+  TicketingHomeScreen,
+  MyTicketsScreen,
+} from "./ticketing";
+
+// Wellbeing screens
+export {
+  WellbeingHomeScreen,
+  SOSScreen,
+  EmergencyContactsScreen,
+} from "./wellbeing";

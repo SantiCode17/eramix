@@ -16,7 +16,7 @@ import {
   Header,
 } from "@/design-system/components";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, typography, spacing } from "@/design-system/tokens";
+import { colors, typography, spacing, DS } from "@/design-system/tokens";
 import { accountApi } from "@/api";
 import { useAuthStore } from "@/store";
 import { handleError } from "@/utils/errorHandler";
@@ -60,7 +60,7 @@ export default function DeleteAccountScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
+        colors={[DS.background, "#0E1A35", "#0F1535"]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   warningCard: {
     alignItems: "center",
     marginBottom: spacing.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(244,67,54,0.4)",
   },
   warningEmoji: { fontSize: 48, marginBottom: spacing.sm },
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     backgroundColor: "rgba(244,67,54,0.2)",
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.status.error,
   },
 });

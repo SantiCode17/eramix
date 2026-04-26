@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { searchApi, friendRequestsApi } from "@/api";
+import { apiClient } from "@/api/client";
 import type { User, DiscoverFilters, FriendRequestResponse } from "@/types";
+
 
 interface DiscoverState {
   // Card stack
@@ -17,6 +19,7 @@ interface DiscoverState {
   // Dismissed / requested IDs (avoid re-showing)
   dismissedIds: Set<number>;
   requestedIds: Set<number>;
+  friendIds: Set<number>;
 
   // Friend requests
   receivedRequests: FriendRequestResponse[];
@@ -58,6 +61,7 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
 
   dismissedIds: new Set(),
   requestedIds: new Set(),
+  friendIds: new Set(),
 
   receivedRequests: [],
   sentRequests: [],
@@ -66,6 +70,17 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
   fetchUsers: async () => {
     const { filters, dismissedIds, requestedIds } = get();
     set({ loading: true, error: null, page: 0, currentIndex: 0 });
+
+    // Ensure we have the latest sent requests to avoid showing already liked users
+    await get().fetchSentRequests();
+
+    // Fetch friends list to exclude already-friends
+    let currentFriendIds = get().friendIds;
+    try {
+      const { data } = await apiClient.get<{ data: { friendId: number }[] }>("/v1/friends");
+      currentFriendIds = new Set((data.data ?? []).map((f) => f.friendId));
+      set({ friendIds: currentFriendIds });
+    } catch { /* ignore */ }
 
     try {
       const result = await searchApi.searchUsers({
@@ -77,8 +92,9 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
         size: 20,
       });
 
-      // Filter out already dismissed/requested users
-      const excluded = new Set([...dismissedIds, ...requestedIds]);
+      // Filter out already dismissed/requested/friends users, and those we already liked
+      const sentIds = new Set(get().sentRequests.map((r) => r.receiverId));
+      const excluded = new Set([...dismissedIds, ...requestedIds, ...currentFriendIds, ...sentIds]);
       const filtered = result.content.filter((u) => !excluded.has(u.id));
 
       set({
@@ -87,15 +103,13 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
         page: 0,
         loading: false,
       });
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Error al buscar usuarios";
-      set({ error: message, loading: false });
+    } catch {
+      set({ users: [], hasMore: false, page: 0, loading: false });
     }
   },
 
   fetchMore: async () => {
-    const { hasMore, loading, page, filters, users, dismissedIds, requestedIds } =
+    const { hasMore, loading, page, filters, users, dismissedIds, requestedIds, friendIds } =
       get();
     if (!hasMore || loading) return;
 
@@ -112,7 +126,8 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
         size: 20,
       });
 
-      const excluded = new Set([...dismissedIds, ...requestedIds]);
+      const sentIds = new Set(get().sentRequests.map((r) => r.receiverId));
+      const excluded = new Set([...dismissedIds, ...requestedIds, ...friendIds, ...sentIds]);
       const filtered = result.content.filter((u) => !excluded.has(u.id));
 
       set({
@@ -154,26 +169,26 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
   sendFriendRequest: async (userId) => {
     try {
       await friendRequestsApi.send(userId);
-      set((s) => {
-        const next = new Set(s.requestedIds);
-        next.add(userId);
-        return {
-          requestedIds: next,
-          currentIndex: s.currentIndex + 1,
-        };
-      });
+    } catch (err: any) {
+      // Silently skip errors — just advance the card
+      // 400 = already requested, 403 = already friends, etc.
+      const errorMsg = err?.response?.data?.message || err?.message || "Error";
+      console.warn("[Discover] sendFriendRequest error (skipping):", errorMsg);
+    }
+    // Always advance card regardless of error
+    set((s) => {
+      const next = new Set(s.requestedIds);
+      next.add(userId);
+      return {
+        requestedIds: next,
+        currentIndex: s.currentIndex + 1,
+      };
+    });
 
-      // Auto-fetch more
-      const { users, currentIndex, hasMore } = get();
-      if (users.length - currentIndex <= 3 && hasMore) {
-        get().fetchMore();
-      }
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Error al enviar solicitud de amistad";
-      set({ error: message });
+    // Auto-fetch more
+    const { users, currentIndex, hasMore } = get();
+    if (users.length - currentIndex <= 3 && hasMore) {
+      get().fetchMore();
     }
   },
 
@@ -183,7 +198,7 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
       const received = await friendRequestsApi.getReceived();
       set({ receivedRequests: received, requestsLoading: false });
     } catch {
-      set({ requestsLoading: false });
+      set({ receivedRequests: [], requestsLoading: false });
     }
   },
 
@@ -193,7 +208,7 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
       const sent = await friendRequestsApi.getSent();
       set({ sentRequests: sent, requestsLoading: false });
     } catch {
-      set({ requestsLoading: false });
+      set({ sentRequests: [], requestsLoading: false });
     }
   },
 
@@ -234,6 +249,7 @@ export const useDiscoverStore = create<DiscoverState>((set, get) => ({
       filters: { ...DEFAULT_FILTERS },
       dismissedIds: new Set(),
       requestedIds: new Set(),
+      friendIds: new Set(),
       receivedRequests: [],
       sentRequests: [],
       requestsLoading: false,

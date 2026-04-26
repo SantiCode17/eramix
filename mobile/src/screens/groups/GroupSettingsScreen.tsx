@@ -16,10 +16,12 @@ import type { RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import * as Haptics from "expo-haptics";
 import { useAuthStore } from "@/store/useAuthStore";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
 import type { GroupData, GroupMember, GroupsStackParamList } from "@/types/groups";
 import * as groupsApi from "@/api/groups";
 import { handleError } from "@/utils/errorHandler";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
+import { pluralize } from "@/utils/pluralize";
 
 type Route = RouteProp<GroupsStackParamList, "GroupSettings">;
 type Nav = StackNavigationProp<GroupsStackParamList, "GroupSettings">;
@@ -101,7 +103,7 @@ export default function GroupSettingsScreen() {
 
   if (loading || !group) {
     return (
-      <LinearGradient colors={[colors.background.start, colors.background.end]} style={styles.center}>
+      <LinearGradient colors={[DS.background, "#0E1A35", "#0F1535"]} style={styles.center}>
         <ActivityIndicator size="large" color={colors.eu.star} />
       </LinearGradient>
     );
@@ -109,7 +111,7 @@ export default function GroupSettingsScreen() {
 
   return (
     <LinearGradient
-      colors={[colors.background.start, colors.background.end]}
+      colors={[DS.background, "#0E1A35", "#0F1535"]}
       style={[styles.container, { paddingTop: insets.top }]}
     >
       {/* Header */}
@@ -126,7 +128,7 @@ export default function GroupSettingsScreen() {
         <View style={styles.card}>
           <View style={styles.groupInfo}>
             {group.avatarUrl ? (
-              <Image source={{ uri: group.avatarUrl }} style={styles.groupAvatar} />
+              <Image source={{ uri: resolveMediaUrl(group.avatarUrl) }} style={styles.groupAvatar} />
             ) : (
               <View style={styles.groupAvatarPlaceholder}>
                 <Text style={styles.groupInitials}>
@@ -139,7 +141,7 @@ export default function GroupSettingsScreen() {
               <Text style={styles.groupDesc}>{group.description}</Text>
             )}
             <Text style={styles.groupMeta}>
-              {group.memberCount}/{group.maxMembers} miembros
+              {group.memberCount}/{group.maxMembers} {pluralize(group.maxMembers, "miembro", "miembros")}
             </Text>
           </View>
         </View>
@@ -151,7 +153,7 @@ export default function GroupSettingsScreen() {
         {group.members.map((member) => (
           <View key={member.userId} style={styles.memberItem}>
             {member.profilePhotoUrl ? (
-              <Image source={{ uri: member.profilePhotoUrl }} style={styles.memberAvatar} />
+              <Image source={{ uri: resolveMediaUrl(member.profilePhotoUrl) }} style={styles.memberAvatar} />
             ) : (
               <View style={styles.memberAvatarPlaceholder}>
                 <Text style={styles.memberInitials}>
@@ -202,7 +204,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.glass.border,
+    borderBottomColor: "rgba(255,255,255,0.08)",
   },
   backBtn: { padding: spacing.sm },
   backText: { color: colors.text.primary, fontSize: 28, fontWeight: "300" },
@@ -213,10 +215,10 @@ const styles = StyleSheet.create({
   },
   scroll: { flex: 1, paddingHorizontal: spacing.lg },
   card: {
-    backgroundColor: colors.glass.white,
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.08)",
     padding: spacing.lg,
     marginTop: spacing.lg,
   },
@@ -226,7 +228,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.eu.deep + "40",
+    backgroundColor: "rgba(19,34,64,0.45)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -263,14 +265,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.glass.border,
+    borderBottomColor: "rgba(255,255,255,0.08)",
   },
   memberAvatar: { width: 40, height: 40, borderRadius: 20 },
   memberAvatarPlaceholder: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.eu.deep + "40",
+    backgroundColor: "rgba(19,34,64,0.45)",
     justifyContent: "center",
     alignItems: "center",
   },

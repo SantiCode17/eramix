@@ -83,8 +83,24 @@ public class CommunityService {
         Community community = communityRepository.findById(communityId)
                 .orElseThrow(() -> new RuntimeException("Community not found"));
 
-        if (communityMemberRepository.existsByCommunityIdAndUserId(communityId, userId)) {
-            throw new RuntimeException("Already a member of this community");
+        // Check existing membership
+        java.util.Optional<CommunityMember> existingOpt =
+                communityMemberRepository.findByCommunityIdAndUserId(communityId, userId);
+
+        if (existingOpt.isPresent()) {
+            CommunityMember existing = existingOpt.get();
+            if (existing.getStatus() == CommunityMemberStatus.ACTIVE) {
+                // Already a member — return idempotently (no error)
+                return toCommunityResponse(community, userId);
+            }
+            // PENDING + public → activate now
+            if (community.getIsPublic()) {
+                existing.setStatus(CommunityMemberStatus.ACTIVE);
+                communityMemberRepository.save(existing);
+                community.setMemberCount(community.getMemberCount() + 1);
+                communityRepository.save(community);
+            }
+            return toCommunityResponse(community, userId);
         }
 
         User user = userRepository.findById(userId)
@@ -223,6 +239,35 @@ public class CommunityService {
         communityPostRepository.save(post);
 
         return toCommentResponse(comment);
+    }
+
+    // ─── CREATE COMMUNITY (user-facing) ───────────────────────────
+
+    @Transactional
+    public CommunityResponse createCommunity(Long userId, CreateCommunityRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Community community = Community.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .category(request.getCategory())
+                .isPublic(request.isPublic())
+                .coverImageUrl(request.getCoverImageUrl())
+                .build();
+        community = communityRepository.save(community);
+
+        // Creator becomes ADMIN member automatically
+        CommunityMember member = CommunityMember.builder()
+                .community(community)
+                .user(user)
+                .role(CommunityRole.ADMIN)
+                .status(CommunityMemberStatus.ACTIVE)
+                .joinedAt(Instant.now())
+                .build();
+        communityMemberRepository.save(member);
+
+        return toCommunityResponse(community, userId);
     }
 
     // ─── AUTO-CREATE COMMUNITY ─────────────────────────────────────

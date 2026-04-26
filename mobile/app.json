@@ -11,31 +11,67 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#003399"
+      "backgroundColor": "#0A1628"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.eramix.app"
+      "bundleIdentifier": "com.eramix.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "EraMix usa tu ubicación para encontrar estudiantes Erasmus cerca de ti.",
+        "NSCameraUsageDescription": "EraMix necesita acceso a tu cámara para subir fotos de perfil y publicaciones.",
+        "NSPhotoLibraryUsageDescription": "EraMix necesita acceso a tus fotos para elegir imágenes de perfil y publicaciones."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#003399"
+        "backgroundColor": "#0A1628"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.eramix.app"
+      "package": "com.eramix.app",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
     },
     "plugins": [
       "expo-secure-store",
-      "expo-location",
-      "expo-image-picker",
-      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "EraMix usa tu ubicación para mostrarte estudiantes Erasmus cerca de ti."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "EraMix necesita acceso a tu cámara para subir fotos.",
+          "photosPermission": "EraMix necesita acceso a tus fotos para elegir imágenes."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#F5A623"
+        }
+      ],
       "expo-font",
       "@react-native-community/datetimepicker"
     ],
     "extra": {
-      "apiUrl": "http://192.168.8.106:8080"
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
     }
   }
 }

@@ -1,6 +1,7 @@
 /**
  * ────────────────────────────────────────────────────────
- *  client.ts — Axios API client con logging avanzado
+ *  client.ts — Axios API client with retry, circuit
+ *  breaker, and centralised environment configuration.
  * ────────────────────────────────────────────────────────
  */
 
@@ -9,26 +10,20 @@ import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { parseApiError, logError } from "@/utils/errorHandler";
-
-// ── Configuración base ──────────────────────────────
-const API_BASE_URL =
-  Constants.expoConfig?.extra?.apiUrl ?? "http://192.168.8.106:8080";
+import { API_BASE_URL, NETWORK, APP_ENV } from "@/config/env";
+import { networkManager } from "@/config/networkManager";
 
 const __DEV_MODE__ = __DEV__;
 
-// Log de configuración al iniciar
-console.log(
-  `\n🌐 [API Client] Configuración inicializada`,
-  `\n   Base URL: ${API_BASE_URL}`,
-  `\n   Full URL: ${API_BASE_URL}/api`,
-  `\n   Timeout: 15000ms`,
-  `\n   Platform: ${Platform.OS} ${Platform.Version}`,
-  `\n   DEV mode: ${__DEV_MODE__}`,
-);
+if (__DEV_MODE__) {
+  console.log(
+    `\n🌐 [API] ${APP_ENV} — ${API_BASE_URL}/api — timeout ${NETWORK.timeout}ms`,
+  );
+}
 
 export const apiClient = axios.create({
   baseURL: `${API_BASE_URL}/api`,
-  timeout: 15000,
+  timeout: NETWORK.timeout,
   headers: {
     "Content-Type": "application/json",
     "X-Client-Platform": Platform.OS,
@@ -51,9 +46,19 @@ export function setOnSessionExpired(cb: () => void) {
 // ── Request counter para tracking ───────────────────
 let requestCounter = 0;
 
-// ── Request interceptor: inject Bearer + logging ────
+// ── Request interceptor: inject Bearer + logging + circuit breaker ────
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    // Circuit breaker: skip request if circuit is open
+    if (!networkManager.shouldAttemptRequest()) {
+      const err = new axios.AxiosError(
+        "Circuit breaker open — backend offline",
+        "ERR_NETWORK",
+        config,
+      );
+      return Promise.reject(err);
+    }
+
     const requestId = ++requestCounter;
     const method = config.method?.toUpperCase() ?? "?";
     const url = config.url ?? "";
@@ -72,6 +77,14 @@ apiClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       } else if (__DEV_MODE__) {
         console.warn(`⚠️ [API #${requestId}] No hay token guardado — request sin autenticación`);
+      }
+    }
+
+    // Fix for React Native FormData (allows Axios to set the boundary correctly)
+    if (config.data && (config.data instanceof FormData || config.data.constructor?.name === "FormData" || config.data._parts)) {
+      delete config.headers["Content-Type"];
+      if (config.headers.delete) {
+        config.headers.delete("Content-Type");
       }
     }
 
@@ -107,6 +120,9 @@ const processQueue = (error: unknown, token: string | null) => {
 
 apiClient.interceptors.response.use(
   (response) => {
+    // ─── Record success in circuit breaker ───
+    networkManager.recordSuccess();
+
     // ─── Respuesta exitosa: log ───
     if (__DEV_MODE__) {
       const reqId = (response.config as any).__requestId ?? "?";
@@ -134,35 +150,50 @@ apiClient.interceptors.response.use(
     const method = config?.method?.toUpperCase() ?? "?";
     const url = config?.url ?? "";
 
-    // ─── Log detallado del error ───
-    if (error.response) {
-      const { status, data } = error.response;
-      const serverMsg = typeof data === "object" && data
-        ? (data as any).message || (data as any).error || ""
-        : String(data ?? "");
+    // ─── Log detallado del error (dev only) ───
+    if (__DEV_MODE__) {
+      if (error.response) {
+        console.error(
+          `🔴 [API #${reqId}] HTTP ${error.response.status} | ${method} ${url} (${duration})`,
+        );
+      } else if (error.request) {
+        console.error(
+          `🔴 [API #${reqId}] NO RESPONSE | ${method} ${url} (${duration}) — ${error.code}`,
+        );
+      }
+    }
 
-      console.error(
-        `\n🔴 [API #${reqId}] HTTP ${status} | ${method} ${url} (${duration})`,
-        `\n   Server: "${serverMsg}"`,
-        `\n   Body: ${JSON.stringify(data).slice(0, 500)}`,
-      );
-    } else if (error.request) {
-      console.error(
-        `\n🔴 [API #${reqId}] SIN RESPUESTA | ${method} ${url} (${duration})`,
-        `\n   Code: ${error.code}`,
-        `\n   Message: ${error.message}`,
-        `\n   El servidor en ${API_BASE_URL} no responde.`,
-        `\n   Posibles causas:`,
-        `\n     1. El backend Spring Boot no está ejecutándose`,
-        `\n     2. La IP/puerto ${API_BASE_URL} no es accesible desde este dispositivo`,
-        `\n     3. Un firewall está bloqueando la conexión`,
-        `\n     4. El dispositivo no tiene conexión de red`,
-      );
-    } else {
-      console.error(
-        `\n🔴 [API #${reqId}] ERROR DE CONFIGURACIÓN`,
-        `\n   Message: ${error.message}`,
-      );
+    // ─── Retry with exponential back-off for network errors ───
+    const isNetworkError =
+      !error.response &&
+      (error.code === "ERR_NETWORK" ||
+        error.code === "ECONNABORTED" ||
+        error.code === "ECONNREFUSED");
+
+    const retryCount = (config as any).__retryCount ?? 0;
+
+    // Don't retry if circuit breaker is now open (avoid retry storm)
+    const circuitOpen = !networkManager.shouldAttemptRequest();
+
+    if (isNetworkError && retryCount < NETWORK.maxRetries && !(config as any)._skipRetry && !circuitOpen) {
+      (config as any).__retryCount = retryCount + 1;
+      const delay = NETWORK.retryBaseDelay * Math.pow(2, retryCount); // 1s, 2s, 4s
+      if (__DEV_MODE__) {
+        console.log(`🔄 [API #${reqId}] Retry ${retryCount + 1}/${NETWORK.maxRetries} in ${delay}ms`);
+      }
+      await new Promise((r) => setTimeout(r, delay));
+
+      // Re-check circuit breaker after waiting (it may have opened during the delay)
+      if (!networkManager.shouldAttemptRequest()) {
+        return Promise.reject(error);
+      }
+
+      return apiClient(config);
+    }
+
+    // ─── Record failure in circuit breaker ───
+    if (isNetworkError) {
+      networkManager.recordFailure();
     }
 
     // ─── Auto-refresh en 401 ───

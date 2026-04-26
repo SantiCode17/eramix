@@ -1,0 +1,472 @@
+/**
+ * RegisterScreen — Multi-step Carousel
+ * Premium Design with European Glass DS
+ */
+import React, { useState, useRef, useEffect } from "react";
+import {
+  View, Text, StyleSheet, KeyboardAvoidingView, Platform,
+  Pressable, TextInput, ActivityIndicator, ScrollView, Dimensions,
+  Image,
+} from "react-native";
+import Animated, { FadeIn, FadeInDown, SlideInRight, SlideOutLeft, Layout } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { colors, typography, spacing, radii, shadows, sizes, DS, layout } from "@/design-system/tokens";
+import { ScreenBackground } from "@/design-system/components";
+import { useAuthStore } from "@/store/useAuthStore";
+import { parseApiError, logError } from "@/utils/errorHandler";
+import type { AuthStackParamList, RegisterRequest } from "@/types";
+
+const { width } = Dimensions.get("window");
+type Nav = StackNavigationProp<AuthStackParamList, "Register">;
+
+// --- DUMMY DATA FOR SELECTORS ---
+const intentionsList = [
+  { id: "MEET_PEOPLE", label: "Hacer amigos y salir", emoji: "🍻" },
+  { id: "FIND_SPECIAL_SOMEONE", label: "Conocer a alguien especial", emoji: "❤️" },
+  { id: "PRACTICE_LANGUAGES", label: "Practicar idiomas (tandem)", emoji: "🗣️" },
+  { id: "FIND_ROOMMATE", label: "Buscar o compartir piso", emoji: "🏠" },
+  { id: "ORGANIZE_PLANS", label: "Organizar planes y eventos", emoji: "🎉" },
+  { id: "EXPLORE", label: "Simplemente explorar", emoji: "🌍" },
+];
+
+const interestsCategories = [
+  "Música", "Deportes", "Arte", "Viajes", "Gastronomía", "Tecnología", "Cine", "Lectura", "Fotografía", "Naturaleza"
+];
+
+// --- MAIN COMPONENT ---
+export default function RegisterScreen(): React.JSX.Element {
+  const navigation = useNavigation<Nav>();
+  const register = useAuthStore((s) => s.register);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const insets = useSafeAreaInsets();
+
+  const [step, setStep] = useState<number>(0);
+  const totalSteps = 13;
+
+  // -- Form State --
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  
+  const [originCountry, setOriginCountry] = useState("");
+  const [originUniversity, setOriginUniversity] = useState("");
+  const [degree, setDegree] = useState("");
+  
+  const [destinationCity, setDestinationCity] = useState("");
+  const [destinationUniversity, setDestinationUniversity] = useState("");
+  const [mobilityStartDate, setMobilityStartDate] = useState("");
+  const [mobilityEndDate, setMobilityEndDate] = useState("");
+  
+  const [intentions, setIntentions] = useState<string[]>([]);
+  
+  const [languages, setLanguages] = useState<any[]>([]);
+  
+  const [gender, setGender] = useState("");
+  const [lookingForGender, setLookingForGender] = useState("");
+  const [showGenderOnProfile, setShowGenderOnProfile] = useState(true);
+  
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [verificationPhoto, setVerificationPhoto] = useState<string | null>(null);
+  
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleNext = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setErrorMessage("");
+    if (step < totalSteps) {
+      setStep(step + 1);
+    }
+  };
+
+  const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setErrorMessage("");
+    if (step > 0) {
+      setStep(step - 1);
+    } else {
+      navigation.goBack();
+    }
+  };
+
+  const handleRegister = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const data: any = {
+      email: email.trim().toLowerCase(),
+      password,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      dateOfBirth,
+      destinationCity: destinationCity.trim() || undefined,
+      mobilityStartDate: mobilityStartDate || undefined,
+      mobilityEndDate: mobilityEndDate || undefined,
+      degree,
+      gender,
+      lookingForGender,
+      showGenderOnProfile,
+      notificationsEnabled,
+      intentions
+    };
+    try {
+      setErrorMessage("");
+      await register(data);
+      navigation.navigate("Main" as any); // Or whatever navigation works
+    } catch (err) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setErrorMessage("Error al registrarse. Intenta de nuevo.");
+      setStep(0); // Go back to start on error for safety
+    }
+  };
+
+  const toggleIntention = (id: string) => {
+    if (intentions.includes(id)) {
+      setIntentions(intentions.filter(i => i !== id));
+    } else {
+      setIntentions([...intentions, id]);
+    }
+  };
+
+  const toggleInterest = (id: string) => {
+    if (selectedInterests.includes(id)) {
+      setSelectedInterests(selectedInterests.filter(i => i !== id));
+    } else {
+      if (selectedInterests.length < 10) setSelectedInterests([...selectedInterests, id]);
+    }
+  };
+
+  const StepHeader = ({ title, subtitle }: { title: string, subtitle?: string }) => (
+    <View style={{ marginBottom: spacing.lg }}>
+      <Text style={st.stepTitle}>{title}</Text>
+      {subtitle && <Text style={st.stepSubtitle}>{subtitle}</Text>}
+    </View>
+  );
+
+  return (
+    <ScreenBackground>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <View style={[st.headerRow, { paddingTop: insets.top + spacing.sm }]}>
+          <Pressable onPress={handleBack} style={st.backBtn}>
+            <Ionicons name="chevron-back" size={22} color={colors.text.primary} />
+          </Pressable>
+          <View style={st.progressContainer}>
+            <View style={[st.progressBar, { width: `${(step / totalSteps) * 100}%` }]} />
+          </View>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView contentContainerStyle={st.scrollContent} keyboardShouldPersistTaps="handled">
+          
+          {errorMessage ? (
+            <Animated.View entering={FadeInDown} style={st.errorBanner}>
+              <Ionicons name="alert-circle" size={18} color={colors.status.error} />
+              <Text style={st.errorText}>{errorMessage}</Text>
+            </Animated.View>
+          ) : null}
+
+          {/* STEP 0: Email & Password */}
+          {step === 0 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft} layout={Layout}>
+              <StepHeader title="Crea tu cuenta" subtitle="Usa tu email para registrarte" />
+              <DSInput icon="mail" label="Email" value={email} onChangeText={setEmail} placeholder="tu@email.com" />
+              <DSInput icon="lock-closed" label="Contraseña" value={password} onChangeText={setPassword} placeholder="Mínimo 8 caracteres" secureTextEntry />
+              <View style={st.googleBtnContainer}>
+                <Text style={st.orText}>o regístrate con</Text>
+                <Pressable style={st.googleBtn}>
+                  <Ionicons name="logo-google" size={20} color={colors.text.primary} />
+                  <Text style={st.googleBtnText}>Google</Text>
+                </Pressable>
+              </View>
+            </Animated.View>
+          )}
+
+          {/* STEP 1: Nombre y Apellido */}
+          {step === 1 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title="¿Cómo te llamas?" subtitle="Así te verán otros Erasmus" />
+              <DSInput icon="person" label="Nombre (Público)" value={firstName} onChangeText={setFirstName} placeholder="Ej. María" />
+              <DSInput icon="person-outline" label="Apellido (Opcional)" value={lastName} onChangeText={setLastName} placeholder="Ej. López" />
+            </Animated.View>
+          )}
+
+          {/* STEP 2: Fecha de nacimiento */}
+          {step === 2 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title="¿Cuándo naciste?" subtitle="Debes tener al menos 17 años." />
+              <DSInput icon="calendar" label="Fecha de Nacimiento (YYYY-MM-DD)" value={dateOfBirth} onChangeText={setDateOfBirth} placeholder="2003-05-12" />
+              <Text style={st.infoText}>Tu edad se mostrará públicamente en tu perfil.</Text>
+            </Animated.View>
+          )}
+
+          {/* STEP 3: Universidad de origen */}
+          {step === 3 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title="Tu universidad de origen" />
+              <DSInput icon="flag" label="País de Origen" value={originCountry} onChangeText={setOriginCountry} placeholder="Ej. España 🇪🇸" />
+              <DSInput icon="school" label="Universidad" value={originUniversity} onChangeText={setOriginUniversity} placeholder="Universidad Complutense..." />
+              <DSInput icon="book" label="Carrera / Grado" value={degree} onChangeText={setDegree} placeholder="Ingeniería Informática" />
+            </Animated.View>
+          )}
+
+          {/* STEP 4: Erasmus actual */}
+          {step === 4 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title="Tu destino Erasmus" subtitle="¡A dónde vas a vivir la aventura!" />
+              <DSInput icon="location" label="Ciudad de Destino" value={destinationCity} onChangeText={setDestinationCity} placeholder="Ej. Varsovia" />
+              <DSInput icon="school-outline" label="Universidad de Destino" value={destinationUniversity} onChangeText={setDestinationUniversity} placeholder="University of Warsaw" />
+              <DSInput icon="calendar-outline" label="Fecha Inicio (YYYY-MM-DD)" value={mobilityStartDate} onChangeText={setMobilityStartDate} placeholder="2026-09-01" />
+              <DSInput icon="calendar-outline" label="Fecha Fin (YYYY-MM-DD)" value={mobilityEndDate} onChangeText={setMobilityEndDate} placeholder="2027-06-30" />
+            </Animated.View>
+          )}
+
+          {/* STEP 5: Que buscas en EraMix */}
+          {step === 5 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title="¿Qué buscas en EraMix?" subtitle="Puedes elegir varias opciones" />
+              {intentionsList.map((item) => {
+                const isSelected = intentions.includes(item.id);
+                return (
+                  <Pressable key={item.id} onPress={() => toggleIntention(item.id)} style={[st.selectionItem, isSelected && st.selectionItemActive]}>
+                    <Text style={st.selectionItemEmoji}>{item.emoji}</Text>
+                    <Text style={[st.selectionItemText, isSelected && st.selectionItemTextActive]}>{item.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </Animated.View>
+          )}
+
+          {/* STEP 6: Idiomas */}
+          {step === 6 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title="Idiomas" subtitle="¿Qué idiomas hablas y quieres practicar?" />
+              <Text style={st.infoText}>Pronto añadiremos el buscador de idiomas completo. Por ahora haz clic en Continuar.</Text>
+            </Animated.View>
+          )}
+
+          {/* STEP 7: Genero y preferencias */}
+          {step === 7 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title="Género y preferencias" />
+              <Text style={st.label}>Soy:</Text>
+              <View style={st.btnGroupRow}>
+                {['Hombre', 'Mujer', 'No binario'].map(g => (
+                  <Pressable key={g} onPress={() => setGender(g)} style={[st.groupBtn, gender === g && st.groupBtnActive]}>
+                    <Text style={[st.groupBtnText, gender === g && st.groupBtnTextActive]}>{g}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={st.label}>Quiero conocer:</Text>
+              <View style={st.btnGroupRow}>
+                {['Hombres', 'Mujeres', 'Todos'].map(g => (
+                  <Pressable key={g} onPress={() => setLookingForGender(g)} style={[st.groupBtn, lookingForGender === g && st.groupBtnActive]}>
+                    <Text style={[st.groupBtnText, lookingForGender === g && st.groupBtnTextActive]}>{g}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Pressable style={st.checkboxRow} onPress={() => setShowGenderOnProfile(!showGenderOnProfile)}>
+                <Ionicons name={showGenderOnProfile ? "checkbox" : "square-outline"} size={24} color={DS.primary} />
+                <Text style={st.checkboxText}>Mostrar mi género en el perfil</Text>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* STEP 8: Intereses */}
+          {step === 8 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title="Tus intereses" subtitle="Elige hasta 10 categorías" />
+              <View style={st.pillsContainer}>
+                {interestsCategories.map((cat) => {
+                  const isSelected = selectedInterests.includes(cat);
+                  return (
+                    <Pressable key={cat} onPress={() => toggleInterest(cat)} style={[st.pill, isSelected && st.pillActive]}>
+                      <Text style={[st.pillText, isSelected && st.pillTextActive]}>{cat}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </Animated.View>
+          )}
+
+          {/* STEP 9: Fotos */}
+          {step === 9 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title="Tus fotos" subtitle="¡Sube al menos una foto para que te conozcan!" />
+              <View style={st.photoGrid}>
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <View key={i} style={st.photoPlaceholder}>
+                    <Ionicons name="add" size={32} color={colors.text.tertiary} />
+                  </View>
+                ))}
+              </View>
+              <Text style={st.tipText}>Tip: "La primera foto es tu portada — ¡que se te vea la sonrisa! 😄"</Text>
+            </Animated.View>
+          )}
+
+          {/* STEP 10: Foto de verificacion */}
+          {step === 10 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title="Verificación en tiempo real" subtitle="Tómate un selfie para verificar tu cuenta" />
+              <View style={st.verificationBox}>
+                <Ionicons name="camera" size={64} color={colors.text.tertiary} />
+                <Text style={st.verificationText}>Hacer Selfie</Text>
+              </View>
+            </Animated.View>
+          )}
+
+          {/* STEP 11: Ubicacion */}
+          {step === 11 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title="Descubre tu entorno" subtitle="Permite el acceso a tu ubicación" />
+              <View style={st.permissionIcon}>
+                <Ionicons name="location" size={80} color={DS.primary} />
+              </View>
+              <Text style={st.infoTextCenter}>"Usamos tu ubicación para mostrarte erasmus cerca de ti en tu ciudad de destino"</Text>
+              <Pressable style={st.permissionBtn} onPress={() => setLocationEnabled(true)}>
+                <Text style={st.permissionBtnText}>Habilitar Ubicación</Text>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* STEP 12: Notificaciones */}
+          {step === 12 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title="Mantente al día" subtitle="Activa las notificaciones" />
+              <View style={st.permissionIcon}>
+                <Ionicons name="notifications" size={80} color={DS.secondary} />
+              </View>
+              <Text style={st.infoTextCenter}>Recibe avisos sobre matches, mensajes, eventos cercanos y nuevos erasmus en tu ciudad.</Text>
+              <Pressable style={st.permissionBtn} onPress={() => setNotificationsEnabled(true)}>
+                <Text style={st.permissionBtnText}>Habilitar Notificaciones</Text>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* STEP 13: Todo Listo */}
+          {step === 13 && (
+            <Animated.View entering={SlideInRight} exiting={SlideOutLeft}>
+              <StepHeader title={`¡Todo listo!`} />
+              <View style={st.readyBox}>
+                <Text style={st.readyEmoji}>🚀</Text>
+                <Text style={st.readyTitle}>Bienvenido/a a EraMix, {firstName || "Erasmus"}!</Text>
+                <Text style={st.readySub}>Hay muchos erasmus cerca de ti en {destinationCity || "tu destino"}.</Text>
+              </View>
+            </Animated.View>
+          )}
+
+        </ScrollView>
+
+        <View style={[st.footer, { paddingBottom: insets.bottom + spacing.md }]}>
+          <Pressable
+            onPress={step === 13 ? handleRegister : handleNext}
+            style={({ pressed }) => [st.primaryBtn, pressed && { opacity: 0.85 }]}
+          >
+            <LinearGradient colors={colors.gradient.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={st.primaryBtnInner}>
+              <Text style={st.primaryBtnText}>{step === 13 ? "Empezar a explorar" : "Continuar"}</Text>
+              {step !== 13 && <Ionicons name="arrow-forward" size={18} color={DS.secondary} />}
+            </LinearGradient>
+          </Pressable>
+        </View>
+
+      </KeyboardAvoidingView>
+    </ScreenBackground>
+  );
+}
+
+// --- SHARED INPUT ---
+function DSInput({ icon, label, value, onChangeText, error, placeholder, secureTextEntry }: any) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={{ marginBottom: spacing.md }}>
+      <Text style={st.label}>{label}</Text>
+      <View style={[st.inputWrap, focused && st.inputFocused, error && st.inputError]}>
+        <Ionicons name={icon} size={20} color={focused ? DS.primary : colors.text.tertiary} style={st.inputIcon} />
+        <TextInput
+          style={st.inputText} value={value} onChangeText={onChangeText}
+          placeholder={placeholder} placeholderTextColor={colors.text.tertiary}
+          secureTextEntry={secureTextEntry} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+        />
+      </View>
+      {error && <Text style={st.errorTextSmall}>{error}</Text>}
+    </View>
+  );
+}
+
+// --- STYLES ---
+const st = StyleSheet.create({
+  headerRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
+  backBtn: { width: 40, height: 40, borderRadius: radii.md, backgroundColor: colors.glass.white, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.glass.border, alignItems: "center", justifyContent: "center" },
+  progressContainer: { flex: 1, height: 6, backgroundColor: colors.background.input, borderRadius: 3, marginHorizontal: spacing.md, overflow: "hidden" },
+  progressBar: { height: "100%", backgroundColor: DS.primary, borderRadius: 3 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: 100 },
+  stepTitle: { fontFamily: typography.families.heading, fontSize: 32, color: colors.text.primary, marginBottom: 8 },
+  stepSubtitle: { fontFamily: typography.families.body, fontSize: 16, color: colors.text.secondary },
+  
+  label: { fontFamily: typography.families.bodyMedium, fontSize: 13, color: colors.text.secondary, marginBottom: 6 },
+  inputWrap: { height: 54, backgroundColor: colors.background.input, borderRadius: radii.md, borderWidth: 1, borderColor: colors.glass.border, flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.md },
+  inputFocused: { borderColor: DS.primary },
+  inputError: { borderColor: colors.status.error },
+  inputIcon: { marginRight: 12 },
+  inputText: { flex: 1, fontFamily: typography.families.body, fontSize: 16, color: colors.text.primary },
+  errorTextSmall: { fontFamily: typography.families.body, fontSize: 12, color: colors.status.error, marginTop: 4 },
+  
+  googleBtnContainer: { marginTop: spacing.xl, alignItems: "center" },
+  orText: { color: colors.text.tertiary, marginBottom: spacing.md },
+  googleBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: colors.glass.white, borderWidth: 1, borderColor: colors.glass.border, borderRadius: radii.md, width: "100%", height: 54 },
+  googleBtnText: { marginLeft: 10, fontFamily: typography.families.bodyMedium, fontSize: 16, color: colors.text.primary },
+
+  selectionItem: { flexDirection: "row", alignItems: "center", padding: spacing.md, backgroundColor: colors.background.card, borderRadius: radii.md, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.glass.border },
+  selectionItemActive: { borderColor: DS.primary, backgroundColor: DS.primary + "15" },
+  selectionItemEmoji: { fontSize: 24, marginRight: spacing.md },
+  selectionItemText: { fontFamily: typography.families.bodyMedium, fontSize: 16, color: colors.text.primary },
+  selectionItemTextActive: { color: DS.primary },
+
+  btnGroupRow: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.lg, flexWrap: "wrap" },
+  groupBtn: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: radii.full, backgroundColor: colors.background.card, borderWidth: 1, borderColor: colors.glass.border },
+  groupBtnActive: { backgroundColor: DS.primary, borderColor: DS.primary },
+  groupBtnText: { fontFamily: typography.families.bodyMedium, color: colors.text.primary },
+  groupBtnTextActive: { color: colors.background.main },
+
+  checkboxRow: { flexDirection: "row", alignItems: "center", marginTop: spacing.md },
+  checkboxText: { marginLeft: spacing.sm, color: colors.text.primary, fontSize: 16 },
+
+  pillsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  pill: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: radii.full, backgroundColor: colors.background.input, borderWidth: 1, borderColor: colors.glass.border },
+  pillActive: { backgroundColor: DS.primary + "20", borderColor: DS.primary },
+  pillText: { color: colors.text.secondary },
+  pillTextActive: { color: DS.primary },
+
+  photoGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "space-between" },
+  photoPlaceholder: { width: "31%", aspectRatio: 0.8, backgroundColor: colors.background.input, borderRadius: radii.md, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.glass.border, borderStyle: "dashed" },
+  tipText: { color: colors.text.tertiary, marginTop: spacing.lg, textAlign: "center", fontSize: 13, fontStyle: "italic" },
+
+  verificationBox: { width: "100%", height: 300, backgroundColor: colors.background.input, borderRadius: radii.lg, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.glass.border, borderStyle: "dashed" },
+  verificationText: { color: colors.text.tertiary, marginTop: spacing.md, fontFamily: typography.families.bodyMedium },
+
+  permissionIcon: { alignItems: "center", marginVertical: spacing.xxl },
+  infoTextCenter: { textAlign: "center", color: colors.text.secondary, fontSize: 16, lineHeight: 24, marginBottom: spacing.xl },
+  permissionBtn: { paddingVertical: 16, borderRadius: radii.md, backgroundColor: colors.background.card, borderWidth: 1, borderColor: DS.primary, alignItems: "center" },
+  permissionBtnText: { color: DS.primary, fontFamily: typography.families.subheading, fontSize: 16 },
+  infoText: { color: colors.text.tertiary, fontSize: 14, marginTop: spacing.md },
+
+  readyBox: { alignItems: "center", marginTop: spacing.xl },
+  readyEmoji: { fontSize: 80, marginBottom: spacing.lg },
+  readyTitle: { fontSize: 28, fontFamily: typography.families.heading, color: colors.text.primary, textAlign: "center", marginBottom: spacing.md },
+  readySub: { fontSize: 16, color: colors.text.secondary, textAlign: "center" },
+
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: spacing.xl, paddingTop: spacing.md, backgroundColor: colors.background.main + "FA" },
+  primaryBtn: { borderRadius: radii.md, overflow: "hidden", ...shadows.glow },
+  primaryBtnInner: { height: sizes.buttonLg, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm },
+  primaryBtnText: { fontFamily: typography.families.subheading, fontSize: 18, color: DS.secondary, fontWeight: "600" },
+  errorBanner: { flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.status.errorBg, padding: spacing.sm, borderRadius: radii.sm, marginBottom: spacing.md },
+  errorText: { color: colors.status.error, flex: 1 },
+});

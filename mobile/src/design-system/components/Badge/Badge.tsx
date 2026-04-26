@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: colors.background.start,
+    borderColor: "#04061A",
   },
   badgeOuter: { ...shadows.sm },
   badge: {
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: colors.background.start,
+    borderColor: "#04061A",
   },
   text: {
     fontSize: 11,

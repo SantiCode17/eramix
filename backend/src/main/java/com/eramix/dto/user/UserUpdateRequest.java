@@ -43,4 +43,32 @@ public class UserUpdateRequest {
 
     /** Lista de idiomas con nivel */
     private List<UserLanguageRequest> languages;
+
+    @Size(max = 100)
+    private String whyAmIHere;
+
+    @Size(max = 255)
+    private String favoriteSong;
+
+    @Size(max = 255)
+    private String favoriteFood;
+
+    @Size(max = 255)
+    private String specialHobby;
+
+    private String customPrompts;
+
+    @Size(max = 255)
+    private String socialInstagram;
+
+    @Size(max = 255)
+    private String socialTiktok;
+
+    private Integer height;
+
+    @Size(max = 50)
+    private String zodiac;
+
+    @Size(max = 150)
+    private String profession;
 }

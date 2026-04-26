@@ -90,7 +90,7 @@ export default function Avatar({
               borderRadius: dim * 0.14,
               backgroundColor: online ? colors.status.online : colors.status.offline,
               borderWidth: 2.5,
-              borderColor: colors.background.start,
+              borderColor: "#04061A",
               right: ring ? 1 : 0,
               bottom: ring ? 1 : 0,
             },

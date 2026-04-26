@@ -2,3 +2,8 @@ export { useFadeIn } from "./useFadeIn";
 export { useSlideUp } from "./useSlideUp";
 export { useScalePress } from "./useScalePress";
 export { useStaggeredList } from "./useStaggeredList";
+export { useShimmer } from "./useShimmer";
+export { usePulse } from "./usePulse";
+export { useLiquidGlass } from "./useLiquidGlass";
+export { useBreathingGlow } from "./useBreathingGlow";
+export { useBouncePress } from "./useBouncePress";

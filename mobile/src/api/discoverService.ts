@@ -76,7 +76,7 @@ export const friendRequestsApi = {
     status: "ACCEPTED" | "REJECTED",
   ): Promise<FriendRequestResponse> => {
     const { data } = await apiClient.put(`/v1/friends/requests/${requestId}`, {
-      status,
+      action: status,
     });
     return data.data;
   },

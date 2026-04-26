@@ -72,3 +72,12 @@ export async function getUserStories(userId: number): Promise<StoryData[]> {
   );
   return data.data;
 }
+
+// ── React to story ──────────────────────────────────
+
+export async function reactToStory(
+  storyId: number,
+  emoji: string,
+): Promise<void> {
+  await apiClient.post(`/v1/stories/${storyId}/react`, { emoji });
+}

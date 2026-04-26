@@ -1,209 +1,516 @@
-import React, { useState } from "react";
+/**
+ * ForgotPasswordScreen — Diseño premium con estados animados
+ */
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  TextInput,
+  ActivityIndicator,
+  Dimensions,
+  ScrollView,
 } from "react-native";
+import Animated, {
+  FadeInDown,
+  FadeIn,
+  ZoomIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  interpolate,
+  Extrapolate,
+} from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import { GlassInput, GlassButton, GlassCard } from "@/design-system";
-import { colors, typography, spacing } from "@/design-system/tokens";
+import * as Haptics from "expo-haptics";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  colors,
+  typography,
+  spacing,
+  radii,
+  shadows,
+  sizes,
+  DS,
+} from "@/design-system/tokens";
+import { ScreenBackground } from "@/design-system/components";
 import { authApi } from "@/api/authService";
 import type { AuthStackParamList } from "@/types";
-import { parseApiError, logError } from "@/utils/errorHandler";
+
+const { width } = Dimensions.get("window");
 
 type Nav = StackNavigationProp<AuthStackParamList, "ForgotPassword">;
 
 export default function ForgotPasswordScreen(): React.JSX.Element {
   const navigation = useNavigation<Nav>();
+  const insets = useSafeAreaInsets();
+  const inputRef = useRef<TextInput>(null);
+
   const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
   const [loading, setLoading] = useState(false);
-  // DEV: capture the token returned by the backend for direct navigation
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [resetToken, setResetToken] = useState<string | null>(null);
+
+  const shakeValue = useSharedValue(0);
+
+  const shakeStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shakeValue.value }],
+  }));
+
+  const triggerShake = () => {
+    shakeValue.value = withSpring(0, {}, () => {});
+    shakeValue.value = 0;
+    const times = [8, -8, 6, -6, 4, -4, 0];
+    let delay = 0;
+    times.forEach((v) => {
+      setTimeout(() => { shakeValue.value = withTiming(v, { duration: 60 }); }, delay);
+      delay += 65;
+    });
+  };
 
   const validate = (): boolean => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim()) {
-      setEmailError("El email es obligatorio");
+      setErrorMessage("El email es obligatorio");
+      triggerShake();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return false;
     }
     if (!re.test(email)) {
-      setEmailError("Formato de email inválido");
+      setErrorMessage("Introduce un email válido");
+      triggerShake();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return false;
     }
-    setEmailError(null);
     return true;
   };
 
   const handleSubmit = async () => {
-    setError(null);
-    setSuccess(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setErrorMessage(null);
     if (!validate()) return;
-
     setLoading(true);
     try {
       const res = await authApi.forgotPassword({ email: email.trim().toLowerCase() });
-      // In DEV mode, the backend returns the reset token directly
       const token = (res as any).resetToken || (res as any).token;
-      if (token) {
-        setResetToken(token);
-      }
-      setSuccess("Si el email existe, recibirás un enlace para restablecer tu contraseña.");
-    } catch (err) {
-      const parsed = parseApiError(err, "Recuperar contraseña");
-      logError(parsed);
-
-      if (parsed.code === "NETWORK_ERROR") {
-        setError("No se pudo conectar al servidor. Verifica tu conexión.");
-      } else if (parsed.code === "TIMEOUT") {
-        setError("El servidor tardó demasiado. Intenta de nuevo.");
-      } else {
-        setError(parsed.serverMessage || parsed.message);
-      }
+      if (token) setResetToken(token);
+      setSuccess(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Algo salió mal. Inténtalo de nuevo.";
+      setErrorMessage(msg);
+      triggerShake();
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <View style={styles.container}>
-      <LinearGradient
-        colors={[colors.background.start, colors.background.end]}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={styles.title}>Recuperar contraseña</Text>
-          <Text style={styles.subtitle}>
-            Introduce tu email y te enviaremos un enlace para restablecer tu contraseña.
-          </Text>
-
-          {error && (
-            <GlassCard variant="elevated" style={styles.errorCard}>
-              <Text style={styles.errorText}><Ionicons name="alert-circle-outline" size={14} color={colors.eu.orange} /> {error}</Text>
-            </GlassCard>
-          )}
-
-          {success && (
-            <GlassCard variant="elevated" style={styles.successCard}>
-              <Text style={styles.successText}>✅ {success}</Text>
-            </GlassCard>
-          )}
-
-          <View style={styles.form}>
-            <GlassInput
-              label="Email"
-              value={email}
-              onChangeText={(t) => {
-                setEmail(t);
-                if (emailError) setEmailError(null);
-              }}
-              error={emailError ?? undefined}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <GlassButton
-              title="Enviar enlace"
-              variant="primary"
-              size="lg"
-              onPress={handleSubmit}
-              loading={loading}
-              disabled={loading}
-            />
-
-            {resetToken && (
-              <GlassButton
-                title="Ir a restablecer contraseña →"
-                variant="secondary"
-                size="md"
-                onPress={() => navigation.navigate("ResetPassword", { token: resetToken })}
-              />
-            )}
-          </View>
-
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={styles.linkContainer}
-          >
-            <Text style={styles.linkText}>← Volver al inicio de sesión</Text>
+  // ── Success view ─────────────────────────────────────────
+  if (success) {
+    return (
+      <ScreenBackground>
+        <View style={[st.container, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xl }]}>
+          {/* Back */}
+          <Pressable onPress={() => navigation.goBack()} style={st.backBtn}>
+            <Ionicons name="chevron-back" size={22} color={colors.text.primary} />
           </Pressable>
+
+          <Animated.View entering={FadeIn.duration(400)} style={st.successContainer}>
+            {/* Círculo de éxito animado */}
+            <View style={st.successCircleOuter}>
+              <View style={st.successCircleInner}>
+                <Ionicons name="mail-open" size={32} color="#000" />
+              </View>
+            </View>
+
+            <Animated.Text entering={FadeInDown.delay(200)} style={st.successTitle}>
+              ¡Correo enviado!
+            </Animated.Text>
+            <Animated.Text entering={FadeInDown.delay(300)} style={st.successSubtitle}>
+              Hemos enviado las instrucciones a{"\n"}
+              <Text style={{ color: DS.primary, fontFamily: typography.families.bodyMedium }}>
+                {email.toLowerCase()}
+              </Text>
+            </Animated.Text>
+
+            <Animated.View entering={FadeInDown.delay(400)} style={st.successHint}>
+              <Ionicons name="mail-unread-outline" size={16} color={colors.text.tertiary} />
+              <Text style={st.successHintText}>
+                Revisa tu bandeja de entrada y también spam
+              </Text>
+            </Animated.View>
+
+            {/* Botón directo si hay token (dev mode) */}
+            {resetToken ? (
+              <Animated.View entering={FadeInDown.delay(500)} style={{ width: "100%" }}>
+                <Pressable
+                  onPress={() => navigation.navigate("ResetPassword", { token: resetToken })}
+                  style={({ pressed }) => [st.primaryBtn, pressed && { opacity: 0.85 }]}
+                >
+                  <LinearGradient
+                    colors={colors.gradient.accent}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                    style={st.primaryBtnInner}
+                  >
+                    <Ionicons name="key-outline" size={18} color="#000" />
+                    <Text style={st.primaryBtnText}>Restablecer contraseña</Text>
+                  </LinearGradient>
+                </Pressable>
+              </Animated.View>
+            ) : null}
+
+            <Animated.View entering={FadeInDown.delay(600)} style={{ width: "100%", marginTop: spacing.sm }}>
+              <Pressable
+                onPress={() => { setSuccess(false); setEmail(""); setResetToken(null); }}
+                style={st.secondaryBtn}
+              >
+                <Ionicons name="refresh-outline" size={16} color={DS.primary} />
+                <Text style={st.secondaryBtnText}>Enviar de nuevo</Text>
+              </Pressable>
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(700)}>
+              <Pressable onPress={() => navigation.goBack()} style={st.backLink}>
+                <Ionicons name="arrow-back" size={14} color={colors.text.tertiary} />
+                <Text style={st.backLinkText}>Volver al inicio de sesión</Text>
+              </Pressable>
+            </Animated.View>
+          </Animated.View>
+        </View>
+      </ScreenBackground>
+    );
+  }
+
+  // ── Form view ─────────────────────────────────────────────
+  return (
+    <ScreenBackground>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView contentContainerStyle={[st.container, { flexGrow: 1, paddingTop: insets.top + spacing.md, paddingBottom: spacing.md }]} keyboardShouldPersistTaps="handled">
+          {/* Back */}
+          <Animated.View entering={FadeIn.duration(300)}>
+            <Pressable onPress={() => navigation.goBack()} style={st.backBtn}>
+              <Ionicons name="chevron-back" size={22} color={colors.text.primary} />
+            </Pressable>
+          </Animated.View>
+
+          {/* Hero */}
+          <Animated.View entering={FadeInDown.delay(100).springify()} style={st.hero}>
+            <LinearGradient
+              colors={[DS.primary + "30", DS.primary + "08"]}
+              style={st.iconCircle}
+            >
+              <Ionicons name="lock-open-outline" size={36} color={DS.primary} />
+            </LinearGradient>
+            <Text style={st.title}>¿Olvidaste tu contraseña?</Text>
+            <Text style={st.subtitle}>
+              Sin problema. Introduce tu email y te enviaremos un enlace para recuperarla.
+            </Text>
+          </Animated.View>
+
+          {/* Form */}
+          <Animated.View entering={FadeInDown.delay(200).springify()} style={{ flex: 1 }}>
+            {/* Input */}
+            <Animated.View style={shakeStyle}>
+              <Text style={st.label}>Tu email</Text>
+              <Pressable onPress={() => inputRef.current?.focus()} style={[st.inputWrap, focused && st.inputFocused]}>
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={focused ? DS.primary : colors.text.tertiary}
+                  style={st.inputIcon}
+                />
+                <TextInput
+                  ref={inputRef}
+                  style={st.inputText}
+                  value={email}
+                  onChangeText={(t) => { setEmail(t); if (errorMessage) setErrorMessage(null); }}
+                  placeholder="tu@email.com"
+                  placeholderTextColor={colors.text.tertiary}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="email"
+                  onFocus={() => setFocused(true)}
+                  onBlur={() => setFocused(false)}
+                  onSubmitEditing={handleSubmit}
+                  returnKeyType="send"
+                />
+                {email.length > 0 && (
+                  <Pressable onPress={() => { setEmail(""); setErrorMessage(null); }}>
+                    <Ionicons name="close-circle" size={18} color={colors.text.tertiary} />
+                  </Pressable>
+                )}
+              </Pressable>
+
+              {/* Error inline */}
+              {errorMessage ? (
+                <Animated.View entering={FadeInDown.duration(250)} style={st.errorRow}>
+                  <Ionicons name="alert-circle" size={14} color={colors.status.error} />
+                  <Text style={st.errorText}>{errorMessage}</Text>
+                </Animated.View>
+              ) : null}
+            </Animated.View>
+
+            {/* CTA */}
+            <View style={{ marginTop: spacing.xl }}>
+              <Pressable
+                onPress={handleSubmit}
+                disabled={loading}
+                style={({ pressed }) => [st.primaryBtn, pressed && { opacity: 0.85 }, loading && { opacity: 0.7 }]}
+              >
+                <LinearGradient
+                  colors={colors.gradient.accent}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={st.primaryBtnInner}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#000" size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="send-outline" size={18} color="#000" />
+                      <Text style={st.primaryBtnText}>Enviar enlace de recuperación</Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </Pressable>
+            </View>
+
+            {/* Info card */}
+            <Animated.View entering={FadeInDown.delay(300)} style={st.infoCard}>
+              <Ionicons name="information-circle-outline" size={16} color={colors.text.tertiary} style={{ marginTop: 1 }} />
+              <Text style={st.infoText}>
+                Si existe una cuenta con ese email, recibirás las instrucciones en unos minutos.
+              </Text>
+            </Animated.View>
+          </Animated.View>
+
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+
+      {/* Footer link */}
+      <Animated.View entering={FadeInDown.delay(400)} style={{ paddingBottom: insets.bottom + spacing.lg }}>
+        <Pressable onPress={() => navigation.goBack()} style={st.backLink}>
+          <Ionicons name="arrow-back" size={14} color={colors.text.tertiary} />
+          <Text style={st.backLinkText}>Volver al inicio de sesión</Text>
+        </Pressable>
+      </Animated.View>
+    </ScreenBackground>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  flex: { flex: 1 },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
+const st = StyleSheet.create({
+  container: {
+    flex: 1,
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxl,
+  },
+  backBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: radii.md,
+    backgroundColor: colors.glass.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.glass.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.lg,
+  },
+  hero: {
+    alignItems: "center",
+    marginBottom: spacing.xxl,
+  },
+  iconCircle: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: DS.primary + "30",
   },
   title: {
     fontFamily: typography.families.heading,
-    fontSize: 28,
-    color: colors.eu.star,
+    fontSize: 26,
+    color: colors.text.primary,
     textAlign: "center",
     marginBottom: spacing.sm,
   },
   subtitle: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.caption.fontSize,
+    fontSize: 15,
     color: colors.text.secondary,
     textAlign: "center",
-    marginBottom: spacing.lg,
+    lineHeight: 22,
+    paddingHorizontal: spacing.md,
   },
-  errorCard: {
-    marginBottom: spacing.md,
-    backgroundColor: "rgba(244, 67, 54, 0.15)",
+  label: {
+    fontFamily: typography.families.bodyMedium,
+    fontSize: 13,
+    color: colors.text.secondary,
+    marginBottom: 6,
+  },
+  inputWrap: {
+    height: 56,
+    backgroundColor: colors.background.input,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+  },
+  inputFocused: {
+    borderColor: DS.primary,
+    borderWidth: 1.5,
+  },
+  inputIcon: { marginRight: 10 },
+  inputText: {
+    flex: 1,
+    fontFamily: typography.families.body,
+    fontSize: 16,
+    color: colors.text.primary,
+  },
+  errorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 6,
   },
   errorText: {
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.caption.fontSize,
+    fontSize: 13,
     color: colors.status.error,
-    textAlign: "center",
+    flex: 1,
   },
-  successCard: {
-    marginBottom: spacing.md,
-    backgroundColor: "rgba(76, 175, 80, 0.15)",
+  primaryBtn: {
+    borderRadius: radii.md,
+    overflow: "hidden",
   },
-  successText: {
+  primaryBtnInner: {
+    height: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+  primaryBtnText: {
+    fontFamily: typography.families.bodyMedium,
+    fontSize: 16,
+    color: "#000",
+    fontWeight: "600",
+  },
+  infoCard: {
+    flexDirection: "row",
+    gap: 8,
+    backgroundColor: colors.background.card,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginTop: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.glass.border,
+  },
+  infoText: {
+    flex: 1,
     fontFamily: typography.families.body,
-    fontSize: typography.sizes.caption.fontSize,
-    color: colors.status.success,
-    textAlign: "center",
+    fontSize: 13,
+    color: colors.text.tertiary,
+    lineHeight: 19,
   },
-  form: {
+  backLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: spacing.md,
+  },
+  backLinkText: {
+    fontFamily: typography.families.body,
+    fontSize: 14,
+    color: colors.text.tertiary,
+  },
+  // Success states
+  successContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.xl,
     gap: spacing.md,
   },
-  linkContainer: {
+  successCircleOuter: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.status.success + "20",
     alignItems: "center",
-    paddingVertical: spacing.lg,
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: colors.status.success + "40",
+    marginBottom: spacing.sm,
   },
-  linkText: {
+  successCircleInner: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.status.success,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  successTitle: {
+    fontFamily: typography.families.heading,
+    fontSize: 28,
+    color: colors.text.primary,
+    textAlign: "center",
+  },
+  successSubtitle: {
+    fontFamily: typography.families.body,
+    fontSize: 16,
+    color: colors.text.secondary,
+    textAlign: "center",
+    lineHeight: 24,
+  },
+  successHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: colors.background.card,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.glass.border,
+    marginVertical: spacing.sm,
+  },
+  successHintText: {
+    fontFamily: typography.families.body,
+    fontSize: 13,
+    color: colors.text.tertiary,
+  },
+  secondaryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 50,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: DS.primary,
+    gap: 8,
+  },
+  secondaryBtnText: {
     fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.caption.fontSize,
-    color: colors.eu.star,
+    fontSize: 15,
+    color: DS.primary,
   },
 });

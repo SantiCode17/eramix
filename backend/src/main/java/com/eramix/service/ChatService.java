@@ -13,6 +13,7 @@ import com.eramix.repository.ConversationRepository;
 import com.eramix.repository.MessageRepository;
 import com.eramix.repository.UserRepository;
 import com.eramix.websocket.WebSocketSessionManager;
+import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +33,7 @@ public class ChatService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final WebSocketSessionManager sessionManager;
+    private final Counter messagesSentCounter;
 
     // ── Guardar mensaje ───────────────────────────────────
 
@@ -60,6 +62,7 @@ public class ChatService {
                 .build();
 
         message = messageRepository.save(message);
+        messagesSentCounter.increment();
 
         // Actualizar lastMessageAt de la conversación
         conversation.setLastMessageAt(Instant.now());
@@ -74,6 +77,46 @@ public class ChatService {
                 request.getContent().length() > 100
                         ? request.getContent().substring(0, 100) + "..."
                         : request.getContent(),
+                String.valueOf(conversation.getId())
+        );
+
+        return toMessageResponse(message);
+    }
+
+    // ── Guardar mensaje de imagen ─────────────────────────
+
+    @Transactional
+    public MessageResponse saveImageMessage(Long conversationId, Long senderId, String mediaUrl) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversación no encontrada"));
+
+        if (!isParticipant(conversation, senderId)) {
+            throw new RuntimeException("No eres participante de esta conversación");
+        }
+
+        User sender = userRepository.findById(senderId)
+                .orElseThrow(() -> new UserNotFoundException(senderId));
+
+        Message message = Message.builder()
+                .conversation(conversation)
+                .sender(sender)
+                .content("[Imagen]")
+                .type(MessageType.IMAGE)
+                .mediaUrl(mediaUrl)
+                .isRead(false)
+                .build();
+
+        message = messageRepository.save(message);
+
+        conversation.setLastMessageAt(Instant.now());
+        conversationRepository.save(conversation);
+
+        Long receiverId = getOtherUserId(conversation, senderId);
+        notificationService.send(
+                receiverId,
+                NotificationType.NEW_MESSAGE,
+                sender.getFirstName() + " te envió una imagen",
+                "📷 Imagen",
                 String.valueOf(conversation.getId())
         );
 

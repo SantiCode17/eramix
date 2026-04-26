@@ -1,7 +1,10 @@
 import { create } from "zustand";
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TOKEN_KEYS, setOnSessionExpired } from "@/api/client";
 import { authApi } from "@/api/authService";
+import { profileApi } from "@/api/profileService";
+import { webSocketService } from "@/services/webSocketService";
 import type { User, LoginRequest, RegisterRequest } from "@/types";
 
 interface AuthState {
@@ -10,6 +13,8 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isInitialized: boolean;
+  forceOnboarding: boolean;
+  slideOrder: string[];
 
   // Actions
   initialize: () => Promise<void>;
@@ -19,6 +24,7 @@ interface AuthState {
   logout: () => Promise<void>;
   updateUser: (partial: Partial<User>) => void;
   clearSession: () => void;
+  setSlideOrder: (order: string[]) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -27,15 +33,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: false,
   isInitialized: false,
+  forceOnboarding: false,
+  slideOrder: [],
 
   initialize: async () => {
     try {
       set({ isLoading: true });
       const accessToken = await SecureStore.getItemAsync(TOKEN_KEYS.ACCESS);
       const refreshToken = await SecureStore.getItemAsync(TOKEN_KEYS.REFRESH);
+      
+      const savedOrder = await AsyncStorage.getItem("eramix_card_order");
+      if (savedOrder) {
+        try { set({ slideOrder: JSON.parse(savedOrder) }); } catch {}
+      }
 
       if (accessToken) {
         set({ accessToken, isAuthenticated: true });
+        try {
+          const user = await profileApi.getMyProfile();
+          set({ user });
+        } catch {
+          // Access token expired — try refresh
+          if (refreshToken) {
+            const success = await get().refreshSession();
+            if (!success) {
+              set({ user: null, accessToken: null, isAuthenticated: false });
+            }
+          } else {
+            set({ user: null, accessToken: null, isAuthenticated: false });
+          }
+        }
         return;
       }
 
@@ -128,9 +155,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   clearSession: () => {
+    webSocketService.disconnect();
     SecureStore.deleteItemAsync(TOKEN_KEYS.ACCESS).catch(() => {});
     SecureStore.deleteItemAsync(TOKEN_KEYS.REFRESH).catch(() => {});
-    set({ user: null, accessToken: null, isAuthenticated: false });
+    AsyncStorage.removeItem("eramix_onboarding_complete").catch(() => {});
+    set({ user: null, accessToken: null, isAuthenticated: false, forceOnboarding: true, slideOrder: [] });
+  },
+
+  setSlideOrder: (order) => {
+    set({ slideOrder: order });
+    AsyncStorage.setItem("eramix_card_order", JSON.stringify(order)).catch(() => {});
   },
 }));
 

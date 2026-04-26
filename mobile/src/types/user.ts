@@ -25,6 +25,7 @@ export interface UserPhotoResponse {
   id: number;
   photoUrl: string;
   displayOrder: number;
+  caption?: string;
   createdAt: string;
 }
 
@@ -42,6 +43,16 @@ export interface UserUpdateRequest {
   mobilityEndDate?: string;
   interestIds?: number[];
   languages?: UserLanguageRequest[];
+  whyAmIHere?: string;
+  favoriteSong?: string;
+  favoriteFood?: string;
+  specialHobby?: string;
+  customPrompts?: string;
+  socialInstagram?: string;
+  socialTiktok?: string;
+  height?: number;
+  zodiac?: string;
+  profession?: string;
 }
 
 export interface UserLanguageRequest {
@@ -120,4 +131,14 @@ export interface User {
   photos?: UserPhotoResponse[];
   friendCount?: number;
   eventCount?: number;
+  whyAmIHere?: string;
+  favoriteSong?: string;
+  favoriteFood?: string;
+  specialHobby?: string;
+  customPrompts?: string;
+  socialInstagram?: string;
+  socialTiktok?: string;
+  height?: number;
+  zodiac?: string;
+  profession?: string;
 }

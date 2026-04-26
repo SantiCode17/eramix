@@ -22,4 +22,7 @@ public class UserPhoto extends BaseEntity {
     @Column(name = "display_order", nullable = false)
     @Builder.Default
     private Integer displayOrder = 0;
+
+    @Column(name = "caption", length = 255)
+    private String caption;
 }

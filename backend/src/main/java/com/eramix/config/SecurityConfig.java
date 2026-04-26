@@ -32,9 +32,13 @@ public class SecurityConfig {
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/api/v1/catalog/**").permitAll()
                 .requestMatchers("/api/health").permitAll()
                 .requestMatchers("/ws/**").permitAll()
+                .requestMatchers("/ws-native/**").permitAll()
+                .requestMatchers("/ws-native").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter,

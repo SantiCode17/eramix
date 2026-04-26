@@ -48,4 +48,24 @@ public class RegisterRequest {
     private LocalDate mobilityStartDate;
 
     private LocalDate mobilityEndDate;
+
+    private String authProvider;
+
+    private String providerId;
+
+    private String degree;
+
+    private String gender;
+
+    private String lookingForGender;
+
+    private Boolean showGenderOnProfile;
+
+    private Boolean notificationsEnabled;
+
+    private java.util.Set<String> intentions;
+
+    private java.util.List<com.eramix.dto.user.UserLanguageRequest> languages;
+
+    private java.util.Set<Long> interestIds;
 }

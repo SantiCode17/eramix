@@ -19,7 +19,7 @@ public class HousingController {
     private final HousingService housingService;
 
     private Long currentUserId() {
-        return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        return (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
     @PostMapping

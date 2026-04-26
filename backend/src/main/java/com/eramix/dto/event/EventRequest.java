@@ -41,4 +41,7 @@ public class EventRequest {
 
     @Builder.Default
     private Boolean isPublic = true;
+
+    @Size(max = 500)
+    private String coverImageUrl;
 }

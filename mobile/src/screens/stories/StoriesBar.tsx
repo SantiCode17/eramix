@@ -13,8 +13,9 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import * as storiesApi from "@/api/stories";
 import { handleError } from "@/utils/errorHandler";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
 import { useAuthStore } from "@/store/useAuthStore";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
+import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
 import type { StoryData, UserStories } from "@/types/stories";
 import type { DiscoverStackParamList } from "@/types";
 
@@ -86,7 +87,7 @@ export default function StoriesBar({
         <View style={[styles.avatarRing, styles.avatarRingCreate]}>
           {currentUser?.profilePhotoUrl ? (
             <Image
-              source={{ uri: currentUser.profilePhotoUrl }}
+              source={{ uri: resolveMediaUrl(currentUser.profilePhotoUrl) }}
               style={styles.avatar}
             />
           ) : (
@@ -119,7 +120,7 @@ export default function StoriesBar({
             ]}
           >
             {g.userPhoto ? (
-              <Image source={{ uri: g.userPhoto }} style={styles.avatar} />
+              <Image source={{ uri: resolveMediaUrl(g.userPhoto) }} style={styles.avatar} />
             ) : (
               <View style={[styles.avatar, styles.avatarPlaceholder]}>
                 <Text style={styles.avatarInitial}>
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     borderColor: colors.eu.star,
   },
   avatarRingViewed: {
-    borderColor: colors.glass.border,
+    borderColor: "rgba(255,255,255,0.08)",
   },
   avatarRingCreate: {
     borderColor: colors.eu.orange,
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
-    backgroundColor: colors.glass.white,
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   avatarPlaceholder: {
     justifyContent: "center",
@@ -200,7 +201,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: colors.background.start,
+    borderColor: DS.background,
   },
   plusText: {
     fontSize: 13,

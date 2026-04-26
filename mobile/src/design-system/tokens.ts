@@ -1,34 +1,52 @@
 import { Platform } from "react-native";
+import {
+  EramixColors as EC,
+  EramixSpacing as ES,
+  EramixRadius as ER,
+  EramixSizes as ESz,
+  EramixAnimation as EA,
+  EramixShadows as ESh,
+  EramixGradients as EG,
+} from "@/constants/theme";
 
-export const palette = {
-  midnight: "#06081A",
-  deepNavy: "#0B0E2A",
-  royalBlue: "#1A3DE8",
-  electricBlue: "#3B6BFF",
-  skyBlue: "#6B9CFF",
-  cyan: "#00D4FF",
-  gold: "#FFD700",
-  amber: "#FFAB00",
-  tangerine: "#FF6D3F",
-  coral: "#FF4F6F",
-  rose: "#FF2D87",
-  emerald: "#00D68F",
-  teal: "#00BFA6",
-  lavender: "#B47AFF",
-  violet: "#8B5CF6",
-  white: "#FFFFFF",
-  offWhite: "#F0F2FF",
-  pureBlack: "#000000",
-};
+export { EramixColors, EramixTypography, EramixSpacing, EramixRadius, EramixShadows, EramixGradients, EramixSizes, EramixAnimation, EramixZIndex, EramixErrorMessages, C, T, S, R, Sh, G, Sz } from "@/constants/theme";
+
+/**
+ * ─── Design System Colors (Single Source of Truth) ───
+ * All colors now come from EramixColors in theme.ts.
+ * COLOR_PRIMARY:       #FFD700
+ * COLOR_SECONDARY:     #132240
+ * COLOR_BACKGROUND:    #0A1628
+ * COLOR_SURFACE:       #132240
+ * COLOR_TEXT_PRIMARY:   #FFFFFF
+ * COLOR_TEXT_SECONDARY: #8FA3BC
+ * COLOR_ERROR:         #E53E3E
+ * COLOR_SUCCESS:       #38A169
+ */
+export const DS = {
+  primary: EC.PRIMARY_GOLD,
+  secondary: EC.NAVY_CARD,
+  background: EC.NAVY_DEEP,
+  surface: EC.NAVY_CARD,
+  surfaceLight: EC.NAVY_SURFACE,
+  border: EC.NAVY_BORDER,
+  textPrimary: EC.TEXT_PRIMARY,
+  textSecondary: EC.TEXT_SECONDARY,
+  textMuted: EC.TEXT_MUTED,
+  error: EC.ERROR_RED,
+  success: EC.SUCCESS_GREEN,
+  orange: EC.PRIMARY_ORANGE,
+  info: EC.INFO_BLUE,
+} as const;
 
 export const colors = {
   eu: {
-    deep: "#003399",
-    mid: "#1A4DB3",
-    light: "#3366CC",
-    star: "#FFD700",
-    starLight: "#FFECB3",
-    orange: "#FF6B2B",
+    deep: EC.NAVY_DEEP,
+    mid: EC.NAVY_CARD,
+    light: EC.NAVY_SURFACE,
+    star: EC.PRIMARY_GOLD,
+    starLight: EC.GOLD_ALPHA_25,
+    orange: EC.PRIMARY_ORANGE,
   },
   glass: {
     white: "rgba(255, 255, 255, 0.08)",
@@ -39,54 +57,54 @@ export const colors = {
     borderStrong: "rgba(255, 255, 255, 0.30)",
   },
   text: {
-    primary: "rgba(255, 255, 255, 0.95)",
-    secondary: "rgba(255, 255, 255, 0.60)",
-    tertiary: "rgba(255, 255, 255, 0.40)",
-    disabled: "rgba(255, 255, 255, 0.25)",
-    inverse: "#06081A",
-    accent: "#FFD700",
-    link: "#6B9CFF",
+    primary: EC.TEXT_PRIMARY,
+    secondary: EC.TEXT_SECONDARY,
+    tertiary: EC.TEXT_MUTED,
+    disabled: EC.TEXT_MUTED,
+    inverse: EC.NAVY_DEEP,
+    accent: EC.PRIMARY_GOLD,
+    link: EC.INFO_BLUE,
   },
   background: {
-    start: "#06081A",
-    mid: "#0B0E2A",
-    end: "#0F1535",
-    card: "rgba(15, 21, 53, 0.60)",
-    elevated: "rgba(20, 28, 68, 0.65)",
-    input: "rgba(11, 14, 42, 0.55)",
-    overlay: "rgba(6, 8, 26, 0.85)",
+    start: EC.NAVY_DEEP,
+    mid: "#0E1A35",
+    end: "#0E1A35",
+    card: EC.NAVY_CARD,
+    elevated: EC.NAVY_CARD,
+    input: EC.NAVY_SURFACE,
+    overlay: EC.OVERLAY_HEAVY,
   },
   gradient: {
-    primary: ["#1A3DE8", "#3B6BFF"] as const,
-    accent: ["#FFD700", "#FF6D3F"] as const,
-    warm: ["#FF6D3F", "#FF4F6F"] as const,
-    cool: ["#3B6BFF", "#00D4FF"] as const,
-    dark: ["#06081A", "#0F1535"] as const,
-    surface: ["rgba(15, 21, 53, 0.55)", "rgba(11, 14, 42, 0.70)"] as const,
-    hero: ["#1A3DE8", "#8B5CF6", "#FF6D3F"] as const,
-    emerald: ["#00D68F", "#00BFA6"] as const,
-    sunset: ["#FF6D3F", "#FFD700"] as const,
-    night: ["#0B0E2A", "#06081A"] as const,
+    primary: EG.PRIMARY,
+    accent: EG.PRIMARY,
+    warm: [EC.PRIMARY_ORANGE, EC.PRIMARY_GOLD] as const,
+    cool: [EC.NAVY_CARD, EC.NAVY_SURFACE] as const,
+    dark: EG.DARK,
+    surface: [EC.NAVY_CARD, EC.NAVY_SURFACE] as const,
+    hero: EG.HERO,
+    emerald: [EC.SUCCESS_GREEN, EC.SUCCESS_GREEN] as const,
+    sunset: [EC.PRIMARY_ORANGE, EC.PRIMARY_GOLD] as const,
+    night: EG.DARK,
   },
   status: {
-    online: "#00D68F",
-    offline: "#6B7280",
-    away: "#FFAB00",
-    busy: "#FF4F6F",
-    error: "#FF4F6F",
-    errorBg: "rgba(255, 79, 111, 0.10)",
-    success: "#00D68F",
-    successBg: "rgba(0, 214, 143, 0.10)",
-    warning: "#FFAB00",
-    warningBg: "rgba(255, 171, 0, 0.10)",
-    info: "#3B6BFF",
-    infoBg: "rgba(59, 107, 255, 0.10)",
+    online: EC.SUCCESS_GREEN,
+    offline: EC.TEXT_MUTED,
+    away: EC.PRIMARY_GOLD,
+    busy: EC.ERROR_RED,
+    error: EC.ERROR_RED,
+    errorBg: EC.ERROR_ALPHA_10,
+    success: EC.SUCCESS_GREEN,
+    successBg: EC.SUCCESS_ALPHA_10,
+    warning: EC.PRIMARY_GOLD,
+    warningBg: EC.GOLD_ALPHA_10,
+    info: EC.INFO_BLUE,
+    infoBg: EC.INFO_ALPHA_20,
   },
   overlay: {
-    light: "rgba(6, 8, 26, 0.40)",
-    medium: "rgba(6, 8, 26, 0.60)",
-    heavy: "rgba(6, 8, 26, 0.80)",
-    black: "rgba(0, 0, 0, 0.90)",
+    light: EC.OVERLAY_LIGHT,
+    medium: EC.OVERLAY_MEDIUM,
+    heavy: EC.OVERLAY_HEAVY,
+    black: EC.OVERLAY_BLACK,
   },
 };
 
@@ -127,12 +145,12 @@ export const spacing = {
 
 export const radii = {
   xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
+  sm: ER.RADIUS_SM,
+  md: ER.RADIUS_MD,
+  lg: ER.RADIUS_LG,
+  xl: ER.RADIUS_XL,
   xxl: 28,
-  full: 9999,
+  full: ER.RADIUS_FULL,
 };
 
 export const opacity = {
@@ -143,28 +161,28 @@ export const opacity = {
 export const blur = { surface: 20, elevated: 40, prominent: 60, overlay: 80 };
 
 export const sizes = {
-  avatarSm: 36, avatarMd: 48, avatarLg: 72, avatarXl: 96,
-  buttonSm: 38, buttonMd: 48, buttonLg: 56,
-  inputHeight: 58, headerHeight: 56, tabBarHeight: 72,
-  iconSm: 18, iconMd: 24, iconLg: 32,
+  avatarSm: ESz.AVATAR_SM, avatarMd: ESz.AVATAR_MD, avatarLg: ESz.AVATAR_LG, avatarXl: ESz.AVATAR_XL,
+  buttonSm: 38, buttonMd: 48, buttonLg: ESz.BUTTON_HEIGHT,
+  inputHeight: ESz.INPUT_HEIGHT, headerHeight: ESz.HEADER_HEIGHT, tabBarHeight: ESz.TAB_BAR_HEIGHT,
+  iconSm: ESz.ICON_SM, iconMd: ESz.ICON_MD, iconLg: ESz.ICON_LG,
 };
 
 const shadowBase = Platform.OS === "ios" ? {} : { elevation: 0 };
 
 export const shadows = {
   none: { ...shadowBase },
-  sm: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 2 },
-  md: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.20, shadowRadius: 8, elevation: 4 },
-  lg: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8 },
+  sm: ESh.SHADOW_SM,
+  md: ESh.SHADOW_MD,
+  lg: ESh.SHADOW_LG,
   xl: { shadowColor: "#000", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.30, shadowRadius: 24, elevation: 12 },
-  glass: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 6 },
-  glassSmall: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 4 },
-  glow: { shadowColor: "#FFD700", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.30, shadowRadius: 16, elevation: 6 },
-  glowBlue: { shadowColor: "#3B6BFF", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 6 },
-  glowCoral: { shadowColor: "#FF4F6F", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 6 },
-  glowEmerald: { shadowColor: "#00D68F", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 6 },
-  elevated: { shadowColor: "#1A3DE8", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.20, shadowRadius: 20, elevation: 8 },
-  card: { shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.30, shadowRadius: 16, elevation: 6 },
+  glass: ESh.SHADOW_MD,
+  glassSmall: ESh.SHADOW_SM,
+  glow: ESh.SHADOW_GOLD,
+  glowBlue: ESh.SHADOW_MD,
+  glowCoral: ESh.SHADOW_MD,
+  glowEmerald: ESh.SHADOW_MD,
+  elevated: ESh.SHADOW_LG,
+  card: ESh.SHADOW_MD,
   floating: { shadowColor: "#000", shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.40, shadowRadius: 32, elevation: 16 },
 };
 
@@ -180,7 +198,7 @@ export const zIndex = { base: 0, card: 1, header: 10, modal: 100, toast: 200, ov
 export const borders = { hairline: 0.5, thin: 1, medium: 1.5, thick: 2 };
 
 export const animation = {
-  duration: { instant: 100, fast: 200, normal: 300, slow: 500, xslow: 800 },
+  duration: { instant: 100, fast: 200, normal: 300, slow: 500, xslow: 800, stagger: 80 },
   spring: {
     default: { damping: 20, stiffness: 300, mass: 1 },
     bouncy: { damping: 12, stiffness: 200, mass: 0.8 },
@@ -193,3 +211,18 @@ export const animation = {
 };
 
 export const MIN_TOUCH_SIZE = 44;
+
+/** @deprecated — Use EramixColors directly. Compat shim for legacy screens. */
+export const palette = {
+  electricBlue: EC.INFO_BLUE,
+  emerald: EC.SUCCESS_GREEN,
+  coral: EC.PRIMARY_ORANGE,
+  gold: EC.PRIMARY_GOLD,
+  deepNavy: EC.NAVY_DEEP,
+  midnight: EC.NAVY_CARD,
+} as const;
+
+/** Height of the bottom tab bar (before safe-area inset). Use this to add
+ *  paddingBottom to scrollable content inside tab screens so nothing is
+ *  hidden behind the absolute-positioned tab bar. */
+export const TAB_BAR_HEIGHT = 62;

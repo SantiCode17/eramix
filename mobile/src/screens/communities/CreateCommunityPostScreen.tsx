@@ -1,209 +1,263 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   Pressable,
+  Image,
   ActivityIndicator,
-  Alert,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import type { StackNavigationProp } from "@react-navigation/stack";
+import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import { colors, typography, spacing, radii } from "@/design-system/tokens";
-import type { CommunitiesStackParamList } from "@/types/communities";
+import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  colors,
+  typography,
+  spacing,
+  radii,
+} from "@/design-system/tokens";
+import { ScreenBackground } from "@/design-system/components";
 import * as communitiesApi from "@/api/communities";
 import { handleError } from "@/utils/errorHandler";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
 
-type ScreenRoute = RouteProp<CommunitiesStackParamList, "CreateCommunityPost">;
-type Nav = StackNavigationProp<CommunitiesStackParamList, "CreateCommunityPost">;
+type CommunitiesStackParamList = {
+  CreateCommunityPost: { communityId: number };
+};
+type RouteType = RouteProp<CommunitiesStackParamList, "CreateCommunityPost">;
 
-export default function CreateCommunityPostScreen() {
-  const nav = useNavigation<Nav>();
-  const route = useRoute<ScreenRoute>();
+const MAX_CONTENT = 5000;
+
+export default function CreateCommunityPostScreen(): React.JSX.Element {
+  const route = useRoute<RouteType>();
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { communityId } = route.params;
 
   const [content, setContent] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const canSubmit = content.trim().length > 0 && !submitting;
+  const pickImage = useCallback(async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsEditing: true,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setImageUri(result.assets[0].uri);
+    }
+  }, []);
 
-  const handleSubmit = async () => {
-    if (!canSubmit) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const handleSubmit = useCallback(async () => {
+    if (!content.trim()) return;
     setSubmitting(true);
     try {
+      let uploadedUrl: string | undefined;
+      if (imageUri) {
+        setUploading(true);
+        const res = await communitiesApi.uploadPostImage(imageUri);
+        uploadedUrl = res.url ?? res;
+        setUploading(false);
+      }
       await communitiesApi.createPost(communityId, {
         content: content.trim(),
-        imageUrl: imageUrl.trim() || undefined,
+        imageUrl: uploadedUrl,
       });
-      nav.goBack();
-    } catch (e: any) {
-      Alert.alert("Error", handleError(e, "CreateCommunityPost.submit"));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      navigation.goBack();
+    } catch (e) {
+      handleError(e, "CreatePost.submit");
     } finally {
       setSubmitting(false);
+      setUploading(false);
     }
-  };
+  }, [content, imageUri, communityId, navigation]);
 
   return (
-    <LinearGradient
-      colors={[colors.background.start, colors.background.end]}
-      style={[styles.container, { paddingTop: insets.top }]}
-    >
-      {/* Header */}
-      <View style={styles.headerBar}>
-        <Pressable onPress={() => nav.goBack()} style={styles.backBtn}>
-          <Text style={{ fontSize: 22 }}>←</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Nueva publicación</Text>
-        <Pressable
-          onPress={handleSubmit}
-          disabled={!canSubmit}
-          style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
-        >
-          {submitting ? (
-            <ActivityIndicator size="small" color={colors.text.inverse} />
-          ) : (
-            <Text
-              style={[
-                styles.submitText,
-                !canSubmit && styles.submitTextDisabled,
-              ]}
-            >
-              Publicar
-            </Text>
-          )}
-        </Pressable>
-      </View>
-
+    <ScreenBackground>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={styles.form}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Content */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>¿Qué quieres compartir?</Text>
-            <TextInput
-              style={[styles.textArea, { minHeight: 160 }]}
-              multiline
-              textAlignVertical="top"
-              placeholder="Escribe tu publicación..."
-              placeholderTextColor={colors.text.disabled}
-              value={content}
-              onChangeText={setContent}
-              maxLength={5000}
-            />
-            <Text style={styles.charCount}>{content.length}/5000</Text>
+        <View style={{ flex: 1, paddingTop: insets.top }}>
+          {/* Header */}
+          <View style={st.header}>
+            <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
+              <Ionicons name="close" size={24} color={colors.text.primary} />
+            </Pressable>
+            <Text style={st.headerTitle}>Nueva publicación</Text>
+            <Pressable
+              onPress={handleSubmit}
+              disabled={!content.trim() || submitting}
+              style={[st.publishBtn, (!content.trim() || submitting) && st.publishBtnDisabled]}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color={colors.eu.star} />
+              ) : (
+                <Text style={st.publishText}>Publicar</Text>
+              )}
+            </Pressable>
           </View>
 
-          {/* Optional image */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Imagen (opcional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="URL de la imagen"
-              placeholderTextColor={colors.text.disabled}
-              value={imageUrl}
-              onChangeText={setImageUrl}
-              autoCapitalize="none"
-              keyboardType="url"
-            />
-          </View>
-        </ScrollView>
+          <ScrollView
+            contentContainerStyle={st.body}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Text input */}
+            <Animated.View entering={FadeInDown.duration(300)}>
+              <TextInput
+                style={st.textInput}
+                value={content}
+                onChangeText={setContent}
+                placeholder="¿Qué quieres compartir?"
+                placeholderTextColor={colors.text.tertiary}
+                multiline
+                maxLength={MAX_CONTENT}
+                textAlignVertical="top"
+              />
+              <Text style={st.charCount}>
+                {content.length}/{MAX_CONTENT}
+              </Text>
+            </Animated.View>
+
+            {/* Image preview */}
+            {imageUri && (
+              <Animated.View entering={FadeIn.duration(300)} style={st.imagePreview}>
+                <Image
+                  source={{ uri: imageUri }}
+                  style={st.previewImage}
+                  resizeMode="cover"
+                />
+                <Pressable
+                  style={st.removeImage}
+                  onPress={() => setImageUri(null)}
+                >
+                  <Ionicons name="close-circle" size={28} color={colors.status.error} />
+                </Pressable>
+                {uploading && (
+                  <View style={st.uploadOverlay}>
+                    <ActivityIndicator size="large" color="#fff" />
+                  </View>
+                )}
+              </Animated.View>
+            )}
+
+            {/* Add image button */}
+            {!imageUri && (
+              <Pressable style={st.addImageBtn} onPress={pickImage}>
+                <Ionicons name="image-outline" size={22} color={colors.eu.star} />
+                <Text style={st.addImageText}>Añadir imagen</Text>
+              </Pressable>
+            )}
+          </ScrollView>
+        </View>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </ScreenBackground>
   );
 }
 
-// ── Styles ──────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  headerBar: {
+const st = StyleSheet.create({
+  /* Header */
+  header: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
+    paddingVertical: spacing.md,
   },
   headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontFamily: typography.families.subheading,
-    ...typography.sizes.body,
+    fontFamily: typography.families.heading,
+    fontSize: typography.sizes.h4.fontSize,
     color: colors.text.primary,
   },
-  submitBtn: {
-    paddingHorizontal: spacing.md,
+  publishBtn: {
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
-    backgroundColor: colors.eu.star,
+    backgroundColor: "rgba(255,215,0,0.15)",
   },
-  submitBtnDisabled: {
-    backgroundColor: colors.glass.white,
-  },
-  submitText: {
-    fontFamily: typography.families.bodyBold,
-    ...typography.sizes.caption,
-    color: colors.text.inverse,
-  },
-  submitTextDisabled: {
-    color: colors.text.disabled,
-  },
-  form: {
-    padding: spacing.lg,
-    gap: spacing.lg,
-  },
-  inputGroup: { gap: spacing.xs },
-  label: {
+  publishBtnDisabled: { opacity: 0.4 },
+  publishText: {
     fontFamily: typography.families.subheading,
-    ...typography.sizes.caption,
-    color: colors.text.primary,
+    fontSize: typography.sizes.bodySmall.fontSize,
+    color: colors.eu.star,
   },
-  input: {
+
+  /* Body */
+  body: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  textInput: {
+    fontFamily: typography.families.body,
+    fontSize: typography.sizes.body.fontSize,
+    color: colors.text.primary,
+    lineHeight: typography.sizes.body.lineHeight,
+    minHeight: 160,
     backgroundColor: colors.glass.white,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.glass.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontFamily: typography.families.body,
-    ...typography.sizes.body,
-    color: colors.text.primary,
-  },
-  textArea: {
-    backgroundColor: colors.glass.white,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.glass.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontFamily: typography.families.body,
-    ...typography.sizes.body,
-    color: colors.text.primary,
+    padding: spacing.md,
   },
   charCount: {
     fontFamily: typography.families.body,
-    ...typography.sizes.bodySmall,
-    color: colors.text.secondary,
+    fontSize: typography.sizes.caption.fontSize,
+    color: colors.text.tertiary,
     textAlign: "right",
+    marginTop: spacing.xs,
+  },
+
+  /* Image preview */
+  imagePreview: {
+    marginTop: spacing.md,
+    borderRadius: radii.lg,
+    overflow: "hidden",
+  },
+  previewImage: {
+    width: "100%",
+    height: 220,
+    borderRadius: radii.lg,
+  },
+  removeImage: {
+    position: "absolute",
+    top: spacing.sm,
+    right: spacing.sm,
+  },
+  uploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.overlay.medium,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: radii.lg,
+  },
+
+  /* Add image */
+  addImageBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.lg,
+    backgroundColor: colors.glass.white,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    alignSelf: "flex-start",
+  },
+  addImageText: {
+    fontFamily: typography.families.bodyMedium,
+    fontSize: typography.sizes.body.fontSize,
+    color: colors.eu.star,
   },
 });

@@ -42,3 +42,41 @@ export type { TabBarProps, TabBarItem } from "./TabBar";
 
 export { Header } from "./Header";
 export type { HeaderProps } from "./Header";
+
+// Premium components
+export { GlassMetricCard } from "./GlassMetricCard";
+export type { GlassMetricCardProps } from "./GlassMetricCard";
+
+export { GradientHeader } from "./GradientHeader";
+export type { GradientHeaderProps } from "./GradientHeader";
+
+export { FloatingActionButton } from "./FloatingActionButton";
+export type { FloatingActionButtonProps } from "./FloatingActionButton";
+
+export { SectionHeader } from "./SectionHeader";
+export type { SectionHeaderProps } from "./SectionHeader";
+
+export { StatusPill } from "./StatusPill";
+export type { StatusPillProps } from "./StatusPill";
+
+export { AnimatedBottomSheet } from "./AnimatedBottomSheet";
+export type { AnimatedBottomSheetProps } from "./AnimatedBottomSheet";
+
+export { QuickActionGrid } from "./QuickActionGrid";
+export type { QuickActionGridProps, QuickAction } from "./QuickActionGrid";
+
+export { ProgressRing } from "./ProgressRing";
+export type { ProgressRingProps } from "./ProgressRing";
+
+export { ScreenBackground } from "./ScreenBackground";
+export type { ScreenBackgroundProps } from "./ScreenBackground";
+
+export { GradientDivider } from "./GradientDivider";
+export type { GradientDividerProps } from "./GradientDivider";
+
+export { default as NetworkStatusBanner } from "./NetworkStatusBanner";
+export { default as AppImage } from "./AppImage";
+export type { AppImageProps } from "./AppImage";
+
+export { DonutChart } from "./DonutChart";
+export type { };

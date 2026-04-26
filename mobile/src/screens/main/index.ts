@@ -3,5 +3,6 @@ export {
   EventsScreen,
   ChatListScreen,
   NotificationsScreen,
-  AboutScreen,
 } from "./PlaceholderScreens";
+
+export { default as AboutScreen } from "./AboutScreen";

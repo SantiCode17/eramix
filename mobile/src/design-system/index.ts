@@ -10,6 +10,11 @@ export {
   useSlideUp,
   useScalePress,
   useStaggeredList,
+  useShimmer,
+  usePulse,
+  useLiquidGlass,
+  useBreathingGlow,
+  useBouncePress,
 } from "./animations";
 
 // Components
@@ -28,6 +33,18 @@ export {
   ErrorState,
   TabBar,
   Header,
+  GlassMetricCard,
+  GradientHeader,
+  FloatingActionButton,
+  SectionHeader,
+  StatusPill,
+  AnimatedBottomSheet,
+  QuickActionGrid,
+  ProgressRing,
+  ScreenBackground,
+  GradientDivider,
+  NetworkStatusBanner,
+  AppImage,
 } from "./components";
 
 export type {
@@ -46,4 +63,16 @@ export type {
   TabBarProps,
   TabBarItem,
   HeaderProps,
+  GlassMetricCardProps,
+  GradientHeaderProps,
+  FloatingActionButtonProps,
+  SectionHeaderProps,
+  StatusPillProps,
+  AnimatedBottomSheetProps,
+  QuickActionGridProps,
+  QuickAction,
+  ProgressRingProps,
+  ScreenBackgroundProps,
+  GradientDividerProps,
+  AppImageProps,
 } from "./components";

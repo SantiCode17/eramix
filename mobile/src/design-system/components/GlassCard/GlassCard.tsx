@@ -85,6 +85,9 @@ export default function GlassCard({
             {
               borderColor: `rgba(255, 255, 255, ${config.borderOpacity})`,
               borderTopColor: `rgba(255, 255, 255, ${config.borderTopHighlight})`,
+              borderLeftColor: `rgba(255, 255, 255, ${config.borderTopHighlight * 0.8})`,
+              borderRightColor: `rgba(255, 255, 255, ${config.borderOpacity * 0.6})`,
+              borderBottomColor: `rgba(255, 255, 255, ${config.borderOpacity * 0.5})`,
               borderRadius: config.radius,
               padding: noPadding ? 0 : spacing[padding],
             },

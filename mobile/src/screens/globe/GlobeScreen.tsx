@@ -2,6 +2,7 @@ import React, { useEffect, useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   Pressable,
   ScrollView,
@@ -18,6 +19,8 @@ import InteractiveGlobe, {
 import { useGlobeStore } from "@/store/useGlobeStore";
 import { colors, typography, spacing, radii, shadows } from "@/design-system/tokens";
 import type { CountryPin } from "@/types/globe";
+import { pluralize } from "@/utils/pluralize";
+// import { globeDecoracion } from "@/assets/images";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const PANEL_HEIGHT = SCREEN_HEIGHT * 0.42;
@@ -94,15 +97,25 @@ export default function GlobeScreen(): React.JSX.Element {
         style={StyleSheet.absoluteFill}
       />
 
+      {/* Decorative overlay */}
+      <View style={styles.decorWrap} pointerEvents="none">
+        {/* <Image
+          source={globeDecoracion}
+          style={styles.decorImage}
+          resizeMode="contain"
+        /> */}
+      </View>
+
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
         <Text style={styles.headerTitle}>Explorar</Text>
         <Text style={styles.headerSubtitle}>
           {countryPins.length > 0
-            ? `${countryPins.length} países · ${countryPins.reduce(
-                (s, p) => s + p.studentCount,
-                0,
-              )} estudiantes`
+            ? `${pluralize(countryPins.length, "país", "países")} · ${pluralize(
+                countryPins.reduce((s, p) => s + p.studentCount, 0),
+                "estudiante",
+                "estudiantes",
+              )}`
             : "Cargando datos…"}
         </Text>
       </View>
@@ -254,6 +267,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  decorWrap: {
+    position: "absolute",
+    top: 40,
+    right: -20,
+    width: 120,
+    height: 120,
+    opacity: 0.15,
+    zIndex: 1,
+  },
+  decorImage: {
+    width: "100%",
+    height: "100%",
+  },
   header: {
     position: "absolute",
     top: 0,
@@ -293,14 +319,14 @@ const styles = StyleSheet.create({
     top: 100,
     left: spacing.lg,
     right: spacing.lg,
-    backgroundColor: "rgba(244, 67, 54, 0.15)",
+    backgroundColor: "rgba(244,67,54,0.15)",
     borderRadius: radii.md,
     padding: spacing.md,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "rgba(244, 67, 54, 0.3)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(244,67,54,0.3)",
   },
   errorText: {
     fontFamily: typography.families.body,
@@ -323,7 +349,7 @@ const styles = StyleSheet.create({
   hintText: {
     fontFamily: typography.families.body,
     fontSize: typography.sizes.bodySmall.fontSize,
-    color: "rgba(255, 255, 255, 0.35)",
+    color: "rgba(255,255,255,0.35)",
   },
 
   // ── Panel ──────────────────────────────────────
@@ -335,8 +361,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(15, 15, 30, 0.95)",
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
-    borderTopWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.1)",
     ...shadows.glass,
   },
   panelContent: {
@@ -347,7 +373,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(255,255,255,0.2)",
     alignSelf: "center",
     marginTop: spacing.sm,
     marginBottom: spacing.md,
@@ -381,7 +407,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -402,12 +428,12 @@ const styles = StyleSheet.create({
   uniCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: radii.md,
     padding: spacing.md,
     marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.08)",
   },
   uniInfo: {
     flex: 1,
@@ -425,7 +451,7 @@ const styles = StyleSheet.create({
   },
   uniBadge: {
     alignItems: "center",
-    backgroundColor: "rgba(255, 204, 0, 0.12)",
+    backgroundColor: "rgba(255,204,0,0.12)",
     borderRadius: radii.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,

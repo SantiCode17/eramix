@@ -5,29 +5,40 @@ import {
   Image,
   StyleSheet,
   Dimensions,
-  Pressable,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, typography, spacing, radii, shadows } from "@/design-system/tokens";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
 import type { User } from "@/types";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 export const CARD_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
 export const CARD_HEIGHT = CARD_WIDTH * 1.4;
 
+/** Genera un par de colores gradient determinista a partir del nombre
+ *  SOLO usa colores del design system — nunca azules brillantes */
+const nameToGradient = (name: string): [string, string] => {
+  const gradients: [string, string][] = [
+    ["#1A2D4D", "#0D1F3C"], // navy — default
+    ["#132240", "#0A1628"], // deep navy
+    ["#1A2D4A", "#0F1E36"], // navy surface
+    ["#243858", "#132240"], // navy border → card
+    ["#1E3250", "#142740"], // navy mid-tone
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return gradients[Math.abs(hash) % gradients.length];
+};
+
 interface UserCardProps {
   user: User;
-  onSendRequest?: () => void;
-  onDismiss?: () => void;
-  onViewProfile?: () => void;
 }
 
 export default function UserCard({
   user,
-  onSendRequest,
-  onDismiss,
-  onViewProfile,
 }: UserCardProps): React.JSX.Element {
   const fullName = `${user.firstName} ${user.lastName}`;
   const destination = [user.destinationCity, user.destinationCountry]
@@ -36,7 +47,6 @@ export default function UserCard({
   const universityName =
     user.hostUniversity?.name ?? user.homeUniversity?.name;
 
-  // Compute a simple "compatibility" score based on shared data
   const hasInterests = (user.interests?.length ?? 0) > 0;
   const hasLanguages = (user.languages?.length ?? 0) > 0;
   const hasDestination = !!user.destinationCity;
@@ -48,25 +58,32 @@ export default function UserCard({
       (universityName ? 15 : 0),
   );
 
+  const placeholderColors = nameToGradient(fullName);
+
   return (
     <View style={styles.card}>
       {/* Photo area (60% of card) */}
       <View style={styles.photoContainer}>
         {user.profilePhotoUrl ? (
           <Image
-            source={{ uri: user.profilePhotoUrl }}
+            source={{ uri: resolveMediaUrl(user.profilePhotoUrl) }}
             style={styles.photo}
             resizeMode="cover"
           />
         ) : (
-          <View style={styles.photoPlaceholder}>
+          <LinearGradient
+            colors={placeholderColors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.photoPlaceholder}
+          >
             <Text style={styles.photoInitial}>
               {user.firstName?.[0]?.toUpperCase() ?? "?"}
             </Text>
-          </View>
+          </LinearGradient>
         )}
         <LinearGradient
-          colors={["transparent", "rgba(26, 26, 46, 0.95)"]}
+          colors={["transparent", "rgba(4,6,26,0.92)"]}
           style={styles.photoGradient}
         />
         {/* Name overlay on photo */}
@@ -76,7 +93,8 @@ export default function UserCard({
           </Text>
           {destination ? (
             <Text style={styles.destination} numberOfLines={1}>
-              <Ionicons name="location-outline" size={12} color={colors.eu.star} /> {destination}
+              <Ionicons name="location-outline" size={12} color={colors.eu.star} />{" "}
+              {destination}
             </Text>
           ) : null}
         </View>
@@ -119,7 +137,7 @@ export default function UserCard({
             {user.interests!.slice(0, 4).map((interest) => (
               <View key={interest.id} style={styles.chip}>
                 <Text style={styles.chipText}>
-                  <Ionicons name="sparkles-outline" size={12} color={colors.text.secondary} /> {interest.name}
+                  {interest.name}
                 </Text>
               </View>
             ))}
@@ -143,30 +161,6 @@ export default function UserCard({
             ))}
           </View>
         ) : null}
-
-        {/* Action buttons */}
-        <View style={styles.actions}>
-          <Pressable
-            onPress={onDismiss}
-            style={[styles.actionBtn, styles.dismissBtn]}
-          >
-            <Text style={styles.actionEmoji}>✕</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={onViewProfile}
-            style={[styles.actionBtn, styles.profileBtn]}
-          >
-            <Ionicons name="person-outline" size={22} color={colors.text.primary} />
-          </Pressable>
-
-          <Pressable
-            onPress={onSendRequest}
-            style={[styles.actionBtn, styles.connectBtn]}
-          >
-            <Ionicons name="star-outline" size={22} color={colors.eu.star} />
-          </Pressable>
-        </View>
       </View>
     </View>
   );
@@ -178,9 +172,9 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
     borderRadius: radii.xl,
     overflow: "hidden",
-    backgroundColor: "rgba(26, 26, 46, 0.95)",
+    backgroundColor: "rgba(4,6,26,0.92)",
     borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderColor: "rgba(255,255,255,0.10)",
     ...shadows.glass,
   },
   // Photo
@@ -195,14 +189,13 @@ const styles = StyleSheet.create({
   photoPlaceholder: {
     width: "100%",
     height: "100%",
-    backgroundColor: colors.eu.deep,
     alignItems: "center",
     justifyContent: "center",
   },
   photoInitial: {
     fontFamily: typography.families.heading,
-    fontSize: 64,
-    color: colors.eu.star,
+    fontSize: 72,
+    color: "rgba(255,255,255,0.3)",
   },
   photoGradient: {
     position: "absolute",
@@ -237,11 +230,8 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: spacing.xs,
     marginBottom: spacing.xs,
-  },
-  infoEmoji: {
-    fontSize: 16,
-    marginRight: spacing.xs,
   },
   infoText: {
     fontFamily: typography.families.bodyMedium,
@@ -272,7 +262,7 @@ const styles = StyleSheet.create({
   compatBar: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(255,255,255,0.1)",
     overflow: "hidden",
   },
   compatFill: {
@@ -287,68 +277,34 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   chip: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(255,215,0,0.1)",
     borderRadius: radii.full,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderColor: "rgba(255,215,0,0.3)",
   },
   chipText: {
     fontFamily: typography.families.body,
     fontSize: 11,
-    color: colors.text.secondary,
+    color: "#FFD700",
   },
   // Languages
   languagesRow: {
     flexDirection: "row",
     gap: spacing.xs,
-    marginBottom: spacing.xs,
   },
   langBadge: {
-    backgroundColor: "rgba(0, 51, 153, 0.3)",
+    backgroundColor: "rgba(255,109,63,0.12)",
     borderRadius: radii.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
     borderWidth: 1,
-    borderColor: "rgba(0, 51, 153, 0.5)",
+    borderColor: "rgba(255,109,63,0.3)",
   },
   langText: {
     fontFamily: typography.families.bodyMedium,
     fontSize: 11,
-    color: colors.eu.light,
-  },
-  // Actions
-  actions: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: spacing.lg,
-  },
-  actionBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-  },
-  dismissBtn: {
-    backgroundColor: "rgba(244, 67, 54, 0.15)",
-    borderColor: "rgba(244, 67, 54, 0.3)",
-  },
-  profileBtn: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  connectBtn: {
-    backgroundColor: "rgba(255, 204, 0, 0.15)",
-    borderColor: "rgba(255, 204, 0, 0.3)",
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-  },
-  actionEmoji: {
-    fontSize: 20,
+    color: "#FF6D3F",
   },
 });
