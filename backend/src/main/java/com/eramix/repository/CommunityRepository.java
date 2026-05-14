@@ -2,6 +2,7 @@ package com.eramix.repository;
 
 import com.eramix.entity.Community;
 import com.eramix.entity.enums.CommunityCategory;
+import com.eramix.entity.enums.CommunityMemberStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +28,7 @@ public interface CommunityRepository extends JpaRepository<Community, Long> {
     List<Community> findSuggestedForUser(@Param("userId") Long userId);
 
     @Query("SELECT c FROM Community c JOIN CommunityMember cm ON cm.community.id = c.id " +
-            "WHERE cm.user.id = :userId ORDER BY c.name ASC")
-    List<Community> findAllByMemberUserId(@Param("userId") Long userId);
+            "WHERE cm.user.id = :userId AND cm.status = :status ORDER BY c.name ASC")
+    List<Community> findAllByMemberUserIdAndStatus(@Param("userId") Long userId,
+                                                   @Param("status") CommunityMemberStatus status);
 }

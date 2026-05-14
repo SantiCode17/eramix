@@ -23,7 +23,7 @@ import {
 import { FlashList } from "@shopify/flash-list";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
+import { useRoute, useNavigation, RouteProp, useFocusEffect } from "@react-navigation/native";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -172,91 +172,18 @@ const av = StyleSheet.create({
   },
 });
 
-/* ─── CommentRow ───────────────────────────────────────── */
-const CommentRow = memo(function CommentRow({ c }: { c: CommunityCommentData }) {
-  const name = fullName(c.authorFirstName, c.authorLastName);
-  return (
-    <Animated.View entering={FadeInDown.duration(200)} style={cm.row}>
-      {c.authorProfilePhotoUrl ? (
-        <Image
-          source={{ uri: resolveMediaUrl(c.authorProfilePhotoUrl) }}
-          style={cm.avatar}
-        />
-      ) : (
-        <View style={[cm.avatar, cm.avatarPh]}>
-          <Text style={cm.initial}>{name[0] ?? "?"}</Text>
-        </View>
-      )}
-      <View style={cm.bubble}>
-        <Text style={cm.author}>{name}</Text>
-        <Text style={cm.text}>{c.content}</Text>
-        <Text style={cm.time}>{timeAgo(c.createdAt)}</Text>
-      </View>
-    </Animated.View>
-  );
-});
-
-const cm = StyleSheet.create({
-  row: { flexDirection: "row", marginBottom: spacing.sm, gap: spacing.sm },
-  avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    flexShrink: 0,
-    marginTop: 2,
-  },
-  avatarPh: {
-    backgroundColor: colors.glass.whiteMid,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  initial: {
-    fontFamily: typography.families.bodyMedium,
-    fontSize: 10,
-    color: colors.text.primary,
-  },
-  bubble: {
-    flex: 1,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: radii.lg,
-    borderTopLeftRadius: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  author: {
-    fontFamily: typography.families.bodyMedium,
-    fontSize: typography.sizes.caption.fontSize,
-    color: colors.text.primary,
-    marginBottom: 1,
-  },
-  text: {
-    fontFamily: typography.families.body,
-    fontSize: typography.sizes.bodySmall.fontSize,
-    color: colors.text.secondary,
-    lineHeight: 18,
-  },
-  time: {
-    fontFamily: typography.families.body,
-    fontSize: typography.sizes.tiny.fontSize,
-    color: colors.text.tertiary,
-    marginTop: 3,
-  },
-});
 
 /* ─── PostCard ─────────────────────────────────────────── */
 function PostCard({
   post,
   onLike,
-  onComment,
+  onPressComments,
 }: {
   post: CommunityPostData;
   onLike: (id: number) => void;
-  onComment: (id: number, text: string) => void;
+  onPressComments: (post: CommunityPostData) => void;
 }) {
-  const [showComments, setShowComments] = useState(false);
-  const [commentText, setCommentText] = useState("");
   const [expanded, setExpanded] = useState(false);
-  const commentInputRef = useRef<TextInput>(null);
 
   const heartScale = useSharedValue(1);
   const heartStyle = useAnimatedStyle(() => ({
@@ -273,22 +200,6 @@ function PostCard({
       withSpring(1, { damping: 6 }),
     );
     onLike(post.id);
-  };
-
-  const handleToggleComments = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setShowComments((v) => {
-      if (!v) setTimeout(() => commentInputRef.current?.focus(), 350);
-      return !v;
-    });
-  };
-
-  const handleSubmitComment = () => {
-    const txt = commentText.trim();
-    if (!txt) return;
-    onComment(post.id, txt);
-    setCommentText("");
-    Keyboard.dismiss();
   };
 
   return (
@@ -366,16 +277,15 @@ function PostCard({
           </Text>
         </Pressable>
 
-        <Pressable style={pc.actionBtn} onPress={handleToggleComments}>
+        <Pressable style={pc.actionBtn} onPress={() => onPressComments(post)}>
           <Ionicons
-            name={showComments ? "chatbubble" : "chatbubble-outline"}
+            name={"chatbubble-outline"}
             size={19}
-            color={showComments ? colors.eu.star : colors.text.secondary}
+            color={colors.text.secondary}
           />
           <Text
             style={[
               pc.actionCount,
-              showComments && { color: colors.eu.star },
             ]}
           >
             {post.commentCount ?? 0}
@@ -388,51 +298,6 @@ function PostCard({
           <Ionicons name="pin" size={15} color={colors.eu.star} />
         )}
       </View>
-
-      {/* Comments section */}
-      {showComments && (
-        <View style={pc.commentsSection}>
-          {(post.recentComments ?? []).length === 0 && (
-            <Text style={pc.noComments}>Sin comentarios aún</Text>
-          )}
-          {(post.recentComments ?? []).map((c) => (
-            <CommentRow key={c.id} c={c} />
-          ))}
-
-          {/* Input */}
-          <View style={pc.inputRow}>
-            <TextInput
-              ref={commentInputRef}
-              style={pc.input}
-              value={commentText}
-              onChangeText={setCommentText}
-              placeholder="Escribe un comentario…"
-              placeholderTextColor={colors.text.tertiary}
-              onSubmitEditing={handleSubmitComment}
-              returnKeyType="send"
-              multiline={false}
-            />
-            <Pressable
-              onPress={handleSubmitComment}
-              hitSlop={10}
-              disabled={!commentText.trim()}
-              style={[
-                pc.sendBtn,
-                !commentText.trim() && { opacity: 0.4 },
-              ]}
-            >
-              <LinearGradient
-                colors={colors.gradient.accent as [string, string]}
-                style={pc.sendGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Ionicons name="send" size={14} color="#fff" />
-              </LinearGradient>
-            </Pressable>
-          </View>
-        </View>
-      )}
     </Animated.View>
   );
 }
@@ -598,6 +463,7 @@ export default function CommunityFeedScreen(): React.JSX.Element {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [joinLoading, setJoinLoading] = useState(false);
+  const hasMounted = useRef(false);
 
   /* ── fetchers ── */
   const fetchCommunity = useCallback(async () => {
@@ -633,8 +499,18 @@ export default function CommunityFeedScreen(): React.JSX.Element {
       setLoading(true);
       await Promise.all([fetchCommunity(), fetchPosts(0)]);
       setLoading(false);
+      hasMounted.current = true;
     })();
   }, []);
+
+  // Refresh posts when screen regains focus (after commenting, creating a post, etc.)
+  useFocusEffect(
+    useCallback(() => {
+      if (hasMounted.current) {
+        fetchPosts(0);
+      }
+    }, [fetchPosts])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -650,7 +526,7 @@ export default function CommunityFeedScreen(): React.JSX.Element {
   /* ── actions ── */
   const handleLike = useCallback(
     async (postId: number) => {
-      // Optimistic update first
+      // Optimistic update
       setPosts((prev) =>
         prev.map((p) =>
           p.id === postId
@@ -664,7 +540,15 @@ export default function CommunityFeedScreen(): React.JSX.Element {
         ),
       );
       try {
-        await communitiesApi.togglePostLike(communityId, postId);
+        const updated = await communitiesApi.togglePostLike(communityId, postId);
+        // Sync with authoritative server counts
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? { ...p, likeCount: updated.likeCount, likedByCurrentUser: updated.likedByCurrentUser }
+              : p,
+          ),
+        );
       } catch (e) {
         // Revert on error
         setPosts((prev) =>
@@ -680,32 +564,6 @@ export default function CommunityFeedScreen(): React.JSX.Element {
           ),
         );
         handleError(e, "CommunityFeed.like");
-      }
-    },
-    [communityId],
-  );
-
-  const handleComment = useCallback(
-    async (postId: number, text: string) => {
-      try {
-        const comment = await communitiesApi.createComment(
-          communityId,
-          postId,
-          { content: text },
-        );
-        setPosts((prev) =>
-          prev.map((p) =>
-            p.id === postId
-              ? {
-                  ...p,
-                  recentComments: [...(p.recentComments ?? []), comment],
-                  commentCount: (p.commentCount ?? 0) + 1,
-                }
-              : p,
-          ),
-        );
-      } catch (e) {
-        handleError(e, "CommunityFeed.comment");
       }
     },
     [communityId],
@@ -752,17 +610,8 @@ export default function CommunityFeedScreen(): React.JSX.Element {
     } else {
       setJoinLoading(true);
       try {
-        await communitiesApi.joinCommunity(communityId);
-        setCommunity((c) =>
-          c
-            ? {
-                ...c,
-                isMember: true,
-                currentUserRole: "MEMBER",
-                memberCount: (c.memberCount ?? 0) + 1,
-              }
-            : c,
-        );
+        const updatedCommunity = await communitiesApi.joinCommunity(communityId);
+        setCommunity(updatedCommunity);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } catch (e) {
         handleError(e, "CommunityFeed.join");
@@ -832,7 +681,10 @@ export default function CommunityFeedScreen(): React.JSX.Element {
           {/* Stats + join row */}
           <View style={hd.statsRow}>
             {/* Member avatars + count */}
-            <View style={hd.membersGroup}>
+            <Pressable
+              style={hd.membersGroup}
+              onPress={() => navigation.navigate("CommunityMembers", { communityId })}
+            >
               {community.membersPreview?.length > 0 && (
                 <MemberAvatars
                   members={community.membersPreview}
@@ -840,10 +692,9 @@ export default function CommunityFeedScreen(): React.JSX.Element {
                 />
               )}
               <Text style={hd.memberCount}>
-                {community.memberCount ?? 0}{" "}
-                {community.memberCount === 1 ? "miembro" : "miembros"}
+                {community.memberCount ?? 0} {community.memberCount === 1 ? "miembro" : "miembros"}
               </Text>
-            </View>
+            </Pressable>
 
             {/* Join / Leave / Role button */}
             {community.isMember ? (
@@ -910,9 +761,18 @@ export default function CommunityFeedScreen(): React.JSX.Element {
   /* ── render post ── */
   const renderPost = useCallback(
     ({ item }: { item: CommunityPostData }) => (
-      <PostCard post={item} onLike={handleLike} onComment={handleComment} />
+      <PostCard 
+        post={item} 
+        onLike={handleLike} 
+        onPressComments={(post) => {
+          navigation.navigate("CommunityPostComments", {
+            communityId,
+            postParam: post,
+          });
+        }} 
+      />
     ),
-    [handleLike, handleComment],
+    [handleLike, navigation, communityId],
   );
 
   /* ── Empty state ── */

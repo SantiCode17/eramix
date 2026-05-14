@@ -33,3 +33,32 @@ docker-compose.override.yml
 # Logs
 *.log
 backend/uploads/
+
+# Memoria académica (proyecto auxiliar para PDF)
+memoria-eramix/node_modules/
+memoria-eramix/package-lock.json
+
+# === Documentos internos de evaluación (no publicar) ===
+# Estos archivos son de uso del alumno y no se suben al repositorio público.
+RAsCompletados.md
+MEMORIA_ERAMIX.md
+MEMORIA_ERAMIX.pdf
+MEMORIA_ERAMIX.txt
+MEMORIA_TECNICA_ERAMIX.txt
+AUDITORIA_FASE_0.md
+memoria-eramix/
+scripts/memoria/
+*.draft.md
+*.local.md
+
+# === Entornos virtuales y de scripting local ===
+.venv/
+node_modules/
+package-lock.json
+.logs/
+uploads/
+scripts/memoria/__pycache__/
+
+# === Multimedia y herramientas de memoria (locales, no publicar) ===
+multimedia_memoria/
+package.json

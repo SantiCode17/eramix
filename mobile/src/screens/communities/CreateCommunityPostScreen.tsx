@@ -33,7 +33,7 @@ type CommunitiesStackParamList = {
 };
 type RouteType = RouteProp<CommunitiesStackParamList, "CreateCommunityPost">;
 
-const MAX_CONTENT = 5000;
+const MAX_CONTENT = 2000;
 
 export default function CreateCommunityPostScreen(): React.JSX.Element {
   const route = useRoute<RouteType>();
@@ -64,8 +64,7 @@ export default function CreateCommunityPostScreen(): React.JSX.Element {
       let uploadedUrl: string | undefined;
       if (imageUri) {
         setUploading(true);
-        const res = await communitiesApi.uploadPostImage(imageUri);
-        uploadedUrl = res.url ?? res;
+        uploadedUrl = await communitiesApi.uploadPostImage(communityId, imageUri);
         setUploading(false);
       }
       await communitiesApi.createPost(communityId, {

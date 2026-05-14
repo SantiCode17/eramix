@@ -27,27 +27,33 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { DS } from "@/design-system/tokens";
+import { typography, colors, DS } from "@/design-system/tokens";
+
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
+import { sendVoiceMessage } from "@/api/chat";
+import type { ChatStackParamList } from "@/types/chat";
 
 const WAVE_BARS = 32;
 const MAX_DURATION_SEC = 120;
 
 export default function VoiceMessageScreen() {
   const navigation = useNavigation();
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [seconds, setSeconds] = useState(0);
+  const route = useRoute<RouteProp<ChatStackParamList, "VoiceMessage">>();
+  const [isSending, setIsSending] = useState(false);
+
+  const { isRecording, duration, startRecording, stopRecording } = useAudioRecorder();
   const [waveData, setWaveData] = useState<number[]>(
     Array(WAVE_BARS).fill(0.15)
   );
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  const waveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── Pulse animation for rec button ──
   const pulseScale = useSharedValue(1);
   const glowOpacity = useSharedValue(0);
 
   useEffect(() => {
-    if (isRecording && !isPaused) {
+    if (isRecording) {
       pulseScale.value = withRepeat(
         withSequence(
           withTiming(1.12, { duration: 600 }),
@@ -68,77 +74,66 @@ export default function VoiceMessageScreen() {
       pulseScale.value = withTiming(1, { duration: 200 });
       glowOpacity.value = withTiming(0, { duration: 200 });
     }
-  }, [isRecording, isPaused]);
+  }, [isRecording]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
   }));
+
   const glowStyle = useAnimatedStyle(() => ({
     opacity: glowOpacity.value,
   }));
 
-  // ── Timer logic ──
-  const startTimer = useCallback(() => {
-    timerRef.current = setInterval(() => {
-      setSeconds((prev) => {
-        if (prev >= MAX_DURATION_SEC) {
-          stopRecording();
-          return prev;
-        }
-        return prev + 1;
-      });
-      // Simulate waveform
+  // Fake wave logic for visual effect since we just have full expo-av without metering
+  const startWaves = useCallback(() => {
+    waveTimerRef.current = setInterval(() => {
       setWaveData((prev) =>
         prev.map(() => 0.15 + Math.random() * 0.85)
       );
-    }, 1000);
+    }, 150);
   }, []);
 
-  const stopTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+  const stopWaves = useCallback(() => {
+    if (waveTimerRef.current) {
+      clearInterval(waveTimerRef.current);
+      waveTimerRef.current = null;
     }
   }, []);
 
-  const startRecording = useCallback(() => {
-    setIsRecording(true);
-    setIsPaused(false);
-    setSeconds(0);
-    startTimer();
-  }, [startTimer]);
+  const handleStart = useCallback(async () => {
+    await startRecording();
+    startWaves();
+  }, [startRecording, startWaves]);
 
-  const pauseRecording = useCallback(() => {
-    setIsPaused(true);
-    stopTimer();
-  }, [stopTimer]);
+  const cancelRecording = useCallback(async () => {
+    await stopRecording();
+    stopWaves();
+    setWaveData(Array(WAVE_BARS).fill(0.15));
+  }, [stopRecording, stopWaves]);
 
-  const resumeRecording = useCallback(() => {
-    setIsPaused(false);
-    startTimer();
-  }, [startTimer]);
-
-  const stopRecording = useCallback(() => {
-    setIsRecording(false);
-    setIsPaused(false);
-    stopTimer();
-  }, [stopTimer]);
-
-  const sendVoice = useCallback(() => {
-    if (seconds < 1) {
+  const sendVoice = useCallback(async () => {
+    if (duration < 1) {
       Alert.alert("Muy corto", "Graba al menos 1 segundo");
       return;
     }
-    // TODO: Upload audio blob via chat API
-    Alert.alert("✅ Enviado", `Mensaje de voz (${formatTime(seconds)}) enviado`);
-    navigation.goBack();
-  }, [seconds, navigation]);
+    stopWaves();
+    const uri = await stopRecording();
+    
+    if (!uri) {
+      Alert.alert("Error", "No se pudo obtener el audio");
+      return;
+    }
 
-  const cancelRecording = useCallback(() => {
-    stopRecording();
-    setSeconds(0);
-    setWaveData(Array(WAVE_BARS).fill(0.15));
-  }, [stopRecording]);
+    try {
+      setIsSending(true);
+      await sendVoiceMessage(route.params.conversationId, uri);
+      navigation.goBack();
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "No se pudo subir la nota de voz");
+      setIsSending(false);
+    }
+  }, [duration, stopWaves, stopRecording, route.params.conversationId, navigation]);
 
   return (
     <View style={styles.container}>
@@ -149,7 +144,7 @@ export default function VoiceMessageScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn} disabled={isSending}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Mensaje de Voz</Text>
@@ -158,7 +153,7 @@ export default function VoiceMessageScreen() {
 
       {/* Waveform Visualization */}
       <View style={styles.waveContainer}>
-        <View style={styles.waveInner}>
+        <View style={styles.barsArea}>
           {waveData.map((amplitude, i) => (
             <Animated.View
               key={i}
@@ -173,8 +168,8 @@ export default function VoiceMessageScreen() {
                     Extrapolation.CLAMP
                   ),
                   backgroundColor:
-                    isRecording && !isPaused
-                      ? interpolateColor(amplitude)
+                    isRecording
+                      ? interpolateColorAnimated(amplitude)
                       : "rgba(255,255,255,0.12)",
                 },
               ]}
@@ -188,191 +183,212 @@ export default function VoiceMessageScreen() {
         {isRecording && (
           <Animated.View entering={FadeIn} style={styles.recDot} />
         )}
-        <Text style={styles.timer}>{formatTime(seconds)}</Text>
+        <Text style={styles.timer}>{formatTime(duration)}</Text>
         <Text style={styles.maxDuration}>
           / {formatTime(MAX_DURATION_SEC)}
         </Text>
       </View>
 
       {/* Controls */}
-      <View style={styles.controlsRow}>
+      <View style={styles.controls}>
         {/* Cancel */}
         <Pressable
-          onPress={isRecording ? cancelRecording : () => navigation.goBack()}
-          style={styles.secondaryBtn}
+          style={styles.sideBtn}
+          onPress={cancelRecording}
+          disabled={!isRecording || isSending}
         >
-          <Ionicons name="trash-outline" size={24} color="#FC8181" />
-          <Text style={styles.secondaryLabel}>Cancelar</Text>
+          {isRecording && (
+            <Animated.View entering={FadeIn} exiting={FadeOut}>
+              <Ionicons name="trash-outline" size={24} color="#fff" />
+              <Text style={styles.sideLabel}>Borrar</Text>
+            </Animated.View>
+          )}
         </Pressable>
 
-        {/* Record / Pause */}
-        <View style={styles.mainBtnWrapper}>
-          <Animated.View style={[styles.recGlow, glowStyle]} />
-          <Animated.View style={pulseStyle}>
-            <Pressable
-              onPress={() => {
-                if (!isRecording) startRecording();
-                else if (isPaused) resumeRecording();
-                else pauseRecording();
-              }}
-              style={[
-                styles.mainBtn,
-                isRecording && !isPaused && styles.mainBtnRecording,
-              ]}
-            >
-              <Ionicons
-                name={
-                  !isRecording
-                    ? "mic"
-                    : isPaused
-                    ? "play"
-                    : "pause"
-                }
-                size={32}
-                color="#fff"
-              />
+        {/* Main REC */}
+        <View style={styles.centerControl}>
+          <Animated.View style={[styles.glowRing, glowStyle]} />
+          <Animated.View style={[styles.pulseRing, pulseStyle]} />
+
+          {isSending ? (
+            <View style={styles.recBtn}>
+              <ActivityIndicator color="#000" />
+            </View>
+          ) : isRecording ? (
+            <Pressable style={[styles.recBtn, styles.recBtnActive]} onPress={cancelRecording}>
+              <Ionicons name="stop" size={28} color="#000" />
             </Pressable>
-          </Animated.View>
+          ) : (
+            <Pressable style={styles.recBtn} onPress={handleStart}>
+              <Ionicons name="mic" size={32} color="#000" />
+            </Pressable>
+          )}
         </View>
 
         {/* Send */}
         <Pressable
+          style={styles.sideBtn}
           onPress={sendVoice}
-          style={[
-            styles.secondaryBtn,
-            seconds < 1 && { opacity: 0.3 },
-          ]}
-          disabled={seconds < 1}
+          disabled={!isRecording || duration < 1 || isSending}
         >
-          <Ionicons name="send" size={24} color={DS.primary} />
-          <Text style={[styles.secondaryLabel, { color: DS.primary }]}>
-            Enviar
-          </Text>
+          {isRecording && (
+            <Animated.View entering={FadeIn} exiting={FadeOut}>
+              <View style={styles.sendIconWrapper}>
+                <Ionicons name="arrow-up" size={20} color="#000" />
+              </View>
+              <Text style={styles.sideLabel}>Enviar</Text>
+            </Animated.View>
+          )}
         </Pressable>
-      </View>
-
-      {/* Tips */}
-      <View style={styles.tipContainer}>
-        <Ionicons name="information-circle-outline" size={16} color={DS.textMuted} />
-        <Text style={styles.tipText}>
-          Mantén un tono normal · Máximo 2 min · Se envía como audio
-        </Text>
       </View>
     </View>
   );
 }
 
-function formatTime(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+function formatTime(secs: number) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s < 10 ? "0" : ""}${s}`;
 }
 
-function interpolateColor(amplitude: number): string {
-  if (amplitude > 0.7) return "#FFD700";
-  if (amplitude > 0.4) return "#FF6D3F";
-  return "rgba(255,215,0,0.5)";
+function interpolateColorAnimated(amplitude: number) {
+  "worklet";
+  if (amplitude > 0.7) {
+    return "rgba(255, 204, 0, 1)";
+  } else if (amplitude > 0.4) {
+    return "rgba(255, 204, 0, 0.6)";
+  }
+  return "rgba(255, 255, 255, 0.4)";
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: DS.background },
-
+  container: {
+    flex: 1,
+    backgroundColor: DS.background,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 56,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    justifyContent: "space-between",
+    paddingTop: 60,
+    paddingHorizontal: 20,
   },
-  backBtn: { width: 40, height: 40, justifyContent: "center" },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   headerTitle: {
-    flex: 1,
     color: "#fff",
-    fontSize: 18,
-    fontWeight: "700",
-    textAlign: "center",
+    fontSize: 16,
+    fontFamily: typography.families.subheading,
   },
-
   waveContainer: {
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 24,
+    alignItems: "center",
+    paddingHorizontal: 40,
   },
-  waveInner: {
+  barsArea: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 3,
-    height: 100,
+    justifyContent: "space-between",
+    width: "100%",
+    height: 80,
   },
   waveBar: {
     width: 4,
-    borderRadius: 2,
-    minHeight: 6,
+    borderRadius: 4,
   },
-
   timerContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 24,
+    marginBottom: 40,
   },
   recDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#E53E3E",
-    marginRight: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#FF3B30",
+    marginRight: 8,
   },
   timer: {
     color: "#fff",
-    fontSize: 40,
-    fontWeight: "300",
-    fontVariant: ["tabular-nums"],
+    fontSize: 28,
+    fontFamily: typography.families.bodyMedium,
   },
   maxDuration: {
-    color: DS.textMuted,
+    color: "rgba(255,255,255,0.5)",
     fontSize: 16,
-    marginLeft: 6,
-    marginTop: 10,
+    fontFamily: typography.families.bodyMedium,
+    marginLeft: 8,
+    marginTop: 6,
   },
-
-  controlsRow: {
+  controls: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-around",
-    paddingHorizontal: 32,
-    paddingBottom: 30,
+    justifyContent: "space-evenly",
+    height: 160,
+    paddingBottom: 40,
   },
-  secondaryBtn: { alignItems: "center", gap: 4 },
-  secondaryLabel: { color: DS.textSecondary, fontSize: 11 },
-
-  mainBtnWrapper: { alignItems: "center", justifyContent: "center" },
-  recGlow: {
-    position: "absolute",
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "rgba(255,215,0,0.25)",
+  sideBtn: {
+    width: 64,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  mainBtn: {
+  sideLabel: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: typography.families.bodyMedium,
+    marginTop: 8,
+    opacity: 0.8,
+  },
+  centerControl: {
+    width: 88,
+    height: 88,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  recBtn: {
     width: 72,
     height: 72,
     borderRadius: 36,
     backgroundColor: DS.primary,
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 10,
+    elevation: 10,
   },
-  mainBtnRecording: {
-    backgroundColor: "#E53E3E",
+  recBtnActive: {
+    backgroundColor: "#FF3B30",
   },
-
-  tipContainer: {
-    flexDirection: "row",
+  pulseRing: {
+    position: "absolute",
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    borderWidth: 2,
+    borderColor: DS.primary,
+    zIndex: 5,
+  },
+  glowRing: {
+    position: "absolute",
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "rgba(255, 204, 0, 0.15)",
+    zIndex: 0,
+  },
+  sendIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: DS.primary,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 40,
-    gap: 6,
   },
-  tipText: { color: DS.textMuted, fontSize: 11 },
 });

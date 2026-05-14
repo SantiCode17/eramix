@@ -207,7 +207,7 @@ class WebSocketService {
 
   // ── Send group message via STOMP ────────────────
 
-  sendGroupMessage(groupId: number, content: string, type = "TEXT"): void {
+  sendGroupMessage(groupId: number, content: string, type = "TEXT", mediaUrl?: string): void {
     if (!this.client?.connected) return;
     this.client.publish({
       destination: "/app/group.sendMessage",
@@ -215,6 +215,7 @@ class WebSocketService {
         groupId,
         content,
         type,
+        ...(mediaUrl ? { mediaUrl } : {}),
       }),
     });
   }

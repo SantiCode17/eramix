@@ -155,6 +155,29 @@ export async function getSpendingCategories(): Promise<SpendingCategory[]> {
   return data.data;
 }
 
+// ── Finance Settings ──────────────────────────────────────
+
+export interface FinanceSettings {
+  enableNotifications: boolean;
+  enableBudgetAlerts: boolean;
+  alertThreshold: number;
+}
+
+export async function getFinanceSettings(): Promise<FinanceSettings> {
+  const { data } = await apiClient.get<ApiResponse<FinanceSettings>>(
+    "/v1/finance/settings",
+  );
+  return data.data;
+}
+
+export async function updateFinanceSettings(settings: Partial<FinanceSettings>): Promise<FinanceSettings> {
+  const { data } = await apiClient.put<ApiResponse<FinanceSettings>>(
+    "/v1/finance/settings",
+    settings,
+  );
+  return data.data;
+}
+
 export const financeApi = {
   createTransaction,
   getTransactions,
@@ -173,4 +196,6 @@ export const financeApi = {
   getPendingAlertsCount,
   acknowledgeAlert,
   getSpendingCategories,
+  getFinanceSettings,
+  updateFinanceSettings,
 };

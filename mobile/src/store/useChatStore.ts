@@ -26,7 +26,7 @@ interface ChatState {
   fetchMessages: (conversationId: number) => Promise<void>;
   fetchOlderMessages: (conversationId: number) => Promise<void>;
   sendMessage: (conversationId: number, content: string) => void;
-  sendImageMessage: (conversationId: number, imageUri: string) => Promise<void>;
+  sendImageMessage: (conversationId: number, imageUri: string, caption?: string) => Promise<void>;
   markAsRead: (conversationId: number) => Promise<void>;
   sendTypingIndicator: (conversationId: number, typing: boolean) => void;
 }
@@ -313,9 +313,9 @@ export const useChatStore = create<ChatState>((set, get) => {
 
     // ── Send image message via REST API ───────────
 
-    sendImageMessage: async (conversationId: number, imageUri: string) => {
+    sendImageMessage: async (conversationId: number, imageUri: string, caption?: string) => {
       try {
-        const newMessage = await chatApi.sendImageMessage(conversationId, imageUri);
+        const newMessage = await chatApi.sendImageMessage(conversationId, imageUri, caption);
         // The WebSocket listener will handle adding the message to the list
         // But in case the WS event is slow, we optimistically add it
         if (newMessage) {

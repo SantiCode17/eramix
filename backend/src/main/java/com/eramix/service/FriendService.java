@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,18 +40,36 @@ public class FriendService {
                 .orElseThrow(() -> new UserNotFoundException(receiverId));
 
         // Verificar si ya existe una solicitud entre ambos
-        friendRequestRepository.findBetweenUsers(senderId, receiverId)
-                .ifPresent(existing -> {
-                    if (existing.getStatus() == FriendRequestStatus.BLOCKED) {
-                        throw new IllegalArgumentException("No puedes enviar solicitud a este usuario");
-                    }
-                    if (existing.getStatus() == FriendRequestStatus.PENDING) {
-                        throw new IllegalArgumentException("Ya existe una solicitud pendiente");
-                    }
-                    if (existing.getStatus() == FriendRequestStatus.ACCEPTED) {
-                        throw new IllegalArgumentException("Ya sois amigos");
-                    }
-                });
+        Optional<FriendRequest> existingOpt = friendRequestRepository.findBetweenUsers(senderId, receiverId);
+        if (existingOpt.isPresent()) {
+            FriendRequest existing = existingOpt.get();
+            if (existing.getStatus() == FriendRequestStatus.BLOCKED) {
+                throw new IllegalArgumentException("No puedes enviar solicitud a este usuario");
+            }
+            if (existing.getStatus() == FriendRequestStatus.ACCEPTED) {
+                throw new IllegalArgumentException("Ya sois amigos");
+            }
+            if (existing.getStatus() == FriendRequestStatus.PENDING) {
+                // Si la solicitud pendiente es del receptor hacia el emisor → match mutuo
+                if (existing.getReceiver().getId().equals(senderId)) {
+                    existing.setStatus(FriendRequestStatus.ACCEPTED);
+                    friendRequestRepository.save(existing);
+                    createFriendship(existing.getSender(), existing.getReceiver());
+                    createConversationIfNotExists(existing.getSender(), existing.getReceiver());
+                    notificationService.send(senderId, NotificationType.FRIEND_ACCEPTED,
+                            "¡Es un match! 🎉",
+                            receiver.getFirstName() + " también quiere ser tu amigo",
+                            "{\"friendId\":" + receiverId + "}");
+                    notificationService.send(receiverId, NotificationType.FRIEND_ACCEPTED,
+                            "¡Es un match! 🎉",
+                            sender.getFirstName() + " también quiere ser tu amigo",
+                            "{\"friendId\":" + senderId + "}");
+                    return mapToRequestResponse(existing);
+                }
+                // Solicitud ya enviada en el mismo sentido — ignorar silenciosamente
+                return mapToRequestResponse(existing);
+            }
+        }
 
         // Verificar si ya son amigos
         friendshipRepository.findBetweenUsers(senderId, receiverId)

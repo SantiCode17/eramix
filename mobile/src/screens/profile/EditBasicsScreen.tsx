@@ -338,8 +338,8 @@ const s = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    borderTopLeftRadius: radii["2xl"],
-    borderTopRightRadius: radii["2xl"],
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
     overflow: "hidden",
   },
   modalGradient: {

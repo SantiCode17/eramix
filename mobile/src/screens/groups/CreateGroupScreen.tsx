@@ -1,6 +1,6 @@
 /**
  * CreateGroupScreen — Eramix
- * Diseño profesional. Sin animaciones artificiales. Sin sección "Fecha Especial".
+ * Diseño European Glass con avatar prominente, miembros visuales y floaty submit.
  */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -15,6 +15,7 @@ import {
   Platform,
   Alert,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -36,26 +37,25 @@ interface FriendEntry {
   profilePhotoUrl?: string | null;
 }
 
-function SectionTitle({ label }: { label: string }) {
-  return <Text style={s.sectionTitle}>{label}</Text>;
-}
+const { width: SCREEN_W } = Dimensions.get("window");
+const AVATAR_SIZE = 96;
 
 function FriendRow({ friend, selected, onPress }: { friend: FriendEntry; selected: boolean; onPress: () => void }) {
   const initials = `${(friend.firstName || "?")[0]}${(friend.lastName || "?")[0]}`.toUpperCase();
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [s.friendRow, selected && s.friendRowSelected, pressed && { backgroundColor: "rgba(255,255,255,0.04)" }]}
+      style={({ pressed }) => [s.friendRow, selected && s.friendRowSelected, pressed && { opacity: 0.75 }]}
     >
       <View style={s.friendLeft}>
         {friend.profilePhotoUrl ? (
           <Image source={{ uri: resolveMediaUrl(friend.profilePhotoUrl) }} style={s.friendAvatar} />
         ) : (
-          <LinearGradient colors={["rgba(255,215,0,0.15)", "rgba(19,34,64,0.6)"]} style={s.friendAvatarFallback}>
+          <LinearGradient colors={["rgba(255,215,0,0.18)", "rgba(19,34,64,0.7)"]} style={s.friendAvatarFallback}>
             <Text style={s.friendInitials}>{initials}</Text>
           </LinearGradient>
         )}
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={s.friendName}>{friend.firstName} {friend.lastName}</Text>
           <Text style={s.friendSub}>Amigo/a en Eramix</Text>
         </View>
@@ -74,13 +74,13 @@ function SelectedPill({ friend, onRemove }: { friend: FriendEntry; onRemove: () 
       {friend.profilePhotoUrl ? (
         <Image source={{ uri: resolveMediaUrl(friend.profilePhotoUrl) }} style={s.pillAvatar} />
       ) : (
-        <LinearGradient colors={["rgba(255,215,0,0.2)", "rgba(19,34,64,0.6)"]} style={s.pillAvatarFallback}>
+        <LinearGradient colors={["rgba(255,215,0,0.25)", "rgba(19,34,64,0.7)"]} style={s.pillAvatarFallback}>
           <Text style={s.pillInitials}>{initials}</Text>
         </LinearGradient>
       )}
       <Text style={s.pillName} numberOfLines={1}>{friend.firstName}</Text>
-      <Pressable onPress={onRemove} hitSlop={8} style={s.pillRemove}>
-        <Ionicons name="close" size={10} color="rgba(255,255,255,0.6)" />
+      <Pressable onPress={onRemove} hitSlop={10} style={s.pillRemove}>
+        <Ionicons name="close" size={11} color="rgba(255,255,255,0.6)" />
       </Pressable>
     </View>
   );
@@ -182,66 +182,80 @@ export default function CreateGroupScreen(): React.JSX.Element {
     <View style={s.root}>
       <LinearGradient colors={[DS.background, "#0E1A35", "#0A0A1E"]} style={StyleSheet.absoluteFill} />
 
-      {/* Cabecera */}
-      <View style={[s.header, { paddingTop: insets.top + spacing.sm }]}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.6 }]}>
-          <Ionicons name="close" size={22} color={colors.text.primary} />
+      {/* Header */}
+      <View style={[s.header, { paddingTop: insets.top + spacing.xs }]}>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={({ pressed }) => [pressed && { opacity: 0.6 }]}>
+          <BlurView intensity={20} tint="dark" style={s.headerBtnBlur}>
+            <Ionicons name="close" size={20} color={colors.text.primary} />
+          </BlurView>
         </Pressable>
         <View style={s.headerCenter}>
           <Text style={s.headerTitle}>Nuevo Grupo</Text>
-          <Text style={s.headerSub}>
-            {selectedIds.size > 0
-              ? `${selectedIds.size} miembro${selectedIds.size !== 1 ? "s" : ""} seleccionado${selectedIds.size !== 1 ? "s" : ""}`
-              : "Convoca a tus amigos"}
-          </Text>
+          {selectedIds.size > 0 ? (
+            <View style={s.memberCountBadge}>
+              <Ionicons name="people" size={11} color={colors.eu.star} />
+              <Text style={s.memberCountText}>
+                {selectedIds.size} miembro{selectedIds.size !== 1 ? "s" : ""}
+              </Text>
+            </View>
+          ) : (
+            <Text style={s.headerSub}>Convoca a tus amigos</Text>
+          )}
         </View>
-        <Pressable
-          onPress={handleCreate}
-          disabled={!canSubmit}
-          style={({ pressed }) => [s.createBtn, !canSubmit && s.createBtnDisabled, pressed && { opacity: 0.8 }]}
-        >
-          {submitting
-            ? <ActivityIndicator size="small" color="#000" />
-            : <Text style={s.createBtnText}>Crear</Text>
-          }
-        </Pressable>
+        <View style={{ width: 40 }} />
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 40 }]}
+          contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 100 }]}
           keyboardShouldPersistTaps="handled"
         >
-          {/* IDENTIDAD */}
-          <View style={s.section}>
-            <SectionTitle label="IDENTIDAD DEL GRUPO" />
-            <View style={s.card}>
-              {/* Avatar */}
-              <View style={s.avatarSection}>
-                <Pressable onPress={handlePickAvatar} style={s.avatarWrap}>
-                  {avatarUri ? (
-                    <Image source={{ uri: avatarUri }} style={s.avatarImg} />
-                  ) : (
-                    <LinearGradient colors={["rgba(255,215,0,0.1)", "rgba(19,34,64,0.7)"]} style={s.avatarPlaceholder}>
-                      <Ionicons name="camera-outline" size={28} color={colors.eu.star} />
-                    </LinearGradient>
-                  )}
-                  <View style={s.avatarEditBadge}>
-                    <LinearGradient colors={["#FFE566", "#D4AF37"]} style={StyleSheet.absoluteFill} />
-                    <Ionicons name="pencil" size={11} color="#000" />
-                  </View>
-                </Pressable>
-                <Text style={s.avatarHint}>Foto del grupo</Text>
+          {/* Avatar hero */}
+          <View style={s.avatarHero}>
+            <LinearGradient
+              colors={["rgba(255,215,0,0.06)", "rgba(0,51,153,0.12)", "transparent"]}
+              style={StyleSheet.absoluteFill}
+            />
+            <Pressable onPress={handlePickAvatar} style={s.avatarRingWrap}>
+              {/* Ring dorado */}
+              <LinearGradient
+                colors={["#FFE566", "#D4AF37", "#FF6B2B"]}
+                style={s.avatarRing}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              />
+              <View style={s.avatarInner}>
+                {avatarUri ? (
+                  <Image source={{ uri: avatarUri }} style={s.avatarImg} />
+                ) : (
+                  <LinearGradient colors={["rgba(255,215,0,0.12)", "rgba(0,51,153,0.3)"]} style={s.avatarPlaceholder}>
+                    <Ionicons name="camera-outline" size={32} color={colors.eu.star} />
+                  </LinearGradient>
+                )}
               </View>
+              <View style={s.avatarEditBadge}>
+                <LinearGradient colors={["#FFE566", "#D4AF37"]} style={StyleSheet.absoluteFill} />
+                <Ionicons name="pencil" size={12} color="#000" />
+              </View>
+            </Pressable>
+            <Text style={s.avatarHint}>Foto del grupo</Text>
+            <Text style={s.avatarHintSub}>Toca para seleccionar imagen</Text>
+          </View>
 
-              <View style={s.cardDivider} />
-
+          {/* Info del grupo */}
+          <View style={s.section}>
+            <View style={s.sectionLabelRow}>
+              <View style={s.sectionLabelIcon}>
+                <Ionicons name="people-outline" size={13} color={colors.eu.star} />
+              </View>
+              <Text style={s.sectionTitle}>IDENTIDAD DEL GRUPO</Text>
+            </View>
+            <View style={s.card}>
               {/* Nombre */}
               <View style={[s.inputRow, focusedInput === "name" && s.inputRowFocused]}>
                 <Ionicons name="people-outline" size={18} color={focusedInput === "name" ? colors.eu.star : "rgba(255,255,255,0.3)"} style={s.inputIcon} />
                 <TextInput
-                  style={[s.input, { fontSize: 17 }]}
+                  style={[s.input, { fontSize: 16 }]}
                   placeholder="Nombre del grupo *"
                   placeholderTextColor="rgba(255,255,255,0.25)"
                   value={name}
@@ -254,12 +268,11 @@ export default function CreateGroupScreen(): React.JSX.Element {
                 {name.length > 0 && <Text style={s.charCount}>{name.length}/40</Text>}
               </View>
               <View style={s.cardDivider} />
-
               {/* Descripción */}
               <View style={[s.inputRow, { alignItems: "flex-start", paddingVertical: spacing.md }, focusedInput === "desc" && s.inputRowFocused]}>
                 <Ionicons name="document-text-outline" size={18} color={focusedInput === "desc" ? colors.eu.star : "rgba(255,255,255,0.3)"} style={[s.inputIcon, { marginTop: 2 }]} />
                 <TextInput
-                  style={[s.input, { minHeight: 60, textAlignVertical: "top" }]}
+                  style={[s.input, { minHeight: 64, textAlignVertical: "top" }]}
                   placeholder="Descripción (opcional)"
                   placeholderTextColor="rgba(255,255,255,0.25)"
                   value={description}
@@ -273,13 +286,25 @@ export default function CreateGroupScreen(): React.JSX.Element {
             </View>
           </View>
 
-          {/* MIEMBROS */}
+          {/* Miembros */}
           <View style={s.section}>
-            <SectionTitle label={`MIEMBROS${friends.length > 0 ? ` (${friends.length} amigos)` : ""}`} />
+            <View style={s.sectionLabelRow}>
+              <View style={s.sectionLabelIcon}>
+                <Ionicons name="person-add-outline" size={13} color={colors.eu.star} />
+              </View>
+              <Text style={s.sectionTitle}>
+                MIEMBROS{friends.length > 0 ? ` · ${friends.length} amigos` : ""}
+              </Text>
+            </View>
 
-            {/* Pills de seleccionados */}
+            {/* Pills seleccionados */}
             {selectedFriends.length > 0 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.pillsScroll} style={s.pillsWrap}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.pillsScroll}
+                style={s.pillsWrap}
+              >
                 {selectedFriends.map((f) => (
                   <SelectedPill key={f.id} friend={f} onRemove={() => toggleFriend(f.id)} />
                 ))}
@@ -288,7 +313,12 @@ export default function CreateGroupScreen(): React.JSX.Element {
 
             {/* Búsqueda */}
             <View style={[s.searchBar, focusedInput === "search" && s.searchBarFocused]}>
-              <Ionicons name="search-outline" size={16} color={focusedInput === "search" ? colors.eu.star : "rgba(255,255,255,0.3)"} style={{ marginRight: 8 }} />
+              <Ionicons
+                name="search-outline"
+                size={16}
+                color={focusedInput === "search" ? colors.eu.star : "rgba(255,255,255,0.3)"}
+                style={{ marginRight: 8 }}
+              />
               <TextInput
                 style={s.searchInput}
                 placeholder="Buscar amigos..."
@@ -314,9 +344,9 @@ export default function CreateGroupScreen(): React.JSX.Element {
                 </View>
               ) : filteredFriends.length === 0 ? (
                 <View style={s.centeredState}>
-                  <Ionicons name="people-outline" size={36} color="rgba(255,255,255,0.2)" />
+                  <Ionicons name="people-outline" size={40} color="rgba(255,255,255,0.15)" />
                   <Text style={s.stateText}>
-                    {search.trim() ? "Sin resultados" : "Aún no tienes amigos en Eramix"}
+                    {search.trim() ? "Sin resultados para tu búsqueda" : "Aún no tienes amigos en Eramix"}
                   </Text>
                 </View>
               ) : (
@@ -331,48 +361,126 @@ export default function CreateGroupScreen(): React.JSX.Element {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Floating submit */}
+      <View style={[s.floatFooter, { paddingBottom: insets.bottom + spacing.md }]}>
+        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={s.floatFooterBorder} />
+        <Pressable
+          onPress={handleCreate}
+          disabled={!canSubmit}
+          style={({ pressed }) => [s.submitBtn, !canSubmit && s.submitBtnDisabled, pressed && { opacity: 0.85 }]}
+        >
+          {submitting ? (
+            <ActivityIndicator size="small" color="#000" />
+          ) : (
+            <>
+              <LinearGradient
+                colors={canSubmit ? ["#FFE566", "#D4AF37"] : ["rgba(255,215,0,0.3)", "rgba(255,215,0,0.12)"]}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <Ionicons name="people" size={18} color={canSubmit ? "#000" : "rgba(255,255,255,0.35)"} />
+              <Text style={[s.submitBtnText, !canSubmit && { color: "rgba(255,255,255,0.35)" }]}>
+                Crear grupo{selectedIds.size > 0 ? ` · ${selectedIds.size + 1} miembros` : ""}
+              </Text>
+            </>
+          )}
+        </Pressable>
+        {!canSubmit && !submitting && (
+          <Text style={s.submitHint}>Añade un nombre al grupo para continuar</Text>
+        )}
+      </View>
     </View>
   );
 }
 
-const AVATAR_SIZE = 80;
-
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: DS.background },
+
+  // ─── Header ───
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(255,255,255,0.06)",
+    paddingBottom: spacing.sm,
   },
-  headerBtn: { width: 40, alignItems: "center" },
-  headerCenter: { flex: 1, alignItems: "center" },
-  headerTitle: { fontFamily: typography.families.heading, fontSize: 18, color: colors.text.primary },
-  headerSub: { fontFamily: typography.families.body, fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 },
-  createBtn: {
-    backgroundColor: colors.eu.star,
-    borderRadius: radii.full,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs + 2,
-    minWidth: 72,
+  headerBtnBlur: {
+    width: 38, height: 38, borderRadius: 19,
+    alignItems: "center", justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  headerCenter: { flex: 1, alignItems: "center", gap: 4 },
+  headerTitle: { fontFamily: typography.families.heading, fontSize: 17, color: colors.text.primary },
+  headerSub: { fontFamily: typography.families.body, fontSize: 12, color: "rgba(255,255,255,0.4)" },
+  memberCountBadge: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,215,0,0.12)",
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,215,0,0.25)",
   },
-  createBtnDisabled: { backgroundColor: "rgba(255,215,0,0.25)" },
-  createBtnText: { fontFamily: typography.families.subheading, fontSize: 14, color: "#000" },
+  memberCountText: { fontFamily: typography.families.bodyMedium, fontSize: 11, color: colors.eu.star },
 
+  // ─── Avatar hero ───
+  avatarHero: {
+    alignItems: "center",
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    overflow: "hidden",
+  },
+  avatarRingWrap: { position: "relative", marginBottom: spacing.sm },
+  avatarRing: {
+    width: AVATAR_SIZE + 6,
+    height: AVATAR_SIZE + 6,
+    borderRadius: (AVATAR_SIZE + 6) / 2,
+    position: "absolute",
+    top: -3, left: -3,
+  },
+  avatarInner: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: DS.background,
+  },
+  avatarImg: { width: AVATAR_SIZE, height: AVATAR_SIZE, resizeMode: "cover" },
+  avatarPlaceholder: { width: AVATAR_SIZE, height: AVATAR_SIZE, alignItems: "center", justifyContent: "center" },
+  avatarEditBadge: {
+    position: "absolute", bottom: 2, right: 2,
+    width: 26, height: 26, borderRadius: 13,
+    alignItems: "center", justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: 2, borderColor: DS.background,
+  },
+  avatarHint: { fontFamily: typography.families.subheading, fontSize: 14, color: colors.text.primary },
+  avatarHintSub: { fontFamily: typography.families.body, fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 },
+
+  // ─── Sections ───
   scroll: { gap: 0 },
   section: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl },
+  sectionLabelRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginBottom: spacing.sm },
+  sectionLabelIcon: {
+    width: 22, height: 22, borderRadius: 7,
+    backgroundColor: "rgba(255,215,0,0.1)",
+    alignItems: "center", justifyContent: "center",
+  },
   sectionTitle: {
     fontFamily: typography.families.subheading,
     fontSize: 11,
-    color: "rgba(255,255,255,0.4)",
-    letterSpacing: 1.5,
-    marginBottom: spacing.sm,
+    color: "rgba(255,255,255,0.5)",
+    letterSpacing: 1.4,
   },
 
+  // ─── Card ───
   card: {
     backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: radii.xl,
@@ -380,7 +488,7 @@ const s = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.07)",
     overflow: "hidden",
   },
-  cardDivider: { height: StyleSheet.hairlineWidth, backgroundColor: "rgba(255,255,255,0.06)", marginLeft: 50 },
+  cardDivider: { height: StyleSheet.hairlineWidth, backgroundColor: "rgba(255,255,255,0.06)", marginLeft: 52 },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -397,41 +505,30 @@ const s = StyleSheet.create({
     color: colors.text.primary,
     paddingVertical: spacing.xs,
   },
-  charCount: { fontFamily: typography.families.body, fontSize: 11, color: "rgba(255,255,255,0.3)" },
+  charCount: { fontFamily: typography.families.body, fontSize: 11, color: "rgba(255,255,255,0.28)" },
 
-  avatarSection: { alignItems: "center", paddingVertical: spacing.xl },
-  avatarWrap: { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2, overflow: "hidden", position: "relative" },
-  avatarImg: { width: AVATAR_SIZE, height: AVATAR_SIZE, resizeMode: "cover" },
-  avatarPlaceholder: { width: AVATAR_SIZE, height: AVATAR_SIZE, alignItems: "center", justifyContent: "center" },
-  avatarEditBadge: {
-    position: "absolute", bottom: 0, right: 0,
-    width: 24, height: 24, borderRadius: 12,
-    alignItems: "center", justifyContent: "center",
-    overflow: "hidden",
-    borderWidth: 2, borderColor: DS.background,
-  },
-  avatarHint: { fontFamily: typography.families.body, fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: spacing.xs },
-
+  // ─── Pills ───
   pillsWrap: { marginBottom: spacing.sm },
-  pillsScroll: { gap: spacing.sm, paddingHorizontal: 0, paddingVertical: spacing.xs },
+  pillsScroll: { gap: spacing.sm, paddingVertical: spacing.xs },
   pill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,215,0,0.08)",
+    backgroundColor: "rgba(255,215,0,0.1)",
     borderRadius: radii.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,215,0,0.2)",
-    paddingVertical: spacing.xs,
-    paddingLeft: spacing.xs,
+    borderColor: "rgba(255,215,0,0.22)",
+    paddingVertical: 5,
+    paddingLeft: 5,
     paddingRight: spacing.sm,
-    gap: spacing.xs,
+    gap: 5,
   },
-  pillAvatar: { width: 24, height: 24, borderRadius: 12 },
-  pillAvatarFallback: { width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  pillInitials: { fontFamily: typography.families.subheading, fontSize: 9, color: colors.eu.star },
-  pillName: { fontFamily: typography.families.bodyMedium, fontSize: 12, color: colors.text.primary, maxWidth: 60 },
+  pillAvatar: { width: 26, height: 26, borderRadius: 13 },
+  pillAvatarFallback: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  pillInitials: { fontFamily: typography.families.subheading, fontSize: 10, color: colors.eu.star },
+  pillName: { fontFamily: typography.families.bodyMedium, fontSize: 12, color: colors.text.primary, maxWidth: 64 },
   pillRemove: { padding: 2 },
 
+  // ─── Búsqueda ───
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -446,6 +543,7 @@ const s = StyleSheet.create({
   searchBarFocused: { borderColor: "rgba(255,215,0,0.3)", backgroundColor: "rgba(255,215,0,0.03)" },
   searchInput: { flex: 1, fontFamily: typography.families.body, fontSize: 14, color: colors.text.primary },
 
+  // ─── Friends list ───
   friendsCard: {
     backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: radii.xl,
@@ -457,25 +555,56 @@ const s = StyleSheet.create({
   listDivider: { height: StyleSheet.hairlineWidth, backgroundColor: "rgba(255,255,255,0.06)", marginLeft: 68 },
   centeredState: { alignItems: "center", justifyContent: "center", padding: spacing.xl, gap: spacing.sm },
   stateText: { fontFamily: typography.families.body, fontSize: 14, color: "rgba(255,255,255,0.35)", textAlign: "center" },
-
   friendRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
+    paddingVertical: spacing.md,
   },
   friendRowSelected: { backgroundColor: "rgba(255,215,0,0.04)" },
   friendLeft: { flexDirection: "row", alignItems: "center", gap: spacing.md, flex: 1 },
-  friendAvatar: { width: 44, height: 44, borderRadius: 22 },
-  friendAvatarFallback: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
-  friendInitials: { fontFamily: typography.families.subheading, fontSize: 14, color: colors.eu.star },
+  friendAvatar: { width: 46, height: 46, borderRadius: 23 },
+  friendAvatarFallback: { width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center" },
+  friendInitials: { fontFamily: typography.families.subheading, fontSize: 15, color: colors.eu.star },
   friendName: { fontFamily: typography.families.bodyMedium, fontSize: 14, color: colors.text.primary },
-  friendSub: { fontFamily: typography.families.body, fontSize: 12, color: "rgba(255,255,255,0.4)" },
+  friendSub: { fontFamily: typography.families.body, fontSize: 12, color: "rgba(255,255,255,0.38)", marginTop: 2 },
   checkCircle: {
-    width: 24, height: 24, borderRadius: 12,
-    borderWidth: 1.5, borderColor: "rgba(255,255,255,0.2)",
+    width: 26, height: 26, borderRadius: 13,
+    borderWidth: 1.5, borderColor: "rgba(255,255,255,0.18)",
     alignItems: "center", justifyContent: "center",
   },
   checkCircleActive: { backgroundColor: colors.eu.star, borderColor: colors.eu.star },
+
+  // ─── Floating footer ───
+  floatFooter: {
+    position: "absolute",
+    bottom: 0, left: 0, right: 0,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    overflow: "hidden",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  floatFooterBorder: {
+    position: "absolute",
+    top: 0, left: 0, right: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255,255,255,0.07)",
+  },
+  submitBtn: {
+    width: "100%",
+    height: 52,
+    borderRadius: radii.xl,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,215,0,0.3)",
+  },
+  submitBtnDisabled: { borderColor: "rgba(255,255,255,0.08)" },
+  submitBtnText: { fontFamily: typography.families.subheading, fontSize: 16, color: "#000" },
+  submitHint: { fontFamily: typography.families.body, fontSize: 12, color: "rgba(255,255,255,0.32)" },
 });

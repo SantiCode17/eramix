@@ -22,6 +22,7 @@ import {
   ScrollView,
   Dimensions,
   FlatList,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -37,6 +38,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import * as eventsApi from "@/api/events";
 import { handleError } from "@/utils/errorHandler";
+import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
 import {
   colors,
   typography,
@@ -73,14 +75,14 @@ interface Category {
 }
 
 const CATEGORIES: Category[] = [
-  { label: "Todos",     value: "",          icon: "apps-outline",            gradient: ["#1A2D4D", "#0D1F3C"] },
-  { label: "Fiesta",    value: "fiesta",    icon: "musical-notes-outline",   gradient: ["#1A2D4D", "#2A1A3D"] },
-  { label: "Academico", value: "academico", icon: "school-outline",          gradient: ["#132240", "#1A3050"] },
-  { label: "Deporte",   value: "deporte",   icon: "football-outline",        gradient: ["#0D2818", "#132D20"] },
-  { label: "Comida",    value: "comida",    icon: "restaurant-outline",      gradient: ["#2D1A0D", "#3D2010"] },
-  { label: "Musica",    value: "musica",    icon: "headset-outline",         gradient: ["#2D0D1A", "#3D1020"] },
-  { label: "Viaje",     value: "viaje",     icon: "airplane-outline",        gradient: ["#0D1A2D", "#102030"] },
-  { label: "Cultura",   value: "cultura",   icon: "color-palette-outline",   gradient: ["#2D2A0D", "#3D3510"] },
+  { label: "Todos",     value: "",         icon: "apps-outline",            gradient: ["#1A2D4D", "#0D1F3C"] },
+  { label: "Fiesta",    value: "PARTY",    icon: "musical-notes-outline",   gradient: ["#1A2D4D", "#2A1A3D"] },
+  { label: "Académico", value: "ACADEMIC", icon: "school-outline",          gradient: ["#132240", "#1A3050"] },
+  { label: "Deporte",   value: "SPORTS",   icon: "football-outline",        gradient: ["#0D2818", "#132D20"] },
+  { label: "Comida",    value: "FOOD",     icon: "restaurant-outline",      gradient: ["#2D1A0D", "#3D2010"] },
+  { label: "Música",    value: "MUSIC",    icon: "headset-outline",         gradient: ["#2D0D1A", "#3D1020"] },
+  { label: "Viaje",     value: "TRIP",     icon: "airplane-outline",        gradient: ["#0D1A2D", "#102030"] },
+  { label: "Cultura",   value: "CULTURE",  icon: "color-palette-outline",   gradient: ["#2D2A0D", "#3D3510"] },
 ];
 
 const findCategory = (val?: string | null): Category =>
@@ -169,6 +171,7 @@ function FeaturedCard({
   onPress: () => void;
 }) {
   const cat = findCategory(event.category);
+  const coverUri = event.coverImageUrl ? resolveMediaUrl(event.coverImageUrl) : null;
 
   return (
     <Animated.View entering={FadeInRight.delay(index * 80).duration(400).springify()}>
@@ -176,13 +179,27 @@ function FeaturedCard({
         onPress={onPress}
         style={({ pressed }) => [st.featuredCard, pressed && st.pressedScale]}
       >
-        {/* Background gradient */}
+        {/* Background gradient or cover photo */}
         <LinearGradient
           colors={cat.gradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
+        {coverUri && (
+          <Image
+            source={{ uri: coverUri }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+          />
+        )}
+        {/* Dark overlay for readability when image present */}
+        {coverUri && (
+          <LinearGradient
+            colors={["rgba(0,0,0,0.15)", "rgba(0,0,0,0.65)"]}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
         <View style={st.glassOverlay} />
 
         {/* Decorative watermark */}
@@ -228,6 +245,7 @@ function EventCard({
 }) {
   const cat = findCategory(event.category);
   const dateStr = formatDate(event.startDatetime);
+  const coverUri = event.coverImageUrl ? resolveMediaUrl(event.coverImageUrl) : null;
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 60).duration(400).springify()}>
@@ -243,6 +261,13 @@ function EventCard({
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
+          {coverUri && (
+            <Image
+              source={{ uri: coverUri }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            />
+          )}
           <View style={st.glassOverlay} />
 
           {/* Category watermark */}

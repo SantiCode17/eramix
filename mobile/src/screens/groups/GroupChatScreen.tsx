@@ -18,21 +18,41 @@ import type { RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/store/useAuthStore";
 import { webSocketService } from "@/services/webSocketService";
 import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
+import { ChatInput } from "@/screens/chat/ChatScreen";
 import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
 import type { GroupMessageData, GroupsStackParamList } from "@/types/groups";
 import * as groupsApi from "@/api/groups";
 import { handleError } from "@/utils/errorHandler";
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 
 type Route = RouteProp<GroupsStackParamList, "GroupChat">;
 type Nav = StackNavigationProp<GroupsStackParamList, "GroupChat">;
 
+// ── Deterministic color from user ID ────────────────
+
+const USER_COLORS = [
+  "#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF",
+  "#9B59B6", "#FF9671", "#00D2FF", "#F9F871",
+  "#FF6F91", "#845EC2", "#FFC75F", "#00C9A7",
+  "#C34A36", "#008E9B", "#926C00", "#D65DB1",
+];
+
+function getUserColor(userId: number): string {
+  // Simple hash for deterministic but varied results
+  const idx = Math.abs(((userId * 2654435761) >>> 0) % USER_COLORS.length);
+  return USER_COLORS[idx];
+}
+
+
+
 // ── Avatar ──────────────────────────────────────────
 
-function SmallAvatar({ uri, name, size = 32 }: { uri: string | null; name: string; size?: number }) {
+function SmallAvatar({ uri, name, size = 32, color }: { uri: string | null; name: string; size?: number; color?: string }) {
   const initials = name.charAt(0).toUpperCase();
   const resolvedUri = resolveMediaUrl(uri);
   return resolvedUri ? (
@@ -43,12 +63,14 @@ function SmallAvatar({ uri, name, size = 32 }: { uri: string | null; name: strin
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: "rgba(19,34,64,0.45)",
+        backgroundColor: color ? `${color}55` : "rgba(19,34,64,0.45)",
         justifyContent: "center",
         alignItems: "center",
+        borderWidth: 1,
+        borderColor: color ? `${color}88` : "rgba(255,255,255,0.1)",
       }}
     >
-      <Text style={{ color: colors.eu.light, fontSize: size * 0.4, fontWeight: "700" }}>
+      <Text style={{ color: color ?? colors.eu.light, fontSize: size * 0.4, fontWeight: "700" }}>
         {initials}
       </Text>
     </View>
@@ -66,29 +88,46 @@ function MessageBubble({
   isMine: boolean;
   showSender: boolean;
 }) {
+  const mediaUri = msg.mediaUrl ? resolveMediaUrl(msg.mediaUrl) : null;
+  const userColor = getUserColor(msg.senderId);
+
   return (
     <Animated.View
       entering={FadeInDown.duration(300)}
       style={[styles.bubbleRow, isMine && styles.bubbleRowMine]}
     >
       {!isMine && showSender && (
-        <SmallAvatar uri={msg.senderProfilePhotoUrl} name={msg.senderFirstName} size={28} />
+        <SmallAvatar uri={msg.senderProfilePhotoUrl} name={msg.senderFirstName} size={28} color={userColor} />
       )}
       {!isMine && !showSender && <View style={{ width: 28 }} />}
       <View
         style={[
           styles.bubble,
-          isMine ? styles.bubbleMine : styles.bubbleOther,
+          isMine
+            ? styles.bubbleMine
+            : [styles.bubbleOther, { borderLeftWidth: 3, borderLeftColor: userColor }],
         ]}
       >
         {!isMine && showSender && (
-          <Text style={styles.senderName}>
+          <Text style={[styles.senderName, { color: userColor }]}>
             {msg.senderFirstName} {msg.senderLastName}
           </Text>
         )}
-        <Text style={[styles.msgText, isMine && styles.msgTextMine]}>
-          {msg.content}
-        </Text>
+        {msg.type === "IMAGE" && mediaUri ? (
+          <Image source={{ uri: mediaUri }} style={styles.mediaImage} resizeMode="cover" />
+        ) : msg.type === "AUDIO" ? (
+          <View style={styles.audioMsgRow}>
+            <Ionicons name="play" size={20} color={isMine ? "#CCB700" : userColor} />
+            <Ionicons name="pulse" size={24} color={isMine ? "#CCB700" : userColor} />
+            <Ionicons name="pulse" size={24} color={isMine ? "#CCB700" : userColor} />
+            <Ionicons name="pulse" size={24} color={isMine ? "#CCB700" : userColor} />
+          </View>
+        ) : null}
+        {msg.content ? (
+          <Text style={[styles.msgText, isMine && styles.msgTextMine]}>
+            {msg.content}
+          </Text>
+        ) : null}
         <Text style={[styles.msgTime, isMine && styles.msgTimeMine]}>
           {new Date(msg.createdAt).toLocaleTimeString("es-ES", {
             hour: "2-digit",
@@ -113,7 +152,10 @@ export default function GroupChatScreen() {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const listRef = useRef<any>(null);
+  const { isRecording, duration, startRecording, stopRecording } = useAudioRecorder();
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -155,32 +197,112 @@ export default function GroupChatScreen() {
 
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
-    if (!trimmed || sending) return;
+    if ((!trimmed && !imagePreview) || sending) return;
     setSending(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    // Optimistic: add to local list
-    const tempMsg: GroupMessageData = {
-      id: -Date.now(),
-      groupId,
-      senderId: currentUserId || 0,
-      senderFirstName: "Tú",
-      senderLastName: "",
-      senderProfilePhotoUrl: null,
-      content: trimmed,
-      type: "TEXT",
-      mediaUrl: null,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, tempMsg]);
-    setText("");
-
     try {
-      webSocketService.sendGroupMessage(groupId, trimmed);
+      if (imagePreview) {
+        // Upload image first, then send via WebSocket
+        setUploadingMedia(true);
+        let mediaUrl: string | undefined;
+        try {
+          mediaUrl = await groupsApi.uploadGroupMedia(groupId, imagePreview, "image/jpeg");
+        } catch (uploadErr) {
+          handleError(uploadErr, "GroupChat.uploadImage");
+        } finally {
+          setUploadingMedia(false);
+        }
+
+        const tempMsg: GroupMessageData = {
+          id: -Date.now(),
+          groupId,
+          senderId: currentUserId || 0,
+          senderFirstName: "Tú",
+          senderLastName: "",
+          senderProfilePhotoUrl: null,
+          content: trimmed,
+          type: "IMAGE",
+          mediaUrl: mediaUrl ?? imagePreview,
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, tempMsg]);
+        setImagePreview(null);
+        setText("");
+        webSocketService.sendGroupMessage(groupId, trimmed, "IMAGE", mediaUrl);
+      } else {
+        // Text only
+        const tempMsg: GroupMessageData = {
+          id: -Date.now(),
+          groupId,
+          senderId: currentUserId || 0,
+          senderFirstName: "Tú",
+          senderLastName: "",
+          senderProfilePhotoUrl: null,
+          content: trimmed,
+          type: "TEXT",
+          mediaUrl: null,
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, tempMsg]);
+        setText("");
+        webSocketService.sendGroupMessage(groupId, trimmed);
+      }
     } finally {
       setSending(false);
     }
-  }, [text, sending, groupId, currentUserId]);
+  }, [text, imagePreview, sending, groupId, currentUserId]);
+
+  const handlePickImage = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+      allowsEditing: true,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setImagePreview(result.assets[0].uri);
+    }
+  }, []);
+
+  const handleMicPressIn = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await startRecording();
+  }, [startRecording]);
+
+  const handleMicPressOut = useCallback(async () => {
+    const audioUri = await stopRecording();
+    if (!audioUri) return;
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setSending(true);
+    setUploadingMedia(true);
+    try {
+      const mediaUrl = await groupsApi.uploadGroupMedia(groupId, audioUri, "audio/m4a");
+      const tempMsg: GroupMessageData = {
+        id: -Date.now(),
+        groupId,
+        senderId: currentUserId || 0,
+        senderFirstName: "Tú",
+        senderLastName: "",
+        senderProfilePhotoUrl: null,
+        content: "",
+        type: "AUDIO",
+        mediaUrl,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, tempMsg]);
+      webSocketService.sendGroupMessage(groupId, "", "AUDIO", mediaUrl);
+    } catch (e) {
+      handleError(e, "GroupChat.sendAudio");
+    } finally {
+      setSending(false);
+      setUploadingMedia(false);
+    }
+  }, [stopRecording, groupId, currentUserId]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: GroupMessageData; index: number }) => {
@@ -238,27 +360,107 @@ export default function GroupChatScreen() {
           inverted={false}
         />
 
-        {/* Input */}
-        <View style={[styles.inputRow, { paddingBottom: insets.bottom + spacing.sm }]}>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              value={text}
-              onChangeText={setText}
-              placeholder="Escribe un mensaje…"
-              placeholderTextColor={colors.text.disabled}
-              multiline
-              maxLength={2000}
-            />
-          </View>
-          <Pressable
-            style={[styles.sendBtn, !text.trim() && styles.sendBtnDisabled]}
-            onPress={handleSend}
-            disabled={!text.trim() || sending}
-          >
-            <Text style={styles.sendBtnText}>➤</Text>
-          </Pressable>
-        </View>
+        <ChatInput
+          onSend={(trimmed) => {
+            if (sending) return;
+            setSending(true);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            
+            const tempMsg: GroupMessageData = {
+              id: -Date.now(),
+              groupId,
+              senderId: currentUserId || 0,
+              senderFirstName: "Tú",
+              senderLastName: "",
+              senderProfilePhotoUrl: null,
+              content: trimmed,
+              type: "TEXT",
+              mediaUrl: null,
+              createdAt: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, tempMsg]);
+            webSocketService.sendGroupMessage(groupId, trimmed, "TEXT");
+            setSending(false);
+          }}
+          onSendImage={async (uri) => {
+            if (sending) return;
+            setSending(true);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            
+            setUploadingMedia(true);
+            let mediaUrl: string | undefined;
+            try {
+              mediaUrl = await groupsApi.uploadGroupMedia(groupId, uri, "image/jpeg");
+              const tempMsg: GroupMessageData = {
+                id: -Date.now(),
+                groupId,
+                senderId: currentUserId || 0,
+                senderFirstName: "Tú",
+                senderLastName: "",
+                senderProfilePhotoUrl: null,
+                content: "",
+                type: "IMAGE",
+                mediaUrl: mediaUrl,
+                createdAt: new Date().toISOString(),
+              };
+              setMessages((prev) => [...prev, tempMsg]);
+              webSocketService.sendGroupMessage(groupId, "", "IMAGE", mediaUrl);
+            } catch (err) {
+              handleError(err, "uploadImage");
+            } finally {
+              setUploadingMedia(false);
+              setSending(false);
+            }
+          }}
+          onSendImageWithCaption={async (uri, caption) => {
+             if (sending) return;
+            setSending(true);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            
+            setUploadingMedia(true);
+            let mediaUrl: string | undefined;
+            try {
+              mediaUrl = await groupsApi.uploadGroupMedia(groupId, uri, "image/jpeg");
+              const tempMsg: GroupMessageData = {
+                id: -Date.now(),
+                groupId,
+                senderId: currentUserId || 0,
+                senderFirstName: "Tú",
+                senderLastName: "",
+                senderProfilePhotoUrl: null,
+                content: caption, // We can just send as TEXT if it doesn't support IMAGE+TEXT or separate
+                type: "IMAGE",
+                mediaUrl: mediaUrl,
+                createdAt: new Date().toISOString(),
+              };
+              setMessages((prev) => [...prev, tempMsg]);
+              webSocketService.sendGroupMessage(groupId, "", "IMAGE", mediaUrl);
+              
+              const txtMsg: GroupMessageData = {
+                id: -Date.now() - 1,
+                groupId,
+                senderId: currentUserId || 0,
+                senderFirstName: "Tú",
+                senderLastName: "",
+                senderProfilePhotoUrl: null,
+                content: caption,
+                type: "TEXT",
+                mediaUrl: null,
+                createdAt: new Date().toISOString(),
+              };
+              setMessages((prev) => [...prev, txtMsg]);
+              webSocketService.sendGroupMessage(groupId, caption, "TEXT");
+
+            } catch (err) {
+              handleError(err, "uploadImage");
+            } finally {
+              setUploadingMedia(false);
+              setSending(false);
+            }
+          }}
+          onTyping={() => {}}
+          onVoice={() => nav.navigate("VoiceMessage", { conversationId: groupId })} // Reusing VoiceMessageScreen
+        />
       </KeyboardAvoidingView>
     </LinearGradient>
   );
@@ -287,7 +489,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   settingsBtn: { padding: spacing.sm },
-  settingsText: { fontSize: 20 },
   bubbleRow: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -309,6 +510,18 @@ const styles = StyleSheet.create({
     color: colors.eu.star,
     marginBottom: 2,
   },
+  mediaImage: {
+    width: 200,
+    height: 150,
+    borderRadius: radii.sm,
+    marginBottom: spacing.xs,
+  },
+  audioMsgRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: 2,
+  },
   msgText: {
     fontFamily: typography.families.body,
     ...typography.sizes.body,
@@ -323,13 +536,73 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   msgTimeMine: { color: "rgba(255,255,255,0.6)" },
+  inputArea: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.08)",
+  },
+  imagePreviewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+  },
+  imagePreviewThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: radii.sm,
+  },
+  uploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: radii.sm,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  imagePreviewCancel: {
+    marginLeft: spacing.sm,
+  },
   inputRow: {
     flexDirection: "row",
     alignItems: "flex-end",
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255,255,255,0.08)",
+    gap: spacing.sm,
+  },
+  attachBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  attachBtnRecording: {
+    backgroundColor: "rgba(229,62,62,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(229,62,62,0.4)",
+  },
+  recordingRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
+  recordingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.status.error,
+  },
+  recordingText: {
+    fontFamily: typography.families.subheading,
+    fontSize: typography.sizes.body.fontSize,
+    color: colors.status.error,
+  },
+  recordingHint: {
+    fontFamily: typography.families.body,
+    fontSize: typography.sizes.bodySmall.fontSize,
+    color: colors.text.secondary,
   },
   inputWrapper: {
     flex: 1,
@@ -350,11 +623,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.eu.orange,
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: spacing.sm,
+    overflow: "hidden",
   },
   sendBtnDisabled: { opacity: 0.4 },
-  sendBtnText: { color: "#FFF", fontSize: 20 },
+  sendGrad: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

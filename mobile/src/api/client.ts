@@ -150,19 +150,6 @@ apiClient.interceptors.response.use(
     const method = config?.method?.toUpperCase() ?? "?";
     const url = config?.url ?? "";
 
-    // ─── Log detallado del error (dev only) ───
-    if (__DEV_MODE__) {
-      if (error.response) {
-        console.error(
-          `🔴 [API #${reqId}] HTTP ${error.response.status} | ${method} ${url} (${duration})`,
-        );
-      } else if (error.request) {
-        console.error(
-          `🔴 [API #${reqId}] NO RESPONSE | ${method} ${url} (${duration}) — ${error.code}`,
-        );
-      }
-    }
-
     // ─── Retry with exponential back-off for network errors ───
     const isNetworkError =
       !error.response &&
@@ -200,6 +187,44 @@ apiClient.interceptors.response.use(
     const isAuthEndpoint =
       config?.url?.includes("/v1/auth/login") ||
       config?.url?.includes("/v1/auth/register");
+
+    // If it's a 401 that can be auto-refreshed, log softly and proceed with refresh
+    const is401Refreshable =
+      error.response?.status === 401 &&
+      !config?._retry &&
+      !isAuthEndpoint;
+
+    if (is401Refreshable) {
+      if (__DEV_MODE__) {
+        console.log(
+          `🔄 [API #${reqId}] Token expirado — renovando sesión... | ${method} ${url} (${duration})`,
+        );
+      }
+    } else {
+      // ─── Log detallado del error (dev only) — solo para errores reales ───
+      if (__DEV_MODE__) {
+        // Skip logging expected 4xx errors for friend-request endpoints
+        // (400 = mutual match / already sent, 409 = conflict — handled gracefully by caller)
+        const isFriendRequestEndpoint = url?.includes("/v1/friends/requests");
+        const isExpected4xx =
+          isFriendRequestEndpoint &&
+          error.response?.status != null &&
+          error.response.status >= 400 &&
+          error.response.status < 500;
+
+        if (!isExpected4xx) {
+          if (error.response) {
+            console.error(
+              `🔴 [API #${reqId}] HTTP ${error.response.status} | ${method} ${url} (${duration})`,
+            );
+          } else if (error.request) {
+            console.error(
+              `🔴 [API #${reqId}] NO RESPONSE | ${method} ${url} (${duration}) — ${error.code}`,
+            );
+          }
+        }
+      }
+    }
 
     if (
       error.response?.status !== 401 ||

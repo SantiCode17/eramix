@@ -18,22 +18,26 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeIn, FadeOut } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
-import {
-  getNotificationConfig,
-  saveNotificationConfig,
-  NotificationConfig,
-} from "@/services/notificationService";
+import { getFinanceSettings, updateFinanceSettings } from "@/api/financeService";
+
+interface FinanceSettings {
+  enableNotifications: boolean;
+  enableBudgetAlerts: boolean;
+  alertThreshold: number;
+}
 
 export default function FinanceSettingsScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const [config, setConfig] = useState<NotificationConfig>({
+  const [config, setConfig] = useState<FinanceSettings>({
     enableNotifications: true,
     enableBudgetAlerts: true,
-    alertThreshold: "75",
+    alertThreshold: 75,
   });
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     loadConfig();
@@ -41,27 +45,31 @@ export default function FinanceSettingsScreen(): React.JSX.Element {
 
   const loadConfig = async () => {
     try {
-      const savedConfig = await getNotificationConfig();
-      setConfig(savedConfig);
+      const settings = await getFinanceSettings();
+      setConfig(settings);
     } catch (error) {
-      console.error("[FinanceSettings] Failed to load config:", error);
+      console.warn("[FinanceSettings] Failed to load from server, using defaults:", error);
     }
   };
 
-  const updateConfig = async (updates: Partial<NotificationConfig>) => {
+  const updateConfig = async (updates: Partial<FinanceSettings>) => {
     const newConfig = { ...config, ...updates };
     setConfig(newConfig);
+    Haptics.selectionAsync();
     try {
-      await saveNotificationConfig(newConfig);
+      await updateFinanceSettings(updates);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
     } catch (error) {
       console.error("[FinanceSettings] Failed to save config:", error);
+      setConfig(config);
     }
   };
 
-  const thresholds: { value: "75" | "90" | "100"; label: string; icon: string; desc: string }[] = [
-    { value: "75", label: "Preventivo", icon: "shield-checkmark", desc: "Alerta al 75%" },
-    { value: "90", label: "Moderado", icon: "alert-circle", desc: "Alerta al 90%" },
-    { value: "100", label: "Límite", icon: "warning", desc: "Al exceder" },
+  const thresholds: { value: 75 | 90 | 100; label: string; icon: string; desc: string }[] = [
+    { value: 75, label: "Preventivo", icon: "shield-checkmark", desc: "Alerta al 75%" },
+    { value: 90, label: "Moderado", icon: "alert-circle", desc: "Alerta al 90%" },
+    { value: 100, label: "Límite", icon: "warning", desc: "Al exceder" },
   ];
 
   return (
@@ -77,7 +85,14 @@ export default function FinanceSettingsScreen(): React.JSX.Element {
           <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
         </Pressable>
         <Text style={styles.headerTitle}>Configuración</Text>
-        <View style={{ width: 40 }} />
+        {saved ? (
+          <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={styles.savedBadge}>
+            <Ionicons name="checkmark-circle" size={14} color="#34C759" />
+            <Text style={styles.savedText}>Guardado</Text>
+          </Animated.View>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
       </View>
 
       <ScrollView
@@ -258,6 +273,20 @@ const styles = StyleSheet.create({
     fontFamily: typography.families.heading,
     fontSize: typography.sizes.h2.fontSize,
     color: colors.text.primary,
+  },
+  savedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(52,199,89,0.12)",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radii.full,
+  },
+  savedText: {
+    fontFamily: typography.families.bodyMedium,
+    fontSize: 11,
+    color: "#34C759",
   },
   content: { paddingHorizontal: spacing.lg },
   profileCard: {

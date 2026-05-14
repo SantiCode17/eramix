@@ -5,6 +5,7 @@ export { useRefreshControl } from "./useRefreshControl";
 export { useKeyboardAware } from "./useKeyboardAware";
 export { useDebounce } from "./useDebounce";
 export { useNetworkStatus } from "./useNetworkStatus";
+export { useAudioRecorder } from "./useAudioRecorder";
 
 // React Query hooks
 export * from "./useProfileQuery";

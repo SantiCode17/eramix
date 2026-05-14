@@ -22,7 +22,10 @@ public class CreateCommunityRequest {
     @NotNull(message = "La categoría es obligatoria")
     private CommunityCategory category;
 
-    private boolean isPublic = true;
+    // Boolean (boxed) → Lombok generates getIsPublic()/setIsPublic() → Jackson maps "isPublic" correctly.
+    // primitive boolean → getter isPublic() → Jackson uses "public" as key (BUG).
+    @Builder.Default
+    private Boolean isPublic = true;
 
     private String coverImageUrl;
 }

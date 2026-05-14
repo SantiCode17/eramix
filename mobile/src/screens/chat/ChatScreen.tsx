@@ -171,7 +171,7 @@ const MessageBubble = React.memo(function MessageBubble({
 
 // ── Chat Input ──────────────────────────────────────
 
-function ChatInput({
+export function ChatInput({
   onSend,
   onSendImage,
   onSendImageWithCaption,
@@ -583,9 +583,8 @@ export default function ChatScreen(): React.JSX.Element {
           onSend={handleSend}
           onSendImage={handleSendImage}
           onSendImageWithCaption={(uri, caption) => {
-            // Send image, caption sent as separate text message after
-            sendImageMessage(conversationId, uri);
-            if (caption.trim()) sendMessage(conversationId, caption);
+            // Send image and caption together as a single message
+            sendImageMessage(conversationId, uri, caption.trim() || undefined);
           }}
           onTyping={handleTyping}
           onVoice={() => navigation.navigate("VoiceMessage", { conversationId })}

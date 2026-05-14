@@ -86,7 +86,7 @@ public class ChatService {
     // ── Guardar mensaje de imagen ─────────────────────────
 
     @Transactional
-    public MessageResponse saveImageMessage(Long conversationId, Long senderId, String mediaUrl) {
+    public MessageResponse saveImageMessage(Long conversationId, Long senderId, String mediaUrl, String caption) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Conversación no encontrada"));
 
@@ -100,7 +100,7 @@ public class ChatService {
         Message message = Message.builder()
                 .conversation(conversation)
                 .sender(sender)
-                .content("[Imagen]")
+                .content(caption != null && !caption.isBlank() ? caption.trim() : "")
                 .type(MessageType.IMAGE)
                 .mediaUrl(mediaUrl)
                 .isRead(false)
@@ -117,6 +117,44 @@ public class ChatService {
                 NotificationType.NEW_MESSAGE,
                 sender.getFirstName() + " te envió una imagen",
                 "📷 Imagen",
+                String.valueOf(conversation.getId())
+        );
+
+        return toMessageResponse(message);
+    }
+
+    @Transactional
+    public MessageResponse saveAudioMessage(Long conversationId, Long senderId, String mediaUrl) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversación no encontrada"));
+
+        if (!isParticipant(conversation, senderId)) {
+            throw new RuntimeException("No eres participante de esta conversación");
+        }
+
+        User sender = userRepository.findById(senderId)
+                .orElseThrow(() -> new UserNotFoundException(senderId));
+
+        Message message = Message.builder()
+                .conversation(conversation)
+                .sender(sender)
+                .content("[Nota de voz]")
+                .type(MessageType.AUDIO)
+                .mediaUrl(mediaUrl)
+                .isRead(false)
+                .build();
+
+        message = messageRepository.save(message);
+
+        conversation.setLastMessageAt(Instant.now());
+        conversationRepository.save(conversation);
+
+        Long receiverId = getOtherUserId(conversation, senderId);
+        notificationService.send(
+                receiverId,
+                NotificationType.NEW_MESSAGE,
+                sender.getFirstName() + " te envió un audio",
+                "🎙️ Nota de voz",
                 String.valueOf(conversation.getId())
         );
 

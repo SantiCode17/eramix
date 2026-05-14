@@ -30,7 +30,7 @@ import type { StackScreenProps } from "@react-navigation/stack";
 
 import { ScreenBackground, Avatar } from "@/design-system";
 import { colors, typography, spacing, DS } from "@/design-system/tokens";
-import { getCommunityPosts, togglePostLike, createComment } from "@/api/communities";
+import { getCommunityPosts, togglePostLike, createComment, getPostComments } from "@/api/communities";
 import { resolveMediaUrl } from "@/utils/resolveMediaUrl";
 import type { ProfileStackParamList } from "@/types";
 import type { CommunityPostData, CommunityCommentData } from "@/types/communities";
@@ -92,6 +92,13 @@ export default function PostDetailScreen({ route, navigation }: Props): React.JS
     },
   });
 
+  /* ── Fetch full comments list ── */
+  const { data: commentsData } = useQuery<CommunityCommentData[]>({
+    queryKey: ["postComments", communityId, postId],
+    queryFn: () => getPostComments(communityId, postId),
+    enabled: !!communityId && !!postId,
+  });
+
   /* ── Like mutation ── */
   const likeMut = useMutation({
     mutationFn: () => togglePostLike(communityId, postId),
@@ -105,6 +112,7 @@ export default function PostDetailScreen({ route, navigation }: Props): React.JS
     onSuccess: () => {
       setCommentText("");
       qc.invalidateQueries({ queryKey: ["postDetail", communityId, postId] });
+      qc.invalidateQueries({ queryKey: ["postComments", communityId, postId] });
     },
   });
 
@@ -143,7 +151,7 @@ export default function PostDetailScreen({ route, navigation }: Props): React.JS
 
   const authorPhoto = post.authorProfilePhotoUrl ? resolveMediaUrl(post.authorProfilePhotoUrl) : undefined;
   const postImage = post.imageUrl ? resolveMediaUrl(post.imageUrl) : undefined;
-  const comments: CommunityCommentData[] = post.recentComments ?? [];
+  const comments: CommunityCommentData[] = commentsData ?? post.recentComments ?? [];
 
   return (
     <ScreenBackground>

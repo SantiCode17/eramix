@@ -33,7 +33,7 @@ export interface GroupMessageData {
   senderLastName: string;
   senderProfilePhotoUrl: string | null;
   content: string;
-  type: "TEXT" | "IMAGE" | "LOCATION";
+  type: "TEXT" | "IMAGE" | "AUDIO" | "LOCATION";
   mediaUrl: string | null;
   createdAt: string;
 }
@@ -57,4 +57,5 @@ export type GroupsStackParamList = {
   GroupChat: { groupId: number; groupName: string };
   CreateGroup: undefined;
   GroupSettings: { groupId: number };
+  VoiceMessage: { conversationId: number };
 };

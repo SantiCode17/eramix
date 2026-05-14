@@ -108,9 +108,12 @@ function ConversationRow({
   onPress: () => void;
 }) {
   const hasUnread = conversation.unreadCount > 0;
-  const preview = conversation.lastMessage?.content ?? "Inicia la conversacion";
+  const lastMsg = conversation.lastMessage;
+  const rawPreview = lastMsg?.type === "IMAGE"
+    ? (lastMsg.content?.trim() ? `📷 ${lastMsg.content}` : "📷 Imagen")
+    : (lastMsg?.content ?? "Inicia la conversacion");
   const truncated =
-    preview.length > 42 ? preview.substring(0, 42) + "..." : preview;
+    rawPreview.length > 42 ? rawPreview.substring(0, 42) + "..." : rawPreview;
   const time = relativeTime(conversation.lastMessageAt);
   const fullName = `${conversation.otherUserFirstName} ${conversation.otherUserLastName}`;
 

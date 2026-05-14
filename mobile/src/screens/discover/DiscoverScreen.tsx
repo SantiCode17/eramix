@@ -49,6 +49,7 @@ import {
   DS,
 } from "@/design-system/tokens";
 import type { DiscoverStackParamList, DiscoverFilters } from "@/types";
+import { fetchConversations } from "@/api/chat";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 // MUCH lower thresholds for easier swiping
@@ -146,11 +147,35 @@ export default function DiscoverScreen(): React.JSX.Element {
     [currentUser, sendFriendRequest, dismissUser, sentRequests, requestedIds, receivedRequests],
   );
 
-  const handleGoToChat = useCallback(() => {
-    setMatchedUser(null);
-    /* Navigate up to the tab navigator and switch to Chat tab */
-    navigation.getParent()?.navigate("Chat" as never);
-  }, [navigation]);
+  const handleGoToChat = useCallback(async () => {
+    if (!matchedUser) {
+      setMatchedUser(null);
+      return;
+    }
+    try {
+      const conversations = await fetchConversations();
+      const convo = conversations.find((c) => c.otherUserId === matchedUser.id);
+      setMatchedUser(null);
+      if (convo) {
+        /* Navigate to the Chat tab and directly open the conversation */
+        (navigation.getParent() as any)?.navigate("Chat", {
+          screen: "ChatRoom",
+          params: {
+            conversationId: convo.id,
+            otherUserId: convo.otherUserId,
+            otherUserName: `${matchedUser.firstName} ${matchedUser.lastName}`,
+            otherUserPhoto: matchedUser.profilePhotoUrl ?? null,
+          },
+        });
+      } else {
+        /* Fallback: just open the Chat tab */
+        navigation.getParent()?.navigate("Chat" as never);
+      }
+    } catch {
+      setMatchedUser(null);
+      navigation.getParent()?.navigate("Chat" as never);
+    }
+  }, [matchedUser, navigation]);
 
   const handleDismissMatch = useCallback(() => {
     setMatchedUser(null);

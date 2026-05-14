@@ -2,6 +2,8 @@ package com.eramix.controller;
 
 import com.eramix.dto.ApiResponse;
 import com.eramix.dto.finance.*;
+import com.eramix.entity.User;
+import com.eramix.repository.UserRepository;
 import com.eramix.service.FinancialService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,7 @@ import java.util.List;
 public class FinancialController {
 
     private final FinancialService financialService;
+    private final UserRepository userRepository;
 
     private Long currentUserId() {
         return (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -138,5 +141,36 @@ public class FinancialController {
     public ResponseEntity<ApiResponse<Void>> deleteBudget(@PathVariable Long id) {
         financialService.deleteBudget(id, currentUserId());
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    // ── Finance Settings ──────────────────────────────────────────────────
+
+    @GetMapping("/settings")
+    public ResponseEntity<ApiResponse<FinanceSettingsDto>> getFinanceSettings() {
+        User user = userRepository.findById(currentUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        FinanceSettingsDto dto = new FinanceSettingsDto(
+                Boolean.TRUE.equals(user.getNotificationsEnabled()),
+                Boolean.TRUE.equals(user.getBudgetAlertsEnabled()),
+                user.getBudgetAlertThreshold() != null ? user.getBudgetAlertThreshold() : 75
+        );
+        return ResponseEntity.ok(ApiResponse.ok(dto));
+    }
+
+    @PutMapping("/settings")
+    public ResponseEntity<ApiResponse<FinanceSettingsDto>> updateFinanceSettings(
+            @RequestBody FinanceSettingsDto req) {
+        User user = userRepository.findById(currentUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        if (req.enableNotifications() != null) user.setNotificationsEnabled(req.enableNotifications());
+        if (req.enableBudgetAlerts() != null) user.setBudgetAlertsEnabled(req.enableBudgetAlerts());
+        if (req.alertThreshold() != null) user.setBudgetAlertThreshold(req.alertThreshold());
+        userRepository.save(user);
+        FinanceSettingsDto dto = new FinanceSettingsDto(
+                user.getNotificationsEnabled(),
+                user.getBudgetAlertsEnabled(),
+                user.getBudgetAlertThreshold()
+        );
+        return ResponseEntity.ok(ApiResponse.ok(dto));
     }
 }

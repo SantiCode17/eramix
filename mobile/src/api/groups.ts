@@ -85,3 +85,23 @@ export async function getGroupMessages(
 export async function markGroupAsRead(groupId: number): Promise<void> {
   await apiClient.put(`/v1/groups/${groupId}/read`);
 }
+
+/** Upload a media file (image or audio) for a group message, returns the media URL */
+export async function uploadGroupMedia(
+  groupId: number,
+  fileUri: string,
+  mimeType: string,
+): Promise<string> {
+  const ext = fileUri.split(".").pop() ?? "jpg";
+  const form = new FormData();
+  form.append("file", {
+    uri: fileUri,
+    type: mimeType,
+    name: `group_${groupId}_${Date.now()}.${ext}`,
+  } as any);
+  const { data } = await apiClient.post<ApiResponse<{ url: string }>>(
+    `/v1/groups/${groupId}/messages/upload`,
+    form,
+  );
+  return data.data.url;
+}

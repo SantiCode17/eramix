@@ -119,6 +119,14 @@ public class User extends BaseEntity {
     @Builder.Default
     private Boolean notificationsEnabled = false;
 
+    @Column(name = "budget_alerts_enabled", nullable = false)
+    @Builder.Default
+    private Boolean budgetAlertsEnabled = true;
+
+    @Column(name = "budget_alert_threshold", nullable = false)
+    @Builder.Default
+    private Integer budgetAlertThreshold = 75;
+
     @Column(name = "why_am_i_here", length = 100)
     private String whyAmIHere;
 

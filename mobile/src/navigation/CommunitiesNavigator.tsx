@@ -5,6 +5,8 @@ import {
   CommunityFeedScreen,
   CreateCommunityScreen,
   CreateCommunityPostScreen,
+  CommunityMembersScreen,
+  CommunityPostCommentsScreen,
 } from "@/screens/communities";
 import type { CommunitiesStackParamList } from "@/types/communities";
 
@@ -28,6 +30,12 @@ export default function CommunitiesNavigator(): React.JSX.Element {
       <Stack.Screen
         name="CreateCommunityPost"
         component={CreateCommunityPostScreen}
+        options={{ presentation: "modal" }}
+      />
+      <Stack.Screen name="CommunityMembers" component={CommunityMembersScreen} />
+      <Stack.Screen
+        name="CommunityPostComments"
+        component={CommunityPostCommentsScreen}
         options={{ presentation: "modal" }}
       />
     </Stack.Navigator>

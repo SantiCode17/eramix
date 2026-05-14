@@ -238,8 +238,10 @@ function extractServerMessage(data: unknown): string {
  * Útil para debugging rápido.
  */
 export function logError(parsed: ParsedError): void {
+  const ts = new Date().toISOString();
+  const statusPart = parsed.status ? ` HTTP ${parsed.status}` : "";
   console.error(
-    `\n🔴 ERROR [${parsed.code}]${parsed.status ? ` HTTP ${parsed.status}` : ""}`,
+    `\n🔴 ERROR [${parsed.code}]${statusPart} @ ${ts}`,
     `\n   Mensaje: ${parsed.message.split("\n")[0]}`,
     `\n   Detalles: ${parsed.details}`,
     parsed.serverMessage ? `\n   Servidor: ${parsed.serverMessage}` : "",

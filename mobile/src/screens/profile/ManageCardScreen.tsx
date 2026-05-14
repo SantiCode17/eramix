@@ -340,9 +340,9 @@ const s = StyleSheet.create({
 
   /* ── Hero Card ── */
   heroContainer: {
-    borderRadius: radii["2xl"],
+    borderRadius: radii.xxl,
     overflow: "hidden",
-    marginBottom: spacing["2xl"],
+    marginBottom: spacing.xxl,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
   },
@@ -492,7 +492,7 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.03)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
-    borderRadius: radii["2xl"],
+    borderRadius: radii.xxl,
     padding: spacing.md,
   },
   optionIconWrapBlur: {

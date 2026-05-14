@@ -1,9 +1,8 @@
 /**
  * CreateEventScreen — Eramix
- * Diseño profesional, sin animaciones artificiales.
- * Imagen de portada 2-step upload → JSON submit.
+ * Diseño European Glass con hero visual, floaty submit y categorías premium.
  */
-import React, { useState } from "react";
+import React, { useLayoutEffect, useState } from "react";
 import {
   View,
   Text,
@@ -17,6 +16,8 @@ import {
   Alert,
   ActivityIndicator,
   Switch,
+  Dimensions,
+  Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -27,17 +28,19 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
-import { colors, typography, spacing, radii, DS, borders } from "@/design-system/tokens";
+import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
 import { apiClient } from "@/api/client";
 import * as eventsApi from "@/api/events";
 
+const { width: SCREEN_W } = Dimensions.get("window");
+
 const CATEGORIES = [
-  { id: "PARTY",    label: "Fiesta",      icon: "🎉" },
-  { id: "CULTURE",  label: "Cultura",     icon: "🎭" },
-  { id: "SPORTS",   label: "Deporte",     icon: "⚽" },
-  { id: "ACADEMIC", label: "Académico",   icon: "📚" },
-  { id: "TRIP",     label: "Viaje",       icon: "✈️" },
-  { id: "FOOD",     label: "Gastronomía", icon: "🍽️" },
+  { id: "PARTY",    label: "Fiesta",      icon: "🎉", color: "#FF6B6B" },
+  { id: "CULTURE",  label: "Cultura",     icon: "🎭", color: "#9B59B6" },
+  { id: "SPORTS",   label: "Deporte",     icon: "⚽", color: "#27AE60" },
+  { id: "ACADEMIC", label: "Académico",   icon: "📚", color: "#2980B9" },
+  { id: "TRIP",     label: "Viaje",       icon: "✈️", color: "#16A085" },
+  { id: "FOOD",     label: "Gastronomía", icon: "🍽️", color: "#E67E22" },
 ];
 
 function fmtDate(d: Date): string {
@@ -57,12 +60,19 @@ async function uploadMedia(uri: string): Promise<string> {
   return res.data.data;
 }
 
-function SectionTitle({ label }: { label: string }) {
-  return <Text style={s.sectionTitle}>{label}</Text>;
+function SectionLabel({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: string }) {
+  return (
+    <View style={s.sectionLabelRow}>
+      <View style={s.sectionLabelIcon}>
+        <Ionicons name={icon} size={13} color={colors.eu.star} />
+      </View>
+      <Text style={s.sectionTitle}>{label}</Text>
+    </View>
+  );
 }
 
 function InputField({
-  icon, placeholder, value, onChangeText, multiline, keyboardType, maxLength,
+  icon, placeholder, value, onChangeText, multiline, keyboardType, maxLength, charCount,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   placeholder: string;
@@ -71,13 +81,16 @@ function InputField({
   multiline?: boolean;
   keyboardType?: any;
   maxLength?: number;
+  charCount?: boolean;
 }) {
   const [focused, setFocused] = useState(false);
   return (
     <View style={[s.inputRow, focused && s.inputRowFocused]}>
-      <Ionicons name={icon} size={18} color={focused ? colors.eu.star : "rgba(255,255,255,0.3)"} style={s.inputIcon} />
+      <View style={[s.inputIconBox, focused && s.inputIconBoxFocused]}>
+        <Ionicons name={icon} size={16} color={focused ? colors.eu.star : "rgba(255,255,255,0.35)"} />
+      </View>
       <TextInput
-        style={[s.input, multiline && { minHeight: 72 }]}
+        style={[s.input, multiline && { minHeight: 80 }]}
         placeholder={placeholder}
         placeholderTextColor="rgba(255,255,255,0.25)"
         value={value}
@@ -89,6 +102,9 @@ function InputField({
         onBlur={() => setFocused(false)}
         returnKeyType={multiline ? "default" : "next"}
       />
+      {charCount && maxLength && value.length > 0 && (
+        <Text style={s.charCount}>{value.length}/{maxLength}</Text>
+      )}
     </View>
   );
 }
@@ -96,6 +112,25 @@ function InputField({
 export default function CreateEventScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+
+  // Hide bottom tab bar while in this screen
+  useLayoutEffect(() => {
+    const parent = navigation.getParent?.();
+    parent?.setOptions({ tabBarStyle: { display: "none" } });
+    return () => {
+      parent?.setOptions({
+        tabBarStyle: {
+          position: "absolute", bottom: 0, left: 0, right: 0,
+          backgroundColor: "rgba(4,6,26,0.92)",
+          borderTopWidth: 0,
+          height: 64 + insets.bottom,
+          paddingBottom: insets.bottom,
+          paddingTop: 8,
+          elevation: 0, shadowOpacity: 0,
+        },
+      });
+    };
+  }, [navigation, insets.bottom]);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -198,72 +233,115 @@ export default function CreateEventScreen(): React.JSX.Element {
     <View style={s.root}>
       <LinearGradient colors={[DS.background, "#0E1A35", "#0A0A1E"]} style={StyleSheet.absoluteFill} />
 
-      <View style={[s.header, { paddingTop: insets.top + spacing.sm }]}>
+      {/* Header glass */}
+      <View style={[s.header, { paddingTop: insets.top + spacing.xs }]}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.6 }]}>
-          <Ionicons name="close" size={22} color={colors.text.primary} />
+          <BlurView intensity={20} tint="dark" style={s.headerBtnBlur}>
+            <Ionicons name="close" size={20} color={colors.text.primary} />
+          </BlurView>
         </Pressable>
-        <Text style={s.headerTitle}>Nuevo Evento</Text>
-        <Pressable
-          onPress={handleCreate}
-          disabled={!canSubmit}
-          style={({ pressed }) => [s.createBtn, !canSubmit && s.createBtnDisabled, pressed && { opacity: 0.8 }]}
-        >
-          {submitting
-            ? <ActivityIndicator size="small" color="#000" />
-            : <Text style={s.createBtnText}>Crear</Text>
-          }
-        </Pressable>
+        <View style={s.headerCenter}>
+          <Text style={s.headerTitle}>Nuevo Evento</Text>
+          {category && (
+            <View style={s.headerCatBadge}>
+              <Text style={s.headerCatText}>
+                {CATEGORIES.find(c => c.id === category)?.icon} {CATEGORIES.find(c => c.id === category)?.label}
+              </Text>
+            </View>
+          )}
+        </View>
+        <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 60 }]}
+          contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 120 }]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
         >
-          {/* Portada */}
-          <Pressable onPress={handlePickCover} style={s.coverWrap}>
+          {/* HERO portada */}
+          <Pressable onPress={handlePickCover} style={s.heroWrap}>
             {coverUri ? (
-              <Image source={{ uri: coverUri }} style={s.coverImage} />
-            ) : (
-              <LinearGradient colors={["rgba(255,215,0,0.08)", "rgba(59,107,255,0.12)", "rgba(10,10,30,0.6)"]} style={s.coverPlaceholder}>
-                <View style={s.coverIconCircle}>
-                  <Ionicons name="image-outline" size={28} color={colors.eu.star} />
+              <>
+                <Image source={{ uri: coverUri }} style={s.heroImage} />
+                <LinearGradient
+                  colors={["transparent", "rgba(10,10,30,0.85)"]}
+                  style={s.heroOverlay}
+                />
+                <View style={s.heroEditChip}>
+                  <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+                  <Ionicons name="camera" size={13} color={colors.eu.star} />
+                  <Text style={s.heroEditText}>Cambiar portada</Text>
                 </View>
-                <Text style={s.coverPlaceholderText}>Añadir imagen de portada</Text>
-                <Text style={s.coverPlaceholderSub}>Recomendado 16:9 · Hasta 10 MB</Text>
+              </>
+            ) : (
+              <LinearGradient
+                colors={["rgba(255,107,43,0.15)", "rgba(0,51,153,0.25)", "rgba(10,10,30,0.8)"]}
+                style={s.heroPlaceholder}
+              >
+                <View style={s.heroCamCircle}>
+                  <LinearGradient colors={["rgba(255,215,0,0.2)", "rgba(255,107,43,0.15)"]} style={StyleSheet.absoluteFill} />
+                  <Ionicons name="camera-outline" size={30} color={colors.eu.star} />
+                </View>
+                <Text style={s.heroPlaceholderTitle}>Añadir portada</Text>
+                <Text style={s.heroPlaceholderSub}>16:9 · JPG / PNG · Hasta 10 MB</Text>
               </LinearGradient>
-            )}
-            {coverUri && (
-              <View style={s.coverEditBadge}>
-                <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
-                <Ionicons name="pencil" size={14} color="#FFF" />
-              </View>
             )}
           </Pressable>
 
-          {/* Info básica */}
+          {/* Ficha de info */}
           <View style={s.section}>
-            <SectionTitle label="INFORMACIÓN BÁSICA" />
+            <SectionLabel icon="information-circle-outline" label="INFORMACIÓN BÁSICA" />
             <View style={s.card}>
-              <InputField icon="text-outline" placeholder="Título del evento *" value={title} onChangeText={setTitle} maxLength={100} />
+              <InputField
+                icon="text-outline"
+                placeholder="Título del evento *"
+                value={title}
+                onChangeText={setTitle}
+                maxLength={100}
+                charCount
+              />
               <View style={s.cardDivider} />
-              <InputField icon="document-text-outline" placeholder="Descripción (opcional)" value={description} onChangeText={setDescription} multiline maxLength={1000} />
+              <InputField
+                icon="document-text-outline"
+                placeholder="Descripción (opcional)"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                maxLength={1000}
+              />
               <View style={s.cardDivider} />
-              <InputField icon="location-outline" placeholder="Lugar del evento *" value={location} onChangeText={setLocation} maxLength={200} />
+              <InputField
+                icon="location-outline"
+                placeholder="Lugar del evento *"
+                value={location}
+                onChangeText={setLocation}
+                maxLength={200}
+              />
             </View>
           </View>
 
-          {/* Categoría */}
+          {/* Categoría — tarjetas visuales */}
           <View style={s.section}>
-            <SectionTitle label="CATEGORÍA" />
-            <View style={s.chipGrid}>
+            <SectionLabel icon="grid-outline" label="CATEGORÍA" />
+            <View style={s.catGrid}>
               {CATEGORIES.map((cat) => {
                 const active = category === cat.id;
                 return (
-                  <Pressable key={cat.id} onPress={() => { Haptics.selectionAsync(); setCategory(active ? null : cat.id); }} style={[s.chip, active && s.chipActive]}>
-                    <Text style={s.chipEmoji}>{cat.icon}</Text>
-                    <Text style={[s.chipLabel, active && s.chipLabelActive]}>{cat.label}</Text>
+                  <Pressable
+                    key={cat.id}
+                    onPress={() => { Haptics.selectionAsync(); setCategory(active ? null : cat.id); }}
+                    style={[s.catCard, active && { borderColor: cat.color, borderWidth: 2, backgroundColor: `${cat.color}18` }]}
+                  >
+                    {active && (
+                      <LinearGradient
+                        colors={[`${cat.color}22`, `${cat.color}08`]}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    )}
+                    <Text style={s.catEmoji}>{cat.icon}</Text>
+                    <Text style={[s.catLabel, active && { color: cat.color }]}>{cat.label}</Text>
                   </Pressable>
                 );
               })}
@@ -272,42 +350,78 @@ export default function CreateEventScreen(): React.JSX.Element {
 
           {/* Fechas */}
           <View style={s.section}>
-            <SectionTitle label="FECHAS Y HORA" />
+            <SectionLabel icon="calendar-outline" label="FECHA Y HORA" />
             <View style={s.card}>
+              {/* Inicio — fecha */}
               <Pressable onPress={() => openPicker("startDate")} style={s.dateRow}>
-                <Ionicons name="calendar-outline" size={18} color={colors.eu.star} style={s.inputIcon} />
-                <View style={{ flex: 1 }}>
-                  <Text style={s.dateLabel}>Inicio *</Text>
-                  <Text style={s.dateValue}>{fmtDate(startDate)} · {fmtTime(startDate)}</Text>
+                <View style={s.dateIconBox}>
+                  <LinearGradient colors={["rgba(255,215,0,0.2)", "rgba(255,215,0,0.05)"]} style={StyleSheet.absoluteFill} />
+                  <Ionicons name="calendar" size={16} color={colors.eu.star} />
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.dateLabel}>Fecha de inicio *</Text>
+                  <Text style={s.dateValue}>{fmtDate(startDate)}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.25)" />
               </Pressable>
               <View style={s.cardDivider} />
-              <Pressable onPress={() => openPicker("endDate")} style={s.dateRow}>
-                <Ionicons name="flag-outline" size={18} color="rgba(255,255,255,0.4)" style={s.inputIcon} />
+              {/* Inicio — hora */}
+              <Pressable onPress={() => openPicker("startTime")} style={s.dateRow}>
+                <View style={s.dateIconBox}>
+                  <LinearGradient colors={["rgba(255,215,0,0.12)", "rgba(255,215,0,0.03)"]} style={StyleSheet.absoluteFill} />
+                  <Ionicons name="time-outline" size={16} color={colors.eu.star} />
+                </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.dateLabel}>Fin (opcional)</Text>
-                  <Text style={[s.dateValue, !endDate && { color: "rgba(255,255,255,0.3)" }]}>
-                    {endDate ? `${fmtDate(endDate)} · ${fmtTime(endDate)}` : "Sin hora de fin"}
+                  <Text style={s.dateLabel}>Hora de inicio *</Text>
+                  <Text style={s.dateValue}>{fmtTime(startDate)}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.25)" />
+              </Pressable>
+              <View style={s.cardDivider} />
+              {/* Fin — fecha */}
+              <Pressable onPress={() => openPicker("endDate")} style={s.dateRow}>
+                <View style={[s.dateIconBox, { opacity: 0.6 }]}>
+                  <Ionicons name="flag" size={16} color="rgba(255,255,255,0.5)" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.dateLabel}>Fecha de fin (opcional)</Text>
+                  <Text style={[s.dateValue, !endDate && { color: "rgba(255,255,255,0.28)" }]}>
+                    {endDate ? fmtDate(endDate) : "Sin fecha de fin"}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
+                <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.25)" />
+              </Pressable>
+              <View style={s.cardDivider} />
+              {/* Fin — hora */}
+              <Pressable onPress={() => openPicker("endTime")} style={s.dateRow}>
+                <View style={[s.dateIconBox, { opacity: 0.6 }]}>
+                  <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.5)" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.dateLabel}>Hora de fin (opcional)</Text>
+                  <Text style={[s.dateValue, !endDate && { color: "rgba(255,255,255,0.28)" }]}>
+                    {endDate ? fmtTime(endDate) : "Sin hora de fin"}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.25)" />
               </Pressable>
             </View>
           </View>
 
           {/* Opciones */}
           <View style={s.section}>
-            <SectionTitle label="OPCIONES" />
+            <SectionLabel icon="options-outline" label="OPCIONES" />
             <View style={s.card}>
               <View style={s.optionRow}>
-                <Ionicons name="people-outline" size={18} color="rgba(255,255,255,0.4)" style={s.inputIcon} />
+                <View style={s.optionIconBox}>
+                  <Ionicons name="people-outline" size={16} color="rgba(255,255,255,0.5)" />
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.optionLabel}>Máx. participantes</Text>
                   <TextInput
                     style={s.optionInput}
                     placeholder="Sin límite"
-                    placeholderTextColor="rgba(255,255,255,0.25)"
+                    placeholderTextColor="rgba(255,255,255,0.22)"
                     value={maxParticipants}
                     onChangeText={(v) => setMaxParticipants(v.replace(/[^0-9]/g, ""))}
                     keyboardType="numeric"
@@ -317,10 +431,16 @@ export default function CreateEventScreen(): React.JSX.Element {
               </View>
               <View style={s.cardDivider} />
               <View style={s.optionRow}>
-                <Ionicons name={isPublic ? "globe-outline" : "lock-closed-outline"} size={18} color="rgba(255,255,255,0.4)" style={s.inputIcon} />
+                <View style={[s.optionIconBox, isPublic && { backgroundColor: "rgba(255,215,0,0.1)" }]}>
+                  <Ionicons
+                    name={isPublic ? "globe-outline" : "lock-closed-outline"}
+                    size={16}
+                    color={isPublic ? colors.eu.star : "rgba(255,255,255,0.5)"}
+                  />
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.optionLabel}>{isPublic ? "Evento público" : "Evento privado"}</Text>
-                  <Text style={s.optionSub}>{isPublic ? "Cualquier usuario puede verlo" : "Solo por invitación"}</Text>
+                  <Text style={s.optionSub}>{isPublic ? "Cualquiera puede verlo y unirse" : "Solo por invitación"}</Text>
                 </View>
                 <Switch
                   value={isPublic}
@@ -331,69 +451,89 @@ export default function CreateEventScreen(): React.JSX.Element {
               </View>
             </View>
           </View>
-
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Date Picker */}
+      {/* Floating submit button */}
+      <View style={[s.floatFooter, { paddingBottom: insets.bottom + spacing.md }]}>
+        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={s.floatFooterBorder} />
+        <Pressable
+          onPress={handleCreate}
+          disabled={!canSubmit}
+          style={({ pressed }) => [s.submitBtn, !canSubmit && s.submitBtnDisabled, pressed && { opacity: 0.85 }]}
+        >
+          {submitting ? (
+            <ActivityIndicator size="small" color="#000" />
+          ) : (
+            <>
+              <LinearGradient
+                colors={canSubmit ? ["#FFE566", "#D4AF37"] : ["rgba(255,215,0,0.3)", "rgba(255,215,0,0.15)"]}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <Ionicons name="sparkles" size={18} color={canSubmit ? "#000" : "rgba(255,255,255,0.4)"} />
+              <Text style={[s.submitBtnText, !canSubmit && { color: "rgba(255,255,255,0.4)" }]}>
+                Crear evento
+              </Text>
+            </>
+          )}
+        </Pressable>
+        {!canSubmit && (
+          <Text style={s.submitHint}>
+            {!title.trim() ? "Añade un título" : !location.trim() ? "Añade el lugar" : ""}
+          </Text>
+        )}
+      </View>
+
+      {/* Date Picker — Modal dropdown inline */}
       {pickerMode !== null && (
-        Platform.OS === "ios" ? (
-          <View style={s.iosPickerOverlay}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => setPickerMode(null)} />
-            <View style={s.iosPickerSheet}>
-              <LinearGradient colors={["#131B2A", "#0B101A"]} style={StyleSheet.absoluteFill} />
+        <Modal
+          transparent
+          animationType="fade"
+          visible={pickerMode !== null}
+          onRequestClose={() => setPickerMode(null)}
+        >
+          <Pressable style={s.iosPickerOverlay} onPress={() => setPickerMode(null)}>
+            <Pressable style={s.iosPickerSheet} onPress={(e) => e.stopPropagation()}>
+              <LinearGradient colors={["#1A253D", "#0D1525"]} style={StyleSheet.absoluteFill} borderRadius={radii.xl} />
+              <View style={s.iosPickerHandle} />
               <View style={s.iosPickerHeader}>
-                <Pressable onPress={() => setPickerMode(null)}>
+                <Pressable onPress={() => setPickerMode(null)} hitSlop={8}>
                   <Text style={s.iosPickerCancel}>Cancelar</Text>
                 </Pressable>
                 <Text style={s.iosPickerTitle}>
                   {pickerMode === "startDate" ? "Fecha de inicio" : pickerMode === "startTime" ? "Hora de inicio" : pickerMode === "endDate" ? "Fecha de fin" : "Hora de fin"}
                 </Text>
-                <Pressable onPress={confirmIos}>
+                <Pressable onPress={confirmIos} hitSlop={8}>
                   <Text style={s.iosPickerConfirm}>Listo</Text>
                 </Pressable>
               </View>
-              <DateTimePicker
-                value={iosTempDate}
-                mode={pickerMode.includes("Date") ? "date" : "time"}
-                display="spinner"
-                onChange={handlePickerChange}
-                textColor="#FFF"
-                locale="es-ES"
-                style={{ backgroundColor: "transparent" }}
-              />
-              <View style={s.iosToggleRow}>
-                {(pickerMode === "startDate" || pickerMode === "startTime") && (
-                  <>
-                    <Pressable onPress={() => { applyDate(iosTempDate); setIosTempDate(startDate); setPickerMode("startDate"); }} style={[s.iosToggle, pickerMode === "startDate" && s.iosToggleActive]}>
-                      <Text style={[s.iosToggleText, pickerMode === "startDate" && s.iosToggleTextActive]}>Fecha</Text>
-                    </Pressable>
-                    <Pressable onPress={() => { applyDate(iosTempDate); setIosTempDate(startDate); setPickerMode("startTime"); }} style={[s.iosToggle, pickerMode === "startTime" && s.iosToggleActive]}>
-                      <Text style={[s.iosToggleText, pickerMode === "startTime" && s.iosToggleTextActive]}>Hora</Text>
-                    </Pressable>
-                  </>
-                )}
-                {(pickerMode === "endDate" || pickerMode === "endTime") && (
-                  <>
-                    <Pressable onPress={() => { applyDate(iosTempDate); const b = endDate ?? new Date(startDate.getTime() + 3600000); setIosTempDate(b); setPickerMode("endDate"); }} style={[s.iosToggle, pickerMode === "endDate" && s.iosToggleActive]}>
-                      <Text style={[s.iosToggleText, pickerMode === "endDate" && s.iosToggleTextActive]}>Fecha</Text>
-                    </Pressable>
-                    <Pressable onPress={() => { applyDate(iosTempDate); const b = endDate ?? new Date(startDate.getTime() + 3600000); setIosTempDate(b); setPickerMode("endTime"); }} style={[s.iosToggle, pickerMode === "endTime" && s.iosToggleActive]}>
-                      <Text style={[s.iosToggleText, pickerMode === "endTime" && s.iosToggleTextActive]}>Hora</Text>
-                    </Pressable>
-                  </>
-                )}
+              {/* Calendar centered / spinner for time — no toggle tabs */}
+              <View style={pickerMode?.includes("Date") ? s.iosPickerCalendarWrap : s.iosPickerSpinnerWrap}>
+                <DateTimePicker
+                  value={iosTempDate}
+                  mode={pickerMode?.includes("Date") ? "date" : "time"}
+                  display={
+                    Platform.OS === "ios"
+                      ? (pickerMode?.includes("Date") ? "inline" : "spinner")
+                      : "spinner"
+                  }
+                  onChange={handlePickerChange}
+                  textColor="#FFF"
+                  locale="es-ES"
+                  accentColor={colors.eu.star}
+                  style={{ backgroundColor: "transparent" }}
+                  minimumDate={
+                    pickerMode === "startDate" || pickerMode === "startTime"
+                      ? new Date()
+                      : undefined
+                  }
+                />
               </View>
-            </View>
-          </View>
-        ) : (
-          <DateTimePicker
-            value={iosTempDate}
-            mode={pickerMode.includes("Date") ? "date" : "time"}
-            display="default"
-            onChange={handlePickerChange}
-          />
-        )
+            </Pressable>
+          </Pressable>
+        </Modal>
       )}
     </View>
   );
@@ -401,54 +541,123 @@ export default function CreateEventScreen(): React.JSX.Element {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: DS.background },
+
+  // ─── Header ───
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(255,255,255,0.06)",
+    paddingBottom: spacing.sm,
   },
-  headerBtn: { width: 40, alignItems: "center" },
-  headerTitle: { fontFamily: typography.families.heading, fontSize: 18, color: colors.text.primary },
-  createBtn: {
-    backgroundColor: colors.eu.star,
+  headerBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  headerBtnBlur: {
+    width: 38, height: 38, borderRadius: 19,
+    alignItems: "center", justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  headerCenter: { flex: 1, alignItems: "center", gap: 4 },
+  headerTitle: { fontFamily: typography.families.heading, fontSize: 17, color: colors.text.primary },
+  headerCatBadge: {
+    backgroundColor: "rgba(255,215,0,0.12)",
     borderRadius: radii.full,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs + 2,
-    minWidth: 72,
-    alignItems: "center",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,215,0,0.25)",
   },
-  createBtnDisabled: { backgroundColor: "rgba(255,215,0,0.25)" },
-  createBtnText: { fontFamily: typography.families.subheading, fontSize: 14, color: "#000" },
+  headerCatText: { fontFamily: typography.families.body, fontSize: 11, color: colors.eu.star },
 
+  // ─── Hero portada ───
+  heroWrap: {
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.md,
+    height: 210,
+    borderRadius: radii.xl + 4,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.09)",
+  },
+  heroImage: { width: "100%", height: "100%", resizeMode: "cover" },
+  heroOverlay: { ...StyleSheet.absoluteFillObject },
+  heroEditChip: {
+    position: "absolute",
+    bottom: spacing.md,
+    right: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,215,0,0.3)",
+  },
+  heroEditText: { fontFamily: typography.families.bodyMedium, fontSize: 12, color: colors.eu.star },
+  heroPlaceholder: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.sm },
+  heroCamCircle: {
+    width: 70, height: 70, borderRadius: 35,
+    alignItems: "center", justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,215,0,0.25)",
+    marginBottom: spacing.xs,
+  },
+  heroPlaceholderTitle: { fontFamily: typography.families.subheading, fontSize: 16, color: colors.text.primary },
+  heroPlaceholderSub: { fontFamily: typography.families.body, fontSize: 12, color: "rgba(255,255,255,0.35)" },
+
+  // ─── Sections ───
   scroll: { gap: 0 },
   section: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl },
+  sectionLabelRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginBottom: spacing.sm },
+  sectionLabelIcon: {
+    width: 22, height: 22, borderRadius: 7,
+    backgroundColor: "rgba(255,215,0,0.1)",
+    alignItems: "center", justifyContent: "center",
+  },
   sectionTitle: {
     fontFamily: typography.families.subheading,
     fontSize: 11,
-    color: "rgba(255,255,255,0.4)",
-    letterSpacing: 1.5,
-    marginBottom: spacing.sm,
+    color: "rgba(255,255,255,0.5)",
+    letterSpacing: 1.4,
   },
+
+  // ─── Card / Inputs ───
   card: {
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: radii.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
     overflow: "hidden",
   },
-  cardDivider: { height: StyleSheet.hairlineWidth, backgroundColor: "rgba(255,255,255,0.06)", marginLeft: 50 },
+  cardDivider: { height: StyleSheet.hairlineWidth, backgroundColor: "rgba(255,255,255,0.08)", marginLeft: 52 },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
+    minHeight: 56,
   },
-  inputRowFocused: { backgroundColor: "rgba(255,215,0,0.03)" },
-  inputIcon: { width: 22, textAlign: "center" },
+  inputRowFocused: {
+    backgroundColor: "rgba(255,215,0,0.04)",
+    borderLeftWidth: 2,
+    borderLeftColor: "rgba(255,215,0,0.4)",
+  },
+  inputIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.md,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  inputIconBoxFocused: {
+    backgroundColor: "rgba(255,215,0,0.1)",
+  },
   input: {
     flex: 1,
     fontFamily: typography.families.body,
@@ -457,69 +666,101 @@ const s = StyleSheet.create({
     paddingVertical: spacing.xs,
     textAlignVertical: "top",
   },
+  charCount: { fontFamily: typography.families.body, fontSize: 11, color: "rgba(255,255,255,0.25)" },
 
-  coverWrap: {
-    margin: spacing.lg,
+  // ─── Categorías visuales ───
+  catGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  catCard: {
+    width: (SCREEN_W - spacing.lg * 2 - spacing.sm * 2) / 3,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
     borderRadius: radii.xl,
-    overflow: "hidden",
-    height: 180,
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.08)",
-  },
-  coverImage: { width: "100%", height: "100%", resizeMode: "cover" },
-  coverPlaceholder: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.xs },
-  coverIconCircle: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: "rgba(255,215,0,0.08)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,215,0,0.2)",
-    alignItems: "center", justifyContent: "center",
-    marginBottom: spacing.xs,
-  },
-  coverPlaceholderText: { fontFamily: typography.families.bodyMedium, fontSize: 15, color: colors.text.primary },
-  coverPlaceholderSub: { fontFamily: typography.families.body, fontSize: 12, color: "rgba(255,255,255,0.35)" },
-  coverEditBadge: {
-    position: "absolute", bottom: spacing.sm, right: spacing.sm,
-    width: 32, height: 32, borderRadius: 16,
-    alignItems: "center", justifyContent: "center",
-    overflow: "hidden",
-    borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255,255,255,0.2)",
-  },
-
-  chipGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  chip: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.full,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.08)",
+    gap: 5,
+    overflow: "hidden",
+    position: "relative",
   },
-  chipActive: { backgroundColor: "rgba(255,215,0,0.12)", borderColor: colors.eu.star },
-  chipEmoji: { fontSize: 15 },
-  chipLabel: { fontFamily: typography.families.bodyMedium, fontSize: 13, color: "rgba(255,255,255,0.6)" },
-  chipLabelActive: { color: colors.eu.star },
+  catEmoji: { fontSize: 22 },
+  catLabel: {
+    fontFamily: typography.families.bodyMedium,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.6)",
+    textAlign: "center",
+  },
+  catCheckDot: {
+    position: "absolute", top: 6, right: 6,
+    width: 18, height: 18, borderRadius: 9,
+    alignItems: "center", justifyContent: "center",
+  },
 
+  // ─── Fechas ───
   dateRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
-  dateLabel: { fontFamily: typography.families.body, fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 2 },
+  dateIconBox: {
+    width: 36, height: 36, borderRadius: radii.md,
+    alignItems: "center", justifyContent: "center",
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  dateLabel: { fontFamily: typography.families.body, fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 3 },
   dateValue: { fontFamily: typography.families.bodyMedium, fontSize: 14, color: colors.text.primary },
 
-  optionRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: spacing.sm },
+  // ─── Opciones ───
+  optionRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: spacing.md },
+  optionIconBox: {
+    width: 36, height: 36, borderRadius: radii.md,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
   optionLabel: { fontFamily: typography.families.bodyMedium, fontSize: 14, color: colors.text.primary },
   optionSub: { fontFamily: typography.families.body, fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 },
   optionInput: { fontFamily: typography.families.body, fontSize: 14, color: colors.text.primary, marginTop: 2 },
 
-  iosPickerOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" },
-  iosPickerSheet: { borderTopLeftRadius: radii.xl, borderTopRightRadius: radii.xl, overflow: "hidden" },
+  // ─── Floating footer ───
+  floatFooter: {
+    position: "absolute",
+    bottom: 0,
+    left: 0, right: 0,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    overflow: "hidden",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  floatFooterBorder: {
+    position: "absolute",
+    top: 0, left: 0, right: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255,255,255,0.07)",
+  },
+  submitBtn: {
+    width: "100%",
+    height: 52,
+    borderRadius: radii.xl,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,215,0,0.3)",
+  },
+  submitBtnDisabled: { borderColor: "rgba(255,255,255,0.08)" },
+  submitBtnText: { fontFamily: typography.families.subheading, fontSize: 16, color: "#000" },
+  submitHint: { fontFamily: typography.families.body, fontSize: 12, color: "rgba(255,255,255,0.35)" },
+
+  // ─── iOS picker ───
+  iosPickerOverlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" },
+  iosPickerSheet: { borderTopLeftRadius: radii.xl + 4, borderTopRightRadius: radii.xl + 4, overflow: "hidden", paddingBottom: 24 },
+  iosPickerHandle: { width: 36, height: 4, backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 2, alignSelf: "center", marginTop: 10, marginBottom: 4 },
   iosPickerHeader: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
@@ -528,9 +769,21 @@ const s = StyleSheet.create({
   iosPickerTitle: { fontFamily: typography.families.subheading, fontSize: 15, color: colors.text.primary },
   iosPickerCancel: { fontFamily: typography.families.body, fontSize: 15, color: "rgba(255,255,255,0.5)" },
   iosPickerConfirm: { fontFamily: typography.families.subheading, fontSize: 15, color: colors.eu.star },
-  iosToggleRow: { flexDirection: "row", justifyContent: "center", gap: spacing.sm, paddingBottom: spacing.md },
+  iosToggleRow: { flexDirection: "row", justifyContent: "center", gap: spacing.sm, paddingBottom: spacing.md, paddingTop: spacing.sm },
   iosToggle: { paddingHorizontal: spacing.lg, paddingVertical: spacing.xs, borderRadius: radii.full, backgroundColor: "rgba(255,255,255,0.06)" },
   iosToggleActive: { backgroundColor: "rgba(255,215,0,0.15)", borderWidth: 1, borderColor: colors.eu.star },
   iosToggleText: { fontFamily: typography.families.body, fontSize: 13, color: "rgba(255,255,255,0.5)" },
   iosToggleTextActive: { color: colors.eu.star, fontFamily: typography.families.bodyMedium },
+  // ─── Picker wrappers ───
+  iosPickerCalendarWrap: {
+    alignItems: "center",
+    width: "100%",
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.md,
+  },
+  iosPickerSpinnerWrap: {
+    alignItems: "center",
+    width: "100%",
+    paddingBottom: spacing.md,
+  },
 });

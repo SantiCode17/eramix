@@ -524,7 +524,7 @@ const s = StyleSheet.create({
 
   // Status card
   statusCard: {
-    borderRadius: radii["2xl"], overflow: "hidden",
+    borderRadius: radii.xxl, overflow: "hidden",
     borderWidth: borders.hairline, borderColor: "rgba(255,255,255,0.08)",
   },
   statusContent: {
@@ -634,7 +634,7 @@ const s = StyleSheet.create({
 
   // Card
   card: {
-    borderRadius: radii["2xl"], overflow: "hidden",
+    borderRadius: radii.xxl, overflow: "hidden",
     borderWidth: borders.hairline, borderColor: "rgba(255,255,255,0.08)",
   },
 

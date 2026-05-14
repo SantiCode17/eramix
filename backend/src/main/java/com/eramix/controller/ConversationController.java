@@ -64,10 +64,22 @@ public class ConversationController {
     @PostMapping(value = "/{id}/messages/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<MessageResponse>> sendImageMessage(
             @PathVariable Long id,
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "caption", required = false) String caption) {
         String mediaUrl = fileStorageService.storePhoto(file);
-        MessageResponse msg = chatService.saveImageMessage(id, currentUserId(), mediaUrl);
+        MessageResponse msg = chatService.saveImageMessage(id, currentUserId(), mediaUrl, caption);
         return ResponseEntity.ok(ApiResponse.ok("Imagen enviada", msg));
+    }
+
+    // ── 6. POST /{id}/messages/audio ── Enviar audio ────
+
+    @PostMapping(value = "/{id}/messages/audio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<MessageResponse>> sendAudioMessage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        String mediaUrl = fileStorageService.storeAudio(file);
+        MessageResponse msg = chatService.saveAudioMessage(id, currentUserId(), mediaUrl);
+        return ResponseEntity.ok(ApiResponse.ok("Audio enviado", msg));
     }
 
     // ── Helper ────────────────────────────────────────────

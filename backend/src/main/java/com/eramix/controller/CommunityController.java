@@ -59,6 +59,14 @@ public class CommunityController {
                 ApiResponse.ok(communityService.getCommunityById(id, currentUserId())));
     }
 
+    // ── 4b. GET /{id}/members ── Miembros de comunidad ──────────────
+
+    @GetMapping("/{id}/members")
+    public ResponseEntity<ApiResponse<List<CommunityResponse.MemberPreview>>> getCommunityMembers(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(communityService.getCommunityMembers(id)));
+    }
+
     // ── 4b. POST / ── Crear comunidad ─────────────────────
 
     @PostMapping
@@ -128,6 +136,16 @@ public class CommunityController {
         return ResponseEntity.ok(
                 ApiResponse.ok("Comentario agregado",
                         communityService.createComment(id, postId, currentUserId(), request)));
+    }
+
+    // ── 10.5 GET /{id}/posts/{postId}/comments ── Ver comentarios
+
+    @GetMapping("/{id}/posts/{postId}/comments")
+    public ResponseEntity<ApiResponse<List<CommunityCommentResponse>>> getPostComments(
+            @PathVariable Long id,
+            @PathVariable Long postId) {
+        return ResponseEntity.ok(
+                ApiResponse.ok(communityService.getPostComments(id, postId, currentUserId())));
     }
 
     // ── 11. POST /{id}/posts/upload-image ── Upload imagen de post

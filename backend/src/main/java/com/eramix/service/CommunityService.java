@@ -52,7 +52,7 @@ public class CommunityService {
 
     @Transactional(readOnly = true)
     public List<CommunityResponse> getMyCommunities(Long userId) {
-        return communityRepository.findAllByMemberUserId(userId).stream()
+        return communityRepository.findAllByMemberUserIdAndStatus(userId, CommunityMemberStatus.ACTIVE).stream()
                 .map(c -> toCommunityResponse(c, userId))
                 .collect(Collectors.toList());
     }
@@ -74,6 +74,20 @@ public class CommunityService {
         Community community = communityRepository.findById(communityId)
                 .orElseThrow(() -> new RuntimeException("Community not found"));
         return toCommunityResponse(community, userId);
+    }
+    
+    @Transactional(readOnly = true)
+    public List<CommunityResponse.MemberPreview> getCommunityMembers(Long communityId) {
+        return communityMemberRepository
+                .findAllByCommunityIdAndStatus(communityId, CommunityMemberStatus.ACTIVE)
+                .stream()
+                .map(m -> CommunityResponse.MemberPreview.builder()
+                        .userId(m.getUser().getId())
+                        .firstName(m.getUser().getFirstName())
+                        .lastName(m.getUser().getLastName())
+                        .profilePhotoUrl(m.getUser().getProfilePhotoUrl())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     // ─── JOIN COMMUNITY ────────────────────────────────────────────
@@ -161,8 +175,8 @@ public class CommunityService {
         Community community = communityRepository.findById(communityId)
                 .orElseThrow(() -> new RuntimeException("Community not found"));
 
-        if (!communityMemberRepository.existsByCommunityIdAndUserId(communityId, userId)) {
-            throw new RuntimeException("You must be a member to post in this community");
+        if (!communityMemberRepository.existsByCommunityIdAndUserIdAndStatus(communityId, userId, CommunityMemberStatus.ACTIVE)) {
+            throw new IllegalArgumentException("Debes ser miembro de la comunidad para publicar");
         }
 
         User author = userRepository.findById(userId)
@@ -221,8 +235,8 @@ public class CommunityService {
             throw new RuntimeException("Post does not belong to this community");
         }
 
-        if (!communityMemberRepository.existsByCommunityIdAndUserId(communityId, userId)) {
-            throw new RuntimeException("You must be a member to comment");
+        if (!communityMemberRepository.existsByCommunityIdAndUserIdAndStatus(communityId, userId, CommunityMemberStatus.ACTIVE)) {
+            throw new IllegalArgumentException("Debes ser miembro de la comunidad para comentar");
         }
 
         User author = userRepository.findById(userId)
@@ -241,6 +255,18 @@ public class CommunityService {
         return toCommentResponse(comment);
     }
 
+    @Transactional(readOnly = true)
+    public List<CommunityCommentResponse> getPostComments(Long communityId, Long postId, Long userId) {
+        CommunityPost post = communityPostRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        if (!post.getCommunity().getId().equals(communityId)) {
+            throw new RuntimeException("Post does not belong to this community");
+        }
+        
+        List<CommunityComment> comments = communityCommentRepository.findAllByPostIdOrderByCreatedAtAsc(postId);
+        return comments.stream().map(this::toCommentResponse).collect(Collectors.toList());
+    }
+
     // ─── CREATE COMMUNITY (user-facing) ───────────────────────────
 
     @Transactional
@@ -252,7 +278,7 @@ public class CommunityService {
                 .name(request.getName())
                 .description(request.getDescription())
                 .category(request.getCategory())
-                .isPublic(request.isPublic())
+                .isPublic(request.getIsPublic() != null ? request.getIsPublic() : true)
                 .coverImageUrl(request.getCoverImageUrl())
                 .build();
         community = communityRepository.save(community);
@@ -266,6 +292,9 @@ public class CommunityService {
                 .joinedAt(Instant.now())
                 .build();
         communityMemberRepository.save(member);
+
+        community.setMemberCount(1);
+        communityRepository.save(community);
 
         return toCommunityResponse(community, userId);
     }

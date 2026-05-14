@@ -65,4 +65,6 @@ export type CommunitiesStackParamList = {
   CommunityFeed: { communityId: number; communityName: string };
   CreateCommunity: undefined;
   CreateCommunityPost: { communityId: number };
+  CommunityMembers: { communityId: number };
+  CommunityPostComments: { communityId: number; postParam: CommunityPostData };
 };

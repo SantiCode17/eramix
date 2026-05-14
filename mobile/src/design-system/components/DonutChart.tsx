@@ -44,7 +44,11 @@ export function DonutChart({
   }> = [];
 
   data.forEach((item) => {
-    const sliceAngle = (item.percentage / 100) * 360;
+    let sliceAngle = (item.percentage / 100) * 360;
+    if (sliceAngle >= 360) {
+      sliceAngle = 359.99; // SVG arc command fails when start and end points are identical
+    }
+
     const startAngle = currentAngle;
     const endAngle = currentAngle + sliceAngle;
 
@@ -97,44 +101,48 @@ export function DonutChart({
 
   return (
     <View style={st.container}>
-      <Svg
-        width={chartSize}
-        height={chartSize}
-        viewBox={`0 0 ${chartSize} ${chartSize}`}
-        style={st.chart}
-      >
-        {/* Draw segments */}
-        {paths.map((path, index) => (
-          <Path
-            key={index}
-            d={path.d}
-            fill={path.color}
-            opacity={0.9}
+      {/* SVG + center overlay positioned together */}
+      <View style={{ width: chartSize, height: chartSize }}>
+        <Svg
+          width={chartSize}
+          height={chartSize}
+          viewBox={`0 0 ${chartSize} ${chartSize}`}
+        >
+          {/* Draw segments */}
+          {paths.map((path, index) => (
+            <Path
+              key={index}
+              d={path.d}
+              fill={path.color}
+              opacity={0.9}
+            />
+          ))}
+
+          {/* Center circle with total */}
+          <Circle
+            cx={centerX}
+            cy={centerY}
+            r={innerRadius - 5}
+            fill="rgba(15, 21, 53, 0.95)"
+            opacity={0.95}
           />
-        ))}
+        </Svg>
 
-        {/* Center circle with total */}
-        <Circle
-          cx={centerX}
-          cy={centerY}
-          r={innerRadius - 5}
-          fill="rgba(15, 21, 53, 0.95)"
-          opacity={0.95}
-        />
-      </Svg>
-
-      {/* Center text overlay */}
-      <View
-        style={[
-          st.centerContent,
-          {
-            width: innerRadius * 1.8,
-            height: innerRadius * 1.8,
-          },
-        ]}
-      >
-        <Text style={st.centerLabel}>Total</Text>
-        <Text style={st.centerValue}>{formatCurrency(total)}</Text>
+        {/* Center text overlay — positioned relative to this wrapper */}
+        <View
+          style={[
+            st.centerContent,
+            {
+              width: innerRadius * 1.8,
+              height: innerRadius * 1.8,
+              top: centerY - innerRadius * 0.9,
+              left: centerX - innerRadius * 0.9,
+            },
+          ]}
+        >
+          <Text style={st.centerLabel}>Total</Text>
+          <Text style={st.centerValue}>{formatCurrency(total)}</Text>
+        </View>
       </View>
 
       {/* Legend */}
@@ -165,17 +173,10 @@ const st = StyleSheet.create({
     alignItems: "center",
     paddingVertical: spacing.lg,
   },
-  chart: {
-    marginBottom: spacing.md,
-  },
   centerContent: {
     position: "absolute",
     alignItems: "center",
     justifyContent: "center",
-    top: "50%",
-    left: "50%",
-    marginLeft: -45,
-    marginTop: -45,
   },
   centerLabel: {
     fontFamily: typography.families.bodyMedium,

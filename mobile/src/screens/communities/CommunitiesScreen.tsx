@@ -5,7 +5,7 @@
  * ════════════════════════════════════════════════════
  */
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import { FlashList } from "@shopify/flash-list";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import Animated, { FadeIn, FadeInDown, FadeInRight } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
@@ -67,10 +68,12 @@ function CommunityCard({
   item,
   index,
   onPress,
+  onJoin,
 }: {
   item: CommunityData;
   index: number;
   onPress: () => void;
+  onJoin?: () => void;
 }) {
   const gradColors = CATEGORY_GRADIENTS[item.category] ?? CATEGORY_GRADIENTS.GENERAL;
 
@@ -120,7 +123,7 @@ function CommunityCard({
                 <Text style={styles.joinedText}>Unido</Text>
               </View>
             ) : (
-              <Pressable style={styles.joinBadge} onPress={onPress}>
+              <Pressable style={styles.joinBadge} onPress={(e) => { e.stopPropagation?.(); onJoin ? onJoin() : onPress(); }}>
                 <Ionicons name="add-circle-outline" size={13} color={colors.eu.star} />
                 <Text style={styles.joinText}>Unirse</Text>
               </Pressable>
@@ -141,6 +144,7 @@ export default function CommunitiesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
+  const hasMounted = useRef(false);
 
   const fetchCommunities = useCallback(async () => {
     try {
@@ -167,13 +171,44 @@ export default function CommunitiesScreen() {
 
   useEffect(() => {
     setLoading(true);
+    hasMounted.current = true;
     fetchCommunities();
   }, [fetchCommunities]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (hasMounted.current) {
+        fetchCommunities();
+      }
+    }, [fetchCommunities])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchCommunities();
   }, [fetchCommunities]);
+
+  const handleJoin = useCallback(async (id: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Optimistic update
+    setCommunities((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, isMember: true, memberCount: c.memberCount + 1 } : c))
+    );
+    try {
+      const updated = await communitiesApi.joinCommunity(id);
+      // Sync state with server response (authoritative)
+      setCommunities((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, ...updated } : c))
+      );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      // Revert on failure
+      setCommunities((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, isMember: false, memberCount: Math.max(0, c.memberCount - 1) } : c))
+      );
+      handleError(e, "Communities.join");
+    }
+  }, []);
 
   const renderItem = useCallback(
     ({ item, index }: { item: CommunityData; index: number }) => (
@@ -187,9 +222,10 @@ export default function CommunitiesScreen() {
             communityName: item.name,
           });
         }}
+        onJoin={item.isMember ? undefined : () => handleJoin(item.id)}
       />
     ),
-    [nav],
+    [nav, handleJoin],
   );
 
   return (

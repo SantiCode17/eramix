@@ -21,7 +21,11 @@ public class CommunityPostResponse {
     private String imageUrl;
     private int likeCount;
     private int commentCount;
-    private boolean isPinned;
+
+    // Boolean (boxed) → Lombok generates getIsPinned() → Jackson emits "isPinned".
+    // primitive boolean isPinned → getter isPinned() → Jackson strips "is" → emits "pinned" (BUG).
+    private Boolean isPinned;
+
     private boolean likedByCurrentUser;
     private Instant createdAt;
 

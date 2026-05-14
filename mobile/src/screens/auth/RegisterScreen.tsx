@@ -85,6 +85,12 @@ const CUR_YEAR = new Date().getFullYear();
 const DOB_MAX = new Date(CUR_YEAR - 17, 11, 31);
 const DOB_MIN = new Date(CUR_YEAR - 80, 0, 1);
 const MOBILITY_FALLBACK_DATE = new Date(CUR_YEAR, 8, 1); // 1-Sep stable fallback
+const MOBILITY_MIN_DATE = new Date(CUR_YEAR - 1, 0, 1);  // 1 Jan last year
+const MOBILITY_MAX_DATE = new Date(CUR_YEAR + 3, 11, 31); // 31 Dec in 3 years
+
+/** Guard: reject epoch dates returned by buggy Android picker */
+const isEpochDate = (d: Date): boolean =>
+  d.getFullYear() === 1970 && d.getMonth() === 0 && d.getDate() === 1;
 
 // ── Formatter manual para español (Hermes no soporta Intl con locales) ──
 const MESES_ES = [
@@ -611,13 +617,10 @@ export default function RegisterScreen(): React.JSX.Element {
                       display="default"
                       maximumDate={DOB_MAX}
                       minimumDate={DOB_MIN}
-                      onChange={(e: any, date?: Date) => {
+                      onChange={(_event: DateTimePickerEvent, date?: Date) => {
                         setShowDobPicker(false);
-                        if (e.type === "set") {
-                          const selectedDate = e.nativeEvent?.timestamp ? new Date(e.nativeEvent.timestamp) : date;
-                          if (selectedDate && !isNaN(selectedDate.getTime())) {
-                            setDob(selectedDate);
-                          }
+                        if (date) {
+                          setDob(date);
                         }
                       }}
                     />
@@ -782,7 +785,7 @@ export default function RegisterScreen(): React.JSX.Element {
                 <Text style={st.label}>Inicio de la movilidad</Text>
                 {Platform.OS === "ios" ? (
                   <View onTouchStart={() => setParentScrollEnabled(false)} onTouchEnd={() => setParentScrollEnabled(true)} onTouchCancel={() => setParentScrollEnabled(true)}>
-                    <DateTimePicker value={mobilityStartDate ?? MOBILITY_FALLBACK_DATE} mode="date" display="spinner" locale="es-ES" onChange={(_, date) => { if (date) setMobilityStartDate(date); }} style={{ marginTop: spacing.sm }} />
+                    <DateTimePicker value={mobilityStartDate ?? MOBILITY_FALLBACK_DATE} mode="date" display="spinner" locale="es-ES" minimumDate={MOBILITY_MIN_DATE} maximumDate={MOBILITY_MAX_DATE} onChange={(_, date) => { if (date && !isEpochDate(date)) setMobilityStartDate(date); }} style={{ marginTop: spacing.sm }} />
                   </View>
                 ) : (
                   <>
@@ -798,14 +801,13 @@ export default function RegisterScreen(): React.JSX.Element {
                         value={mobilityStartDate ?? MOBILITY_FALLBACK_DATE} 
                         mode="date" 
                         display="default" 
-                        onChange={(e: any, date?: Date) => { 
+                        minimumDate={MOBILITY_MIN_DATE}
+                        maximumDate={MOBILITY_MAX_DATE}
+                        onChange={(_event: DateTimePickerEvent, date?: Date) => { 
                           setShowStartPicker(false); 
-                          if (e.type === "set") {
-                            const selectedDate = e.nativeEvent?.timestamp ? new Date(e.nativeEvent.timestamp) : date;
-                            if (selectedDate && !isNaN(selectedDate.getTime())) {
-                              setMobilityStartDate(selectedDate);
-                            }
-                          } 
+                          if (date && !isEpochDate(date)) {
+                            setMobilityStartDate(date);
+                          }
                         }} 
                       />
                     )}
@@ -815,7 +817,7 @@ export default function RegisterScreen(): React.JSX.Element {
                 <Text style={[st.label, { marginTop: spacing.md }]}>Fin estimado</Text>
                 {Platform.OS === "ios" ? (
                   <View onTouchStart={() => setParentScrollEnabled(false)} onTouchEnd={() => setParentScrollEnabled(true)} onTouchCancel={() => setParentScrollEnabled(true)}>
-                    <DateTimePicker value={mobilityEndDate ?? MOBILITY_FALLBACK_DATE} mode="date" display="spinner" locale="es-ES" onChange={(_, date) => { if (date) setMobilityEndDate(date); }} style={{ marginTop: spacing.sm }} />
+                    <DateTimePicker value={mobilityEndDate ?? MOBILITY_FALLBACK_DATE} mode="date" display="spinner" locale="es-ES" minimumDate={MOBILITY_MIN_DATE} maximumDate={MOBILITY_MAX_DATE} onChange={(_, date) => { if (date && !isEpochDate(date)) setMobilityEndDate(date); }} style={{ marginTop: spacing.sm }} />
                   </View>
                 ) : (
                   <>
@@ -831,14 +833,13 @@ export default function RegisterScreen(): React.JSX.Element {
                         value={mobilityEndDate ?? MOBILITY_FALLBACK_DATE} 
                         mode="date" 
                         display="default" 
-                        onChange={(e: any, date?: Date) => { 
+                        minimumDate={MOBILITY_MIN_DATE}
+                        maximumDate={MOBILITY_MAX_DATE}
+                        onChange={(_event: DateTimePickerEvent, date?: Date) => { 
                           setShowEndPicker(false); 
-                          if (e.type === "set") {
-                            const selectedDate = e.nativeEvent?.timestamp ? new Date(e.nativeEvent.timestamp) : date;
-                            if (selectedDate && !isNaN(selectedDate.getTime())) {
-                              setMobilityEndDate(selectedDate);
-                            }
-                          } 
+                          if (date && !isEpochDate(date)) {
+                            setMobilityEndDate(date);
+                          }
                         }} 
                       />
                     )}

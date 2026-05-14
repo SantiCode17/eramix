@@ -58,6 +58,13 @@ export async function getCommunity(id: number): Promise<CommunityData> {
   return data.data;
 }
 
+export async function getCommunityMembers(id: number): Promise<CommunityMemberPreview[]> {
+  const { data } = await apiClient.get<ApiResponse<CommunityMemberPreview[]>>(
+    `/v1/communities/${id}/members`,
+  );
+  return data.data;
+}
+
 export async function createCommunity(payload: {
   name: string;
   description?: string;
@@ -123,7 +130,8 @@ export async function uploadPostImage(
   } as any);
   const { data } = await apiClient.post<ApiResponse<{ url: string }>>(
     `/v1/communities/${communityId}/posts/upload-image`,
-    form
+    form,
+    { headers: { "Content-Type": "multipart/form-data" } }
   );
   return data.data.url;
 }
@@ -141,6 +149,16 @@ export async function togglePostLike(
 }
 
 // ── Comments ────────────────────────────────────────
+
+export async function getPostComments(
+  communityId: number,
+  postId: number,
+): Promise<CommunityCommentData[]> {
+  const { data } = await apiClient.get<ApiResponse<CommunityCommentData[]>>(
+    `/v1/communities/${communityId}/posts/${postId}/comments`,
+  );
+  return data.data ?? [];
+}
 
 export async function createComment(
   communityId: number,

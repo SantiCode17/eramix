@@ -26,6 +26,14 @@ export default function GroupsNavigator(): React.JSX.Element {
         options={{ presentation: "modal" }}
       />
       <Stack.Screen name="GroupSettings" component={GroupSettingsScreen} />
+        <Stack.Screen
+          name="VoiceMessage"
+          component={require("@/screens/chat/VoiceMessageScreen").default}
+          options={{
+            presentation: "transparentModal",
+            cardOverlayEnabled: true,
+          }}
+        />
     </Stack.Navigator>
   );
 }

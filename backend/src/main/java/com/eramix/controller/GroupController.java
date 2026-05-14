@@ -16,6 +16,7 @@ import java.util.List;
 @RequestMapping("/api/v1/groups")
 @RequiredArgsConstructor
 public class GroupController {
+    private final com.eramix.service.FileStorageService fileStorageService;
 
     private final GroupService groupService;
 
@@ -85,7 +86,31 @@ public class GroupController {
 
     // ── 8. PUT /{id}/read ── Marcar como leído ────────────
 
+    @PostMapping(value = "/{id}/messages/upload", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<com.eramix.dto.ApiResponse<java.util.Map<String, String>>> uploadGroupMedia(
+            @PathVariable Long id, @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        groupService.getGroupById(id, currentUserId()); // Validates membership implicitly
+        
+        String contentType = file.getContentType();
+        String fileName;
+        if (contentType != null && contentType.startsWith("audio/")) {
+            fileName = fileStorageService.storeAudio(file);
+        } else {
+            fileName = fileStorageService.storePhoto(file);
+        }
+        
+        String fileUrl = "/uploads/photos/" + fileName;
+        if (contentType != null && contentType.startsWith("audio/")) {
+            fileUrl = "/uploads/audio/" + fileName;
+        }
+
+        java.util.Map<String, String> response = new java.util.HashMap<>();
+        response.put("url", fileUrl);
+        return ResponseEntity.ok(com.eramix.dto.ApiResponse.ok(response));
+    }
+
     @PutMapping("/{id}/read")
+
     public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable Long id) {
         groupService.markGroupAsRead(id, currentUserId());
         return ResponseEntity.ok(ApiResponse.ok("Mensajes marcados como leídos", null));

@@ -756,8 +756,8 @@ const s = StyleSheet.create({
   },
   coverAddBtnText: { fontFamily: typography.families.bodyMedium, fontSize: 13, color: colors.eu.star },
   coverChangeBadge: {
-    position: "absolute", bottom: spacing.sm, right: spacing.sm,
-    width: 32, height: 32, borderRadius: 16,
+    position: "absolute", bottom: spacing.xl + spacing.lg + 16, right: spacing.md,
+    width: 36, height: 36, borderRadius: 18,
     alignItems: "center", justifyContent: "center",
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255,255,255,0.2)",

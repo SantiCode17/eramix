@@ -22,7 +22,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { BlurView } from "expo-blur";
-import Animated, { FadeInDown, FadeOutRight, withSpring } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeInRight, FadeOutRight, withSpring } from "react-native-reanimated";
 import { CategoryTab } from "@/components";
 import { colors, typography, spacing, radii, DS } from "@/design-system/tokens";
 import { financeApi } from "@/api/financeService";
@@ -37,6 +37,7 @@ export default function TransactionHistoryScreen(): React.JSX.Element {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<"ALL" | "EXPENSE" | "INCOME">("ALL");
   const [refreshing, setRefreshing] = useState(false);
 
   const {
@@ -46,6 +47,7 @@ export default function TransactionHistoryScreen(): React.JSX.Element {
   } = useQuery<LedgerTransaction[]>({
     queryKey: ["transactions"],
     queryFn: financeApi.getTransactions,
+    retry: false,
   });
 
   const onRefresh = async () => {
@@ -56,19 +58,20 @@ export default function TransactionHistoryScreen(): React.JSX.Element {
 
   // Get unique categories from transactions
   const categories = useMemo(() => {
-    const cats = new Set(transactions.map((t) => t.categoryName));
+    const cats = new Set(transactions.map((t) => t.categoryName ?? "").filter(Boolean));
     return Array.from(cats).sort();
   }, [transactions]);
 
   // Filter and group transactions
   const groupedTransactions = useMemo(() => {
     const filtered = transactions.filter((tx) => {
-      const matchesSearch =
-        !searchQuery ||
-        tx.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tx.categoryName.toLowerCase().includes(searchQuery.toLowerCase());
+      const desc = (tx.description ?? "").toLowerCase();
+      const cat = (tx.categoryName ?? "").toLowerCase();
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = !searchQuery || desc.includes(query) || cat.includes(query);
       const matchesCategory = !selectedCategory || tx.categoryName === selectedCategory;
-      return matchesSearch && matchesCategory;
+      const matchesType = typeFilter === "ALL" || tx.transactionType === typeFilter;
+      return matchesSearch && matchesCategory && matchesType;
     });
 
     // Group by date
@@ -87,7 +90,7 @@ export default function TransactionHistoryScreen(): React.JSX.Element {
         transactions: txs,
         dailyTotal: txs.reduce((sum, tx) => sum + tx.amount, 0),
       }));
-  }, [transactions, searchQuery, selectedCategory]);
+  }, [transactions, searchQuery, selectedCategory, typeFilter]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-ES", {
@@ -115,7 +118,8 @@ export default function TransactionHistoryScreen(): React.JSX.Element {
     }
   };
 
-  const getIconForCategory = (categoryName: string): React.ComponentProps<typeof Ionicons>["name"] => {
+  const getIconForCategory = (categoryName: string | null | undefined): React.ComponentProps<typeof Ionicons>["name"] => {
+    if (!categoryName) return "cube";
     const iconMap: Record<string, React.ComponentProps<typeof Ionicons>["name"]> = {
       "Comida": "restaurant",
       "Transporte": "bus",
@@ -161,26 +165,67 @@ export default function TransactionHistoryScreen(): React.JSX.Element {
         )}
       </View>
 
+      {/* Type Filter Pills */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.typeFilterContainer}
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}
+      >
+        <Animated.View entering={FadeInRight.delay(0).duration(350)}>
+          <CategoryTab
+            label="Todos"
+            icon="apps-outline"
+            active={typeFilter === "ALL"}
+            onPress={() => setTypeFilter("ALL")}
+          />
+        </Animated.View>
+        <Animated.View entering={FadeInRight.delay(40).duration(350)}>
+          <CategoryTab
+            label="Gastos"
+            icon="arrow-down-circle-outline"
+            active={typeFilter === "EXPENSE"}
+            onPress={() => setTypeFilter("EXPENSE")}
+          />
+        </Animated.View>
+        <Animated.View entering={FadeInRight.delay(80).duration(350)}>
+          <CategoryTab
+            label="Ingresos"
+            icon="arrow-up-circle-outline"
+            active={typeFilter === "INCOME"}
+            onPress={() => setTypeFilter("INCOME")}
+          />
+        </Animated.View>
+      </ScrollView>
+
       {/* Category Filter */}
       {categories.length > 0 && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.categoryFilterContainer}
-          contentContainerStyle={{ paddingHorizontal: spacing.lg }}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}
         >
-          <CategoryTab
-            label="Todas"
-            active={selectedCategory === null}
-            onPress={() => setSelectedCategory(null)}
-          />
-          {categories.map((cat) => (
+          <Animated.View entering={FadeInRight.delay(0).duration(350)}>
             <CategoryTab
-              key={cat}
-              label={cat}
-              active={selectedCategory === cat}
-              onPress={() => setSelectedCategory(cat)}
+              label="Todas"
+              icon="apps-outline"
+              active={selectedCategory === null}
+              onPress={() => setSelectedCategory(null)}
             />
+          </Animated.View>
+          {categories.map((cat, index) => (
+            <Animated.View
+              key={cat}
+              entering={FadeInRight.delay((index + 1) * 40).duration(350)}
+            >
+              <CategoryTab
+                label={cat}
+                icon={getIconForCategory(cat)}
+                active={selectedCategory === cat}
+                onPress={() => setSelectedCategory(cat)}
+              />
+            </Animated.View>
           ))}
         </ScrollView>
       )}
@@ -291,7 +336,7 @@ export default function TransactionHistoryScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, backgroundColor: DS.background },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -330,6 +375,13 @@ const styles = StyleSheet.create({
   categoryFilterContainer: {
     marginBottom: spacing.md,
     marginTop: 0,
+  },
+
+  // Type Filter
+  typeFilterContainer: {
+    marginBottom: spacing.sm,
+    marginTop: 0,
+    flexGrow: 0,
   },
 
   // List

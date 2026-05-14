@@ -17,15 +17,19 @@ public class CommunityResponse {
     private String description;
     private CommunityCategory category;
     private String coverImageUrl;
-    private boolean isPublic;
+
+    // Using Boolean (boxed) so Lombok generates getIsPublic() → Jackson serializes as "isPublic".
+    // primitive boolean isPublic → getter isPublic() → Jackson strips "is" → emits "public" (BUG).
+    private Boolean isPublic;
+
     private int memberCount;
     private Instant createdAt;
 
-    // Current user's role in this community (null if not a member)
     private String currentUserRole;
-    private boolean isMember;
 
-    // Preview of some members
+    // Same: Boolean (boxed) → getIsMember() → Jackson emits "isMember" correctly.
+    private Boolean isMember;
+
     private List<MemberPreview> membersPreview;
 
     @Data
